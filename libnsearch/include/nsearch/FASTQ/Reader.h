@@ -24,20 +24,16 @@ namespace FASTQ {
     }
 
     void operator>>( Sequence &seq ) {
-      std::string identifier, sequence, plusline, quality;
+      (*mTextReader) >> seq.identifier;
+      (*mTextReader) >> seq.sequence;
+      (*mTextReader) >> seq.quality; // skip plusline
+      (*mTextReader) >> seq.quality;
 
-      (*mTextReader) >> identifier;
-      (*mTextReader) >> sequence;
-      (*mTextReader) >> plusline;
-      (*mTextReader) >> quality;
+      // delete '>'
+      seq.identifier.erase( seq.identifier.begin(), seq.identifier.begin() + 1 );
 
-      /* std::cout << identifier << std::endl; */
-      /* std::cout << sequence << std::endl; */
-      /* std::cout << plusline << std::endl; */
-      /* std::cout << quality << std::endl; */
-      /* std::cout << "=====" << std::endl; */
-
-      seq = Sequence( identifier.substr( 1 ), toupper( sequence ), quality );
+      UpcaseString( seq.sequence ); // atc -> ATC
+      UpcaseString( seq.quality );
     }
 
     size_t NumBytesRead() const {

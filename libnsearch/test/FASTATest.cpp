@@ -10,11 +10,11 @@ TEST_CASE( "FASTA" )  {
       "TGGCG\n"
       "ATTGG\n"
       "\n"
-      ">Seq2 \n"
-      "TTTTT \n"
+      ">Seq2\n"
+      "TTTTT\n"
       "CAGTC\n"
-      ">Seq3 \n"
-      "actgc \n";
+      ">Seq3\n"
+      "actgc\n";
 
     std::istringstream iss( content );
 

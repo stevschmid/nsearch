@@ -45,7 +45,8 @@ namespace FASTA {
         sequence += line;
       }
 
-      seq = Sequence( identifier.substr( 1 ), toupper( sequence ) );
+      UpcaseString( sequence );
+      seq = Sequence( identifier.substr( 1 ), sequence );
     }
 
     size_t NumBytesRead() const {

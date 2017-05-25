@@ -33,8 +33,7 @@ bool TextStreamReader::EndOfFile() const {
 void TextStreamReader::operator>>( std::string &str ) {
   do {
     getline( mInput, str );
-    str = trim( str );
-  } while( !EndOfFile() && str.empty() );
+  } while( !EndOfFile() && IsBlank( str ) );
 }
 
 /*
@@ -84,8 +83,7 @@ ReadLine:
     }
   }
 
-  str = trim( str );
-  if( str.empty() )
+  if( IsBlank( str ) )
     goto ReadLine;
 }
 

@@ -19,7 +19,7 @@ TEST_CASE( "TextReader" )  {
     reader >> line;
     REQUIRE( line == "Hello" );
     reader >> line;
-    REQUIRE( line == "Happy" );
+    REQUIRE( line == "Happy " );
     reader >> line;
     REQUIRE( line == "World" );
 
@@ -38,7 +38,7 @@ TEST_CASE( "TextReader" )  {
     reader >> line;
     REQUIRE( line == "Hello" );
     reader >> line;
-    REQUIRE( line == "What" );
+    REQUIRE( line == "What " );
     reader >> line;
     REQUIRE( line == "Is up" );
 

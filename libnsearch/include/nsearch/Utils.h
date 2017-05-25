@@ -4,18 +4,14 @@
 #include <cassert>
 #include <ctype.h>
 
-static std::string trim( const std::string &tstr ) {
-  std::string str = tstr;
-  str.erase( str.begin(), std::find_if_not(str.begin(), str.end(), [](char c){ return std::isspace(c); }) );
-  str.erase( std::find_if_not(str.rbegin(), str.rend(), [](char c){ return std::isspace(c); }).base(), str.end() );
-  return str;
+static bool IsBlank( const std::string &str ) {
+  return str.empty() || std::all_of( str.begin(), str.end(), isspace );
 }
 
-static std::string toupper( const std::string &ustr ) {
-  std::string str = ustr;
+static void UpcaseString( std::string &str ) {
   for( auto &ch : str )
-    ch = toupper( ch );
-  return str;
+    if( ch >= 97 && ch <= 122 )
+      ch &= ~0x20;
 }
 
 static const int NUC_MATRIX_SIZE = 26; // 'A'...'Z'

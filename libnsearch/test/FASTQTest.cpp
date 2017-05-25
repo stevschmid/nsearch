@@ -28,7 +28,7 @@ TEST_CASE( "FASTQ" )  {
     REQUIRE( sequence.quality == "JJJJB" );
 
     reader >> sequence;
-    REQUIRE( sequence.identifier == "Seq2" );
+    REQUIRE( sequence.identifier == "Seq2 " );
     REQUIRE( sequence.sequence == "ACTGC" );
     REQUIRE( sequence.quality == "JAJI=" );
 
