@@ -3,6 +3,8 @@
 #include "nsearch/FASTQ/QScore.h"
 
 #include <iostream>
+#include <cassert>
+#include <cfloat>
 
 using FASTQ::QScore;
 
@@ -16,10 +18,13 @@ namespace PairedEnd {
   bool Merger::Merge( Sequence& merged, const Sequence &fwd, const Sequence &rev ) const {
     overlapInfo overlap;
 
+    assert( fwd.quality.length() == fwd.sequence.length() );
+    assert( rev.quality.length() == rev.sequence.length() );
+
     Sequence seq1 = fwd;
     Sequence seq2 = rev.ReverseComplement();
 
-    if( !FindBestOverlap( overlap, seq1.sequence, seq2.sequence ) )
+    if( !FindBestOverlap( overlap, seq1, seq2 ) )
       return false;
 
     merged = seq1.Subsequence( 0, overlap.length );
@@ -69,21 +74,21 @@ namespace PairedEnd {
     return true;
   }
 
-  int Merger::ComputeOverlapScore( const char *sequence1, const char *sequence2, size_t len ) const {
-    int score = 0;
+  double Merger::ComputeOverlapScore( const char *sequence1, const char *sequence2, const char *quality1, const char *quality2, size_t len ) const {
+    double score = 0.0;
 
     size_t numMismatches = 0;
     size_t maxMismatches = len - size_t( len * mMinIdentity );
 
     for( int i = 0; i < len; i++ ) {
       if( DoNucleotidesMatch( sequence1[ i ], sequence2[ i ] ) ) {
-        score += 1;
+        score += ( 1.0 - QScore::Instance().CalculatePosteriorErrorProbabilityForMatch( quality1[ i ], quality2[ i ] ) );
       } else  {
-        score -= 1;
+        score -= ( 1.0 - QScore::Instance().CalculatePosteriorErrorProbabilityForMismatch( quality1[ i ], quality2[ i ] ) );
 
         numMismatches++;
         if( numMismatches > maxMismatches ) {
-          score = INT_MIN;
+          score = DBL_MIN;
           break;
         }
       }
@@ -117,15 +122,15 @@ namespace PairedEnd {
    * BB
    *
    */
-  bool Merger::FindBestOverlap( overlapInfo &overlap, const std::string &sequence1, const std::string &sequence2 ) const {
-    int len1 = sequence1.length();
-    int len2 = sequence2.length();
+  bool Merger::FindBestOverlap( overlapInfo &overlap, const Sequence &seq1, const Sequence &seq2 ) const {
+    int len1 = seq1.Length();
+    int len2 = seq2.Length();
 
     overlap.length = 0;
     overlap.pos1 = 0;
     overlap.pos2 = 0;
 
-    int bestScore = INT_MIN;
+    double bestScore = DBL_MIN;
 
     // Slide base by base, finding best overlap
     for( int i = 0; i <= len1 + len2; i++ ) {
@@ -136,9 +141,11 @@ namespace PairedEnd {
       if( length < mMinOverlap )
         continue;
 
-      int score = ComputeOverlapScore(
-          sequence1.c_str() + pos1,
-          sequence2.c_str() + pos2,
+      double score = ComputeOverlapScore(
+          seq1.sequence.c_str() + pos1,
+          seq2.sequence.c_str() + pos2,
+          seq1.quality.c_str() + pos1,
+          seq2.quality.c_str() + pos2,
           length );
 
       if( score > bestScore ) {
@@ -149,7 +156,7 @@ namespace PairedEnd {
       }
     }
 
-    return ( bestScore > INT_MIN );
+    return ( bestScore > DBL_MIN );
   }
 
   bool Merger::IsStaggered( const overlapInfo& overlap ) const {

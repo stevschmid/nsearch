@@ -23,8 +23,8 @@ namespace PairedEnd {
       size_t pos2;
     } overlapInfo;
 
-    int ComputeOverlapScore( const char *sequence1, const char *sequence2, size_t len ) const;
-    bool FindBestOverlap( overlapInfo &overlap, const std::string &sequence1, const std::string &sequence2 ) const;
+    double ComputeOverlapScore( const char *sequence1, const char *sequence2, const char *quality1, const char *quality2, size_t len ) const;
+    bool FindBestOverlap( overlapInfo &overlap, const Sequence &sequence1, const Sequence &sequence2 ) const;
     bool IsStaggered( const overlapInfo& overlap ) const;
     void PrintOverlap( const Sequence &seq1, const Sequence &seq2, const overlapInfo &overlap ) const;
   };

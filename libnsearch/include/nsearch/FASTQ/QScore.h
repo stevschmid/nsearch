@@ -31,6 +31,14 @@ namespace FASTQ
       return mPosteriorScoresForMismatch[ q1 ][ q2 ];
     }
 
+    double CalculatePosteriorErrorProbabilityForMatch( int q1, int q2 ) const {
+      return mPosteriorErrorProbabilitiesForMatch[ q1 ][ q2 ];
+    }
+
+    double CalculatePosteriorErrorProbabilityForMismatch( int q1, int q2 ) const {
+      return mPosteriorErrorProbabilitiesForMismatch[ q1 ][ q2 ];
+    }
+
     // Singleton implementation
     static QScore &Instance() {
       // Safe in C++11
@@ -43,8 +51,11 @@ namespace FASTQ
     QScore& operator=( QScore && ) = delete;
 
   private:
-    double mPosteriorScoresForMatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
-    double mPosteriorScoresForMismatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
+    double mPosteriorErrorProbabilitiesForMatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
+    double mPosteriorErrorProbabilitiesForMismatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
+
+    int mPosteriorScoresForMatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
+    int mPosteriorScoresForMismatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
 
     void PrecomputeScores() {
       for( int qx = 0; qx <= Q_MAX_SCORE; qx++ ) {
@@ -66,6 +77,9 @@ namespace FASTQ
             pmm = py * ( 1.0 - px / 3.0 )
               / ( px + py - 4.0 * px * py / 3.0 ); // (9) in paper
           }
+
+          mPosteriorErrorProbabilitiesForMatch[ qx ][ qy ] = pm;
+          mPosteriorErrorProbabilitiesForMismatch[ qx ][ qy ] = pmm;
 
           mPosteriorScoresForMatch[ qx ][ qy ] = ProbabilityToScore( pm );
           mPosteriorScoresForMismatch[ qx ][ qy ] = ProbabilityToScore( pmm );
