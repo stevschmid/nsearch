@@ -5,12 +5,16 @@ add_library(libnsearch
   src/Sequence.cpp
   src/TextReader.cpp
   src/PairedEnd/Merger.cpp
+  src/LocalAligner.cpp
   )
 
 target_include_directories(libnsearch PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   PRIVATE src)
+
+target_link_libraries(libnsearch
+  ksw)
 
 # Tests
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
@@ -28,7 +32,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   test/PairedEndTest.cpp
   )
 
-add_dependencies ( check testnsearch )
+add_dependencies(check testnsearch)
 
 target_link_libraries(testnsearch
   libnsearch

@@ -14,7 +14,8 @@ static void UpcaseString( std::string &str ) {
       ch &= ~0x20;
 }
 
-static const int NUC_MATRIX_SIZE = 26; // 'A'...'Z'
+static const int NUC_TOTAL = 16; // effectively
+static const int NUC_MATRIX_SIZE = 26; // 'A'...'Z', waste some space for faster lookup
 static const char NUC_MIN_ASCII = 'A';
 
 static const int8_t NUC_MATRIX[ NUC_MATRIX_SIZE ][ NUC_MATRIX_SIZE ] = {

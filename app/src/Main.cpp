@@ -6,6 +6,7 @@
 #include <nsearch/FASTQ/Writer.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
+#include <nsearch/LocalAligner.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -133,6 +134,14 @@ int main( int argc, const char **argv ) {
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
+
+  LocalAligner localAlign;
+
+  Sequence seqA( "TTTTAAAAAAAAAAAAAAAAAA" );
+  Sequence seqB( "GGGGCCCCCAAAAAA" );
+  localAlign.Align( seqA, seqB );
+
+  return 1;
 
   if( args["merge"] ) {
     gStats.StartTimer();
