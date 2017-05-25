@@ -19,8 +19,10 @@ public:
 
   Sequence Subsequence( size_t pos, size_t len = std::string::npos ) const;
 
-  Sequence operator+( const Sequence& other ) const;
+  Sequence operator+( const Sequence &other ) const;
   char& operator[]( size_t index );
+  bool operator==( const Sequence &other ) const;
+  bool operator!=( const Sequence &other ) const;
 
   Sequence Reverse() const;
   Sequence Complement() const; // complements only ATCG

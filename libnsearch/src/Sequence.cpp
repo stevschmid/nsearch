@@ -1,4 +1,5 @@
 #include "nsearch/Sequence.h"
+#include "nsearch/Utils.h"
 
 #include <iostream>
 #include <cassert>
@@ -52,16 +53,32 @@ char& Sequence::operator[]( size_t index ) {
   return sequence[ index ];
 }
 
+bool Sequence::operator==( const Sequence &other ) const {
+  return !( *this != other );
+}
+
+bool Sequence::operator!=( const Sequence &other ) const {
+  if( Length() != other.Length() )
+    return true;
+
+  auto tit = (*this).sequence.begin();
+  auto oit = other.sequence.begin();
+  while( tit != (*this).sequence.end() && oit != other.sequence.end() ) {
+    if( !AreNucleotidesMatching( *tit, *oit ) )
+      return true;
+
+    ++tit;
+    ++oit;
+  }
+
+  return false;
+}
+
 Sequence Sequence::Complement() const {
   Sequence complement = *this;
 
   for( char &ch : complement.sequence ) {
-    switch( toupper( ch ) ) {
-      case 'A': ch = 'T'; break;
-      case 'T': ch = 'A'; break;
-      case 'C': ch = 'G'; break;
-      case 'G': ch = 'C'; break;
-    }
+    ch = NucleotideComplement( ch );
   }
 
   return complement;

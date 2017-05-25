@@ -32,10 +32,17 @@ TEST_CASE( "Sequence" )  {
     REQUIRE( seq.sequence == "AGCT" );
   }
 
+  SECTION( "operator == and !=" ) {
+    REQUIRE( Sequence("ATCG") == Sequence("ATCG") );
+    REQUIRE( Sequence("ATTG") != Sequence("ATCG") );
+
+    REQUIRE( Sequence("NNTT") == Sequence("CGTT") );
+    REQUIRE( Sequence("AUUT") == Sequence("ATTT") );
+  }
+
   SECTION( "complement" ) {
-    Sequence com = seq.Complement();
-    REQUIRE( seq.sequence == "ACCT" );
-    REQUIRE( com.sequence == "TGGA" );
+    REQUIRE( Sequence( "ACCT" ).Complement().sequence == "TGGA" );
+    REQUIRE( Sequence( "RGGN" ).Complement().sequence == "YCCN" );
   }
 
   SECTION( "reverse" ) {
