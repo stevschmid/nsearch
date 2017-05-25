@@ -72,8 +72,8 @@ namespace PairedEnd {
   int Merger::ComputeOverlapScore( const char *sequence1, const char *sequence2, size_t len ) const {
     int score = 0;
 
-    int numMismatches = 0;
-    int maxMismatches = len * ( 1.0 - mMinIdentity );
+    size_t numMismatches = 0;
+    size_t maxMismatches = len - size_t( len * mMinIdentity );
 
     for( int i = 0; i < len; i++ ) {
       if( DoNucleotidesMatch( sequence1[ i ], sequence2[ i ] ) ) {
