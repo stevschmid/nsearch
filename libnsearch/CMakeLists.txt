@@ -19,7 +19,8 @@ add_executable(testnsearch
   test/Test.cpp
   test/SequenceTest.cpp
   test/TextReaderTest.cpp
-  test/FASTQTest.cpp)
+  test/FASTQTest.cpp
+  test/FASTATest.cpp)
 
 target_link_libraries(testnsearch
   libnsearch

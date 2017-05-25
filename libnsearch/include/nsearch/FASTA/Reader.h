@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace FASTQ {
+namespace FASTA {
   class Reader {
   public:
     Reader( const std::string &pathToFile )
@@ -24,16 +24,29 @@ namespace FASTQ {
     }
 
     void operator>>( Sequence &seq ) {
-      std::string identifier, sequence, plusline, quality;
+      static std::string lastLine;
 
-      (*mTextReader) >> identifier;
-      (*mTextReader) >> sequence;
-      (*mTextReader) >> plusline;
-      (*mTextReader) >> quality;
+      std::string identifier, sequence;
+      if( lastLine.empty() ) {
+        (*mTextReader) >> identifier;
+      } else {
+        identifier = lastLine;
+      }
+
+      std::string line;
+      while( !EndOfFile() ) {
+        (*mTextReader) >> line;
+
+        if( line[ 0 ] == '>' ) {
+          lastLine = line;
+          break;
+        }
+
+        sequence += trim( line );
+      }
 
       seq = Sequence( trim( identifier.substr( 1 ) ),
-          toupper( trim( sequence ) ),
-          trim( quality ) );
+        toupper( sequence ) );
     }
 
     size_t NumBytesRead() const {

@@ -10,8 +10,8 @@ TEST_CASE( "FASTQ" )  {
       "TGGCG\n"
       "+\n"
       "JJJJB\n"
-      "@Seq2\n"
-      "ACTGC\n"
+      "@Seq2 \n"
+      "actgc\n"
       "+\n"
       "JAJI=";
 
