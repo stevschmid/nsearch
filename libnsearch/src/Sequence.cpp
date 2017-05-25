@@ -64,7 +64,7 @@ bool Sequence::operator!=( const Sequence &other ) const {
   auto tit = (*this).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != (*this).sequence.end() && oit != other.sequence.end() ) {
-    if( !AreNucleotidesMatching( *tit, *oit ) )
+    if( !DoNucleotidesMatch( *tit, *oit ) )
       return true;
 
     ++tit;

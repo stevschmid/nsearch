@@ -50,7 +50,7 @@ static const int8_t NUC_MATRIX[ NUC_MATRIX_SIZE ][ NUC_MATRIX_SIZE ] = {
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }
 };
 
-static inline bool AreNucleotidesMatching( char nucA, char nucB ) {
+static inline bool DoNucleotidesMatch( char nucA, char nucB ) {
   int a = nucA - NUC_MIN_ASCII;
   int b = nucB - NUC_MIN_ASCII;
   assert( a >= 0 && a < NUC_MATRIX_SIZE );
