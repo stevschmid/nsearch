@@ -1,5 +1,6 @@
 #include <docopt.h>
 #include <iostream>
+#include <utility>
 
 #include <nsearch/Sequence.h>
 #include <nsearch/FASTQ/Writer.h>
@@ -7,7 +8,7 @@
 #include <nsearch/PairedEnd/Reader.h>
 
 #include "Stats.h"
-#include "ThreadPool.h"
+#include "WorkerQueue.h"
 
 Stats gStats;
 
@@ -45,109 +46,83 @@ void PrintSummaryLine( double value, const char *line, double total = 0.0 )
   printf( "\n" );
 }
 
-class ThreadSafeWriter {
+class QueuedWriter : public WorkerQueue< SequenceList > {
+public:
+  QueuedWriter( const std::string &path )
+    : WorkerQueue( 1 ), mWriter( path )
+  {
+  }
+
+protected:
+  void Process( const SequenceList &list ) {
+    for( auto seq : list ) {
+      mWriter << seq;
+    }
+  }
+
 private:
-  std::queue< SequenceList > mQueue;
-  std::mutex mQueueMutex;
   FASTQ::Writer mWriter;
-  std::atomic< bool > mStop;
+};
 
-  std::atomic< bool > mWorking;
-  std::thread mThread;
+class QueuedMerger : public WorkerQueue< std::pair< SequenceList, SequenceList > > {
+public:
+  QueuedMerger( QueuedWriter &writer )
+    : WorkerQueue( -1 ), mWriter( writer )
+  {
 
-  void Loop() {
-    SequenceList list;
+  }
 
-    while( !mStop )
-    {
-      { // acquire lock
-        std::unique_lock< std::mutex > lock( mQueueMutex );
-        if( !mQueue.empty() ) {
-          list = std::move( mQueue.front() );
-          mQueue.pop();
-        }
-        mWorking = true;
-      } // release lock
+protected:
+  void Process( const std::pair< SequenceList, SequenceList > &queueItem ) {
+    const SequenceList &fwd = queueItem.first;
+    const SequenceList &rev = queueItem.second;
 
-      for( Sequence &seq : list ) {
-        mWriter << seq;
+    const PairedEnd::Merger &merger = mMerger;
+
+    Sequence mergedRead;
+    SequenceList mergedReads;
+
+    auto fit = fwd.begin();
+    auto rit = rev.begin();
+    while( fit != fwd.end() && rit != rev.end() ) {
+      if( merger.Merge( mergedRead, *fit, *rit ) ) {
+        gStats.numMerged++;
+        gStats.mergedReadsTotalLength += mergedRead.Length();
+        mergedReads.push_back( std::move( mergedRead ) );
       }
-      list.clear();
 
-      mWorking = false;
+      gStats.numProcessed++;
+
+      ++fit;
+      ++rit;
     }
 
-    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+    if( !mergedReads.empty() )
+      mWriter.Enqueue( mergedReads );
   }
 
-public:
-  ThreadSafeWriter( const std::string &path )
-    : mWriter( path ), mStop( false ), mWorking( false )
-  {
-    mThread = std::thread( [this] { this->Loop(); } );
-  }
-
-  ~ThreadSafeWriter() {
-    mStop = true;
-    if( mThread.joinable() )
-      mThread.join();
-  }
-
-  void Enqueue( SequenceList &list ) {
-    std::lock_guard< std::mutex > lock( mQueueMutex );
-    mQueue.push( std::move( list ) );
-  }
-
-  bool Done() const {
-    return !mWorking && mQueue.empty();
-  }
+private:
+  QueuedWriter &mWriter;
+  PairedEnd::Merger mMerger;
 };
 
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
-  ThreadSafeWriter writer( mergedPath );
-
-  PairedEnd::Merger mergerObj;
-  const PairedEnd::Merger &merger = mergerObj; // const so we ensure thread-safety
-
   PairedEnd::Reader reader( fwdPath, revPath );
 
-  ThreadPool pool;
+  QueuedWriter writer( mergedPath );
+  QueuedMerger merger( writer );
+
   SequenceList fwdReads, revReads;
 
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, 512 );
-
-    auto mergeAndWrite = [ &writer, &merger ] ( SequenceList &fwd, SequenceList &rev ) {
-      SequenceList mergedReads;
-      Sequence mergedRead;
-
-      auto fit = fwd.begin();
-      auto rit = rev.begin();
-      while( fit != fwd.end() && rit != rev.end() ) {
-        if( merger.Merge( mergedRead, *fit, *rit ) ) {
-          gStats.numMerged++;
-          gStats.mergedReadsTotalLength += mergedRead.Length();
-
-          mergedReads.push_back( std::move( mergedRead ) );
-        }
-
-        gStats.numProcessed++;
-
-        ++fit;
-        ++rit;
-      }
-
-      if( !mergedReads.empty() )
-        writer.Enqueue( mergedReads );
-    };
-
-    auto task = std::bind( mergeAndWrite, std::move( fwdReads ), std::move( revReads ) );
-    pool.Enqueue( task );
+    auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
+    merger.Enqueue( pair );
     PrintProgressLine( reader.NumBytesRead(), reader.NumBytesTotal() );
   }
 
-  while( !writer.Done() && !pool.Done() )
-    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+  merger.WaitTillDone();
+  writer.WaitTillDone();
 
   return true;
 }
