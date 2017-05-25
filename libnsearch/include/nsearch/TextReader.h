@@ -30,7 +30,10 @@ private:
   std::streampos mTotalBytes;
 };
 
-#define TEXT_READER_BUFFER_SIZE 32 * 1024
+/*
+ * Reading huge fastq files needs to be fast
+ */
+#define TEXT_FILE_READER_BUFFER_SIZE 32 * 1024
 
 class TextFileReader : public TextReader {
 public:
@@ -50,6 +53,6 @@ private:
   int mFd;
 
   size_t mBufferPos, mBufferSize;
-  char mBuffer[ TEXT_READER_BUFFER_SIZE ];
+  char mBuffer[ TEXT_FILE_READER_BUFFER_SIZE ];
   off_t mTotalBytes;
 };

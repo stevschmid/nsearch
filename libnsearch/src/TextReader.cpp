@@ -41,7 +41,7 @@ void TextStreamReader::operator>>( std::string &str ) {
  * TextFileReader
  */
 void TextFileReader::NextBuffer() {
-  mBufferSize = read( mFd, mBuffer, TEXT_READER_BUFFER_SIZE );
+  mBufferSize = read( mFd, mBuffer, TEXT_FILE_READER_BUFFER_SIZE );
   mBufferPos = 0;
 }
 
