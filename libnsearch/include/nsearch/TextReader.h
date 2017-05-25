@@ -33,11 +33,9 @@ private:
 /*
  * Reading huge fastq files needs to be fast
  */
-#define TEXT_FILE_READER_BUFFER_SIZE 32 * 1024
-
 class TextFileReader : public TextReader {
 public:
-  TextFileReader( const std::string &fileName );
+  TextFileReader( const std::string &fileName, size_t totalBufferSize = 128 * 1024 );
   ~TextFileReader();
 
   size_t NumBytesRead() const;
@@ -52,7 +50,7 @@ private:
 
   int mFd;
 
-  size_t mBufferPos, mBufferSize;
-  char mBuffer[ TEXT_FILE_READER_BUFFER_SIZE ];
+  size_t mBufferPos, mBufferSize, mTotalBufferSize;
+  char *mBuffer;
   off_t mTotalBytes;
 };

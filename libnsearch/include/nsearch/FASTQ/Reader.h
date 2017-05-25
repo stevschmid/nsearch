@@ -31,6 +31,12 @@ namespace FASTQ {
       (*mTextReader) >> plusline;
       (*mTextReader) >> quality;
 
+      /* std::cout << identifier << std::endl; */
+      /* std::cout << sequence << std::endl; */
+      /* std::cout << plusline << std::endl; */
+      /* std::cout << quality << std::endl; */
+      /* std::cout << "=====" << std::endl; */
+
       seq = Sequence( identifier.substr( 1 ), toupper( sequence ), quality );
     }
 

@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <string>
+#include <iostream>
 
 /**
  *
@@ -32,5 +33,9 @@ public:
   std::string identifier;
   std::string quality;
 };
+
+static std::ostream &operator<<( std::ostream &os, const Sequence &seq ) {
+  return os << std::string( ">" ) << seq.identifier;// << std::endl << seq.sequence;
+}
 
 typedef std::deque< Sequence > SequenceList;

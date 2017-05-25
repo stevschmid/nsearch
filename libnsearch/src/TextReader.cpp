@@ -41,14 +41,15 @@ void TextStreamReader::operator>>( std::string &str ) {
  * TextFileReader
  */
 void TextFileReader::NextBuffer() {
-  mBufferSize = read( mFd, mBuffer, TEXT_FILE_READER_BUFFER_SIZE );
+  mBufferSize = read( mFd, mBuffer, mTotalBufferSize );
   mBufferPos = 0;
 }
 
-TextFileReader::TextFileReader( const std::string &fileName )
-  : mBufferPos( -1 )
+TextFileReader::TextFileReader( const std::string &fileName, size_t totalBufferSize )
+  : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ), mBuffer( NULL )
 {
   mFd = open( fileName.c_str(), O_RDONLY ); // orly?
+  mBuffer = new char[ totalBufferSize ];
 
   mTotalBytes = lseek( mFd, 0, SEEK_END );
   lseek( mFd, 0, SEEK_SET );
@@ -57,12 +58,15 @@ TextFileReader::TextFileReader( const std::string &fileName )
 }
 
 TextFileReader::~TextFileReader() {
+  delete[] mBuffer;
+
   close( mFd );
 }
 
 void TextFileReader::operator>>( std::string &str ) {
   str.clear();
-  while( !EndOfFile() && str.empty() ) {
+ReadLine:
+  while( !EndOfFile() ) {
     char *pos = ( char* )memchr( mBuffer + mBufferPos, '\n', mBufferSize - mBufferPos );
 
     if( pos == NULL ) {
@@ -75,10 +79,14 @@ void TextFileReader::operator>>( std::string &str ) {
       mBufferPos += numBytes + 1; // skip '\n'
       if( mBufferPos >= mBufferSize )
         NextBuffer();
-    }
 
-    str = trim( str );
+      break;
+    }
   }
+
+  str = trim( str );
+  if( str.empty() )
+    goto ReadLine;
 }
 
 bool TextFileReader::EndOfFile() const {
