@@ -35,3 +35,7 @@ target_link_libraries(testnsearch
   Catch)
 
 add_test(NAME testnsearch COMMAND testnsearch)
+
+# Parse tests
+include(${CATCH_INCLUDE_DIR}/ParseAndAddCatchTests.cmake)
+ParseAndAddCatchTests(testnsearch)
