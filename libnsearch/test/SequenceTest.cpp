@@ -2,11 +2,11 @@
 
 #include <nsearch/Sequence.h>
 
-TEST_CASE( "Bla" )  {
-  Sequence seq( "@Id", "ACCT", "JJ::" );
+TEST_CASE( "Sequence" )  {
+  Sequence seq( "Id", "ACCT", "JJ::" );
 
   REQUIRE( seq.Length() == 4 );
-  REQUIRE( seq.identifier == "@Id" );
+  REQUIRE( seq.identifier == "Id" );
   REQUIRE( seq.sequence == "ACCT" );
   REQUIRE( seq.quality == "JJ::" );
 
@@ -20,9 +20,9 @@ TEST_CASE( "Bla" )  {
   }
 
   SECTION( "operator +" ) {
-    Sequence m = seq + Sequence( "@Id2", "GCTT",  "BBAJ" );
+    Sequence m = seq + Sequence( "Id2", "GCTT",  "BBAJ" );
 
-    REQUIRE( m.identifier == "@Id" );
+    REQUIRE( m.identifier == "Id" );
     REQUIRE( m.sequence == "ACCTGCTT" );
     REQUIRE( m.quality == "JJ::BBAJ" );
   }
