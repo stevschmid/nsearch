@@ -6,6 +6,10 @@
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
 
+#include "Stats.h"
+
+Stats gStats;
+
 static const char USAGE[] =
 R"(
   Process and search sequences.
@@ -50,9 +54,15 @@ bool Merge( const std::string &fwd, const std::string &rev, const std::string &m
 
   while( !reader.EndOfFile() ) {
     reader.Read( fwdRead, revRead );
+
     if( merger.Merge( mergedRead, fwdRead, revRead ) ) {
+      gStats.numMerged++;
+      gStats.mergedReadsTotalLength += mergedRead.Length();
+
       writer << mergedRead;
     }
+
+    gStats.numProcessed++;
 
     PrintProgressLine( reader.NumBytesRead(), reader.NumBytesTotal() );
   }
@@ -68,9 +78,22 @@ int main( int argc, const char **argv ) {
         "nsearch");
 
   if( args["merge"] ) {
+    gStats.StartTimer();
+
     Merge( args[ "<forward.fastq>" ].asString(),
         args[ "<reverse.fastq>" ].asString(),
         args[ "<merged.fastq>" ].asString() );
+
+
+    gStats.StopTimer();
+
+    std::cout << std::endl;
+    std::cout << "Summary:" << std::endl;
+    PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
+    PrintSummaryLine( gStats.numProcessed / gStats.ElapsedMillis(), "Processed/ms" );
+    PrintSummaryLine( gStats.numProcessed, "Pairs" );
+    PrintSummaryLine( gStats.numMerged, "Merged", gStats.numProcessed );
+    PrintSummaryLine( gStats.MeanMergedLength(), "Mean merged length" );
   }
 
   return 0;
