@@ -41,7 +41,7 @@ namespace PairedEnd {
         merged.sequence[ i ] = s2;
       }
 
-      if( s1 == s2 ) {
+      if( DoNucleotidesMatch( s1, s2 ) ) {
         merged.quality[ i ] = FASTQ::Q_MIN_ASCII_BASE + QScore::Instance().CalculatePosteriorScoreForMatch( q1, q2 );
       } else {
         merged.quality[ i ] = FASTQ::Q_MIN_ASCII_BASE + QScore::Instance().CalculatePosteriorScoreForMismatch( q1, q2 );
