@@ -7,6 +7,7 @@
 #include <nsearch/PairedEnd/Reader.h>
 
 #include "Stats.h"
+#include "ThreadPool.h"
 
 Stats gStats;
 
@@ -44,28 +45,46 @@ void PrintSummaryLine( double value, const char *line, double total = 0.0 )
   printf( "\n" );
 }
 
-bool Merge( const std::string &fwd, const std::string &rev, const std::string &merged ) {
-  Sequence fwdRead, revRead, mergedRead;
+bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
+  PairedEnd::Merger mergerObj;
+  const PairedEnd::Merger &merger = mergerObj; // const so we ensure thread-safety
 
-  PairedEnd::Merger merger;
-  PairedEnd::Reader reader( fwd, rev );
+  PairedEnd::Reader reader( fwdPath, revPath );
+  FASTQ::Writer writer( mergedPath );
 
-  FASTQ::Writer writer( merged );
+  ThreadPool pool;
+  SequenceList fwdReads, revReads;
 
   while( !reader.EndOfFile() ) {
-    reader.Read( fwdRead, revRead );
+    reader.Read( fwdReads, revReads, 512 );
 
-    if( merger.Merge( mergedRead, fwdRead, revRead ) ) {
-      gStats.numMerged++;
-      gStats.mergedReadsTotalLength += mergedRead.Length();
+    auto mergeAndWrite = [ &merger, &writer ] ( SequenceList &fwd, SequenceList &rev ) {
+      Sequence mergedRead;
 
-      writer << mergedRead;
-    }
+      auto fit = fwd.begin();
+      auto rit = rev.begin();
+      while( fit != fwd.end() && rit != rev.end() ) {
+        if( merger.Merge( mergedRead, *fit, *rit ) ) {
+          gStats.numMerged++;
+          gStats.mergedReadsTotalLength += mergedRead.Length();
 
-    gStats.numProcessed++;
+          /* writer << mergedRead; */
+        }
 
+        gStats.numProcessed++;
+
+        ++fit;
+        ++rit;
+      }
+    };
+
+    auto task = std::bind( mergeAndWrite, std::move( fwdReads ), std::move( revReads ) );
+    pool.Enqueue( task );
     PrintProgressLine( reader.NumBytesRead(), reader.NumBytesTotal() );
   }
+
+  while( !pool.Done() )
+    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
   return true;
 }
