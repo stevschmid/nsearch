@@ -4,7 +4,7 @@ project(libnsearch VERSION 0.1 LANGUAGES CXX)
 add_library(libnsearch
   src/Sequence.cpp
   src/TextReader.cpp
-  src/PairedEndMerger.cpp
+  src/PairedEnd/Merger.cpp
   )
 
 target_include_directories(libnsearch PUBLIC
@@ -23,7 +23,7 @@ add_executable(testnsearch
   test/TextReaderTest.cpp
   test/FASTQTest.cpp
   test/FASTATest.cpp
-  test/PairedEndMergerTest.cpp
+  test/PairedEndTest.cpp
   )
 
 target_link_libraries(testnsearch

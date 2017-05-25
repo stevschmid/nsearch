@@ -42,11 +42,10 @@ namespace FASTA {
           break;
         }
 
-        sequence += trim( line );
+        sequence += line;
       }
 
-      seq = Sequence( trim( identifier.substr( 1 ) ),
-        toupper( sequence ) );
+      seq = Sequence( identifier.substr( 1 ), toupper( sequence ) );
     }
 
     size_t NumBytesRead() const {

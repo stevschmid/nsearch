@@ -1,4 +1,5 @@
 #include "nsearch/TextReader.h"
+#include "nsearch/Utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +31,10 @@ bool TextStreamReader::EndOfFile() const {
 }
 
 void TextStreamReader::operator>>( std::string &str ) {
-  getline( mInput, str );
+  do {
+    getline( mInput, str );
+    str = trim( str );
+  } while( !EndOfFile() && str.empty() );
 }
 
 /*
@@ -58,7 +62,7 @@ TextFileReader::~TextFileReader() {
 
 void TextFileReader::operator>>( std::string &str ) {
   str.clear();
-  while( !EndOfFile() ) {
+  while( !EndOfFile() && str.empty() ) {
     char *pos = ( char* )memchr( mBuffer + mBufferPos, '\n', mBufferSize - mBufferPos );
 
     if( pos == NULL ) {
@@ -71,9 +75,9 @@ void TextFileReader::operator>>( std::string &str ) {
       mBufferPos += numBytes + 1; // skip '\n'
       if( mBufferPos >= mBufferSize )
         NextBuffer();
-
-      break;
     }
+
+    str = trim( str );
   }
 }
 

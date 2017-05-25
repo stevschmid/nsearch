@@ -31,9 +31,7 @@ namespace FASTQ {
       (*mTextReader) >> plusline;
       (*mTextReader) >> quality;
 
-      seq = Sequence( trim( identifier.substr( 1 ) ),
-          toupper( trim( sequence ) ),
-          trim( quality ) );
+      seq = Sequence( identifier.substr( 1 ), toupper( sequence ), quality );
     }
 
     size_t NumBytesRead() const {

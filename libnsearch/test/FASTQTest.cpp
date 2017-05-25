@@ -11,7 +11,7 @@ TEST_CASE( "FASTQ" )  {
     std::string content = "@Seq1\n"
       "TGGCG\n"
       "+\n"
-      "JJJJB\n"
+      "JJJJB\n\n"
       "@Seq2 \n"
       "actgc\n"
       "+\n"

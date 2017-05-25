@@ -10,7 +10,7 @@ TEST_CASE( "TextReader" )  {
   SECTION( "File" ) {
     const char filename[] = "/tmp/textreadertest.tmp";
     std::ofstream file( filename );
-    file << "Hello" << std::endl << "Happy " << std::endl << "World";
+    file << "Hello" << std::endl << std::endl << "Happy " << std::endl << "World";
     file.close();
 
     std::string line;
@@ -19,7 +19,7 @@ TEST_CASE( "TextReader" )  {
     reader >> line;
     REQUIRE( line == "Hello" );
     reader >> line;
-    REQUIRE( line == "Happy " );
+    REQUIRE( line == "Happy" );
     reader >> line;
     REQUIRE( line == "World" );
 
@@ -30,7 +30,7 @@ TEST_CASE( "TextReader" )  {
 #endif
 
   SECTION( "Stream" ) {
-    std::istringstream iss( "Hello\nWhat\nIs up\n" );
+    std::istringstream iss( "Hello\nWhat \n\nIs up\n" );
 
     std::string line;
     TextStreamReader reader( iss );
