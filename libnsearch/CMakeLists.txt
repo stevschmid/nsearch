@@ -3,7 +3,9 @@ project(libnsearch VERSION 0.1 LANGUAGES CXX)
 
 add_library(libnsearch
   src/Sequence.cpp
-  src/TextReader.cpp)
+  src/TextReader.cpp
+  src/PairedEndMerger.cpp
+  )
 
 target_include_directories(libnsearch PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -20,7 +22,9 @@ add_executable(testnsearch
   test/SequenceTest.cpp
   test/TextReaderTest.cpp
   test/FASTQTest.cpp
-  test/FASTATest.cpp)
+  test/FASTATest.cpp
+  test/PairedEndMergerTest.cpp
+  )
 
 target_link_libraries(testnsearch
   libnsearch

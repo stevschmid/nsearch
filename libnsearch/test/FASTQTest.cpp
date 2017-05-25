@@ -73,7 +73,7 @@ TEST_CASE( "FASTQ" )  {
     REQUIRE( qscore.CalculatePosteriorScoreForMatch( 2, 39 ) == 41 );
     REQUIRE( qscore.CalculatePosteriorScoreForMismatch( 2, 39 ) == 38 );
 
-    REQUIRE( qscore.CalculatePosteriorScoreForMatch( 20, 20 ) == std::min( 45, FASTQ::QScore::MAX_SCORE ) ); // would be45, but we defined 41 as max QSCORE
+    REQUIRE( qscore.CalculatePosteriorScoreForMatch( 20, 20 ) == std::min( 45, FASTQ::Q_MAX_SCORE ) ); // would be45, but we defined 41 as max QSCORE
     REQUIRE( qscore.CalculatePosteriorScoreForMismatch( 20, 20 ) == 3 );
 
     REQUIRE( qscore.CalculatePosteriorScoreForMatch( 10, 20 ) == 34 );

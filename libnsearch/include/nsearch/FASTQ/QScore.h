@@ -1,23 +1,25 @@
 #pragma once
 
+#include <math.h>
+
 namespace FASTQ
 {
+  static const int Q_MAX_SCORE = 41;
+  static const int Q_MIN_ASCII_BASE = 33; // '!'
+  static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'J'
+
   // Calculate of posterior Q Scores as outlined by Edgar & Flyvbjerg (2015)
   class QScore
   {
   public:
-    static const int MAX_SCORE = 41;
-    static const int MIN_ASCII_BASE = 33; // '!'
-    static const int MAX_ASCII_BASE = MIN_ASCII_BASE + MAX_SCORE; // 'J'
-
     double ScoreToProbability( int q ) const {
       return pow( 10.0, -double( q ) / 10.0 );
     }
 
     int ProbabilityToScore( double p ) const {
       int q =  round( -10.0 * log10( p ) );
-      if( q > MAX_SCORE )
-        q = MAX_SCORE;
+      if( q > Q_MAX_SCORE )
+        q = Q_MAX_SCORE;
       return q;
     }
 
@@ -41,14 +43,14 @@ namespace FASTQ
     QScore& operator=( QScore && ) = delete;
 
   private:
-    double mPosteriorScoresForMatch[ MAX_SCORE + 1 ][ MAX_SCORE + 1 ];
-    double mPosteriorScoresForMismatch[ MAX_SCORE + 1 ][ MAX_SCORE + 1 ];
+    double mPosteriorScoresForMatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
+    double mPosteriorScoresForMismatch[ Q_MAX_SCORE + 1 ][ Q_MAX_SCORE + 1 ];
 
     void PrecomputeScores() {
-      for( int qx = 0; qx <= MAX_SCORE; qx++ ) {
+      for( int qx = 0; qx <= Q_MAX_SCORE; qx++ ) {
         double px = ScoreToProbability( qx );
 
-        for( int qy = 0; qy <= MAX_SCORE; qy++ ) {
+        for( int qy = 0; qy <= Q_MAX_SCORE; qy++ ) {
           double py = ScoreToProbability( qy );
 
           double pm = ( px * py / 3.0 )
@@ -75,8 +77,4 @@ namespace FASTQ
       PrecomputeScores();
     }
   };
-
-  const int QScore::MAX_SCORE;
-  const int QScore::MIN_ASCII_BASE;
-  const int QScore::MAX_ASCII_BASE;
 }

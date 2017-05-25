@@ -38,6 +38,8 @@ TEST_CASE( "Sequence" )  {
 
     REQUIRE( Sequence("NNTT") == Sequence("CGTT") );
     REQUIRE( Sequence("AUUT") == Sequence("ATTT") );
+
+    REQUIRE( Sequence("ATT") != Sequence("ATTG") );
   }
 
   SECTION( "complement" ) {
