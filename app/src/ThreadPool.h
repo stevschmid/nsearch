@@ -25,7 +25,7 @@ public:
   template<class F>
   void Enqueue(F f);
 
-  bool Done();
+  bool Done() const;
 };
 
 class Worker {
@@ -55,8 +55,7 @@ ThreadPool::~ThreadPool() {
   }
 }
 
-bool ThreadPool::Done() {
-  std::lock_guard< std::mutex > lock( mQueueMutex );
+bool ThreadPool::Done() const {
   return mWorkingCount == 0 && mQueue.empty();
 }
 

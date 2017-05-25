@@ -45,12 +45,71 @@ void PrintSummaryLine( double value, const char *line, double total = 0.0 )
   printf( "\n" );
 }
 
+class ThreadSafeWriter {
+private:
+  std::queue< SequenceList > mQueue;
+  std::mutex mQueueMutex;
+  FASTQ::Writer mWriter;
+  std::atomic< bool > mStop;
+
+  std::atomic< bool > mWorking;
+  std::thread mThread;
+
+  void Loop() {
+    SequenceList list;
+
+    while( !mStop )
+    {
+      { // acquire lock
+        std::unique_lock< std::mutex > lock( mQueueMutex );
+        if( !mQueue.empty() ) {
+          list = std::move( mQueue.front() );
+          mQueue.pop();
+        }
+        mWorking = true;
+      } // release lock
+
+      for( Sequence &seq : list ) {
+        mWriter << seq;
+      }
+      list.clear();
+
+      mWorking = false;
+    }
+
+    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+  }
+
+public:
+  ThreadSafeWriter( const std::string &path )
+    : mWriter( path ), mStop( false ), mWorking( false )
+  {
+    mThread = std::thread( [this] { this->Loop(); } );
+  }
+
+  ~ThreadSafeWriter() {
+    mStop = true;
+    if( mThread.joinable() )
+      mThread.join();
+  }
+
+  void Enqueue( SequenceList &list ) {
+    std::lock_guard< std::mutex > lock( mQueueMutex );
+    mQueue.push( std::move( list ) );
+  }
+
+  bool Done() const {
+    return !mWorking && mQueue.empty();
+  }
+};
+
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
+  ThreadSafeWriter writer( mergedPath );
+
   PairedEnd::Merger mergerObj;
   const PairedEnd::Merger &merger = mergerObj; // const so we ensure thread-safety
 
   PairedEnd::Reader reader( fwdPath, revPath );
-  FASTQ::Writer writer( mergedPath );
 
   ThreadPool pool;
   SequenceList fwdReads, revReads;
@@ -58,7 +117,8 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, 512 );
 
-    auto mergeAndWrite = [ &merger, &writer ] ( SequenceList &fwd, SequenceList &rev ) {
+    auto mergeAndWrite = [ &writer, &merger ] ( SequenceList &fwd, SequenceList &rev ) {
+      SequenceList mergedReads;
       Sequence mergedRead;
 
       auto fit = fwd.begin();
@@ -68,7 +128,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
           gStats.numMerged++;
           gStats.mergedReadsTotalLength += mergedRead.Length();
 
-          /* writer << mergedRead; */
+          mergedReads.push_back( std::move( mergedRead ) );
         }
 
         gStats.numProcessed++;
@@ -76,6 +136,9 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
         ++fit;
         ++rit;
       }
+
+      if( !mergedReads.empty() )
+        writer.Enqueue( mergedReads );
     };
 
     auto task = std::bind( mergeAndWrite, std::move( fwdReads ), std::move( revReads ) );
@@ -83,7 +146,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
     PrintProgressLine( reader.NumBytesRead(), reader.NumBytesTotal() );
   }
 
-  while( !pool.Done() )
+  while( !writer.Done() && !pool.Done() )
     std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
   return true;
