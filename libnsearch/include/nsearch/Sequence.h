@@ -22,6 +22,7 @@ public:
 
   Sequence operator+( const Sequence &other ) const;
   char& operator[]( size_t index );
+  char operator[]( size_t index ) const;
   bool operator==( const Sequence &other ) const;
   bool operator!=( const Sequence &other ) const;
 

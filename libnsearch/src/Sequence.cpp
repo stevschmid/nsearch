@@ -53,6 +53,11 @@ char& Sequence::operator[]( size_t index ) {
   return sequence[ index ];
 }
 
+char Sequence::operator[]( size_t index ) const {
+  assert( index >= 0 && index < sequence.size() );
+  return sequence[ index ];
+}
+
 bool Sequence::operator==( const Sequence &other ) const {
   return !( *this != other );
 }
