@@ -30,6 +30,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   test/FASTQTest.cpp
   test/FASTATest.cpp
   test/PairedEndTest.cpp
+  test/AlignerTest.cpp
   )
 
 add_dependencies(check testnsearch)

@@ -45,35 +45,4 @@ TEST_CASE( "Aligner" )  {
       REQUIRE( aligner.LocalAlign( seq1, seq2 ).score == aligner.LocalAlign( seq2, seq1 ).score );
     }
   }
-
-  /* SECTION( "Reader" ) { */
-  /*   std::string content = ">Seq1\n" */
-  /*     "TGGCG\n" */
-  /*     "ATTGG\n" */
-  /*     "\n" */
-  /*     ">Seq2\n" */
-  /*     "TTTTT\n" */
-  /*     "CAGTC\n" */
-  /*     ">Seq3\n" */
-  /*     "actgc\n"; */
-
-  /*   std::istringstream iss( content ); */
-
-  /*   FASTA::Reader reader( iss ); */
-  /*   Sequence sequence; */
-
-  /*   reader >> sequence; */
-  /*   REQUIRE( sequence.identifier == "Seq1" ); */
-  /*   REQUIRE( sequence.sequence == "TGGCGATTGG" ); */
-
-  /*   reader >> sequence; */
-  /*   REQUIRE( sequence.identifier == "Seq2" ); */
-  /*   REQUIRE( sequence.sequence == "TTTTTCAGTC" ); */
-
-  /*   reader >> sequence; */
-  /*   REQUIRE( sequence.identifier == "Seq3" ); */
-  /*   REQUIRE( sequence.sequence == "ACTGC" ); */
-
-  /*   REQUIRE( reader.EndOfFile() == true ); */
-  /* } */
 }
