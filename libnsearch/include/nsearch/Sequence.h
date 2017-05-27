@@ -13,6 +13,7 @@ class Sequence {
 public:
   Sequence();
   Sequence( const std::string &sequence );
+  Sequence( const char *sequence );
   Sequence( const std::string &identifier, const std::string &sequence );
   Sequence( const std::string &identifier, const std::string &sequence, const std::string &quality );
 
@@ -36,7 +37,7 @@ public:
 };
 
 static std::ostream &operator<<( std::ostream &os, const Sequence &seq ) {
-  return os << std::string( ">" ) << seq.identifier;// << std::endl << seq.sequence;
+  return os << seq.identifier;
 }
 
 typedef std::deque< Sequence > SequenceList;

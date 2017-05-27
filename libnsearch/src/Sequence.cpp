@@ -16,6 +16,13 @@ Sequence::Sequence( const std::string &sequence )
 {
 
 }
+
+Sequence::Sequence( const char *sequence )
+  : Sequence( "", sequence, "" )
+{
+
+}
+
 Sequence::Sequence( const std::string &identifier, const std::string &sequence )
   : Sequence( identifier, sequence, "" )
 {

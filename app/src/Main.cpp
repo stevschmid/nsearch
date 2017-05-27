@@ -4,8 +4,10 @@
 
 #include <nsearch/Sequence.h>
 #include <nsearch/FASTQ/Writer.h>
+#include <nsearch/FASTA/Reader.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
+#include <nsearch/Database.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -18,6 +20,7 @@ R"(
 
   Usage:
     nsearch merge <forward.fastq> <reverse.fastq> <merged.fastq>
+    nsearch search <query.fasta> <database.fasta>
 )";
 
 void PrintProgressLine( size_t numProcessedReads, size_t numTotalReads )
@@ -127,34 +130,50 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   return true;
 }
 
-void Seq( Sequence &a ) {
-  std::cout << a.sequence.data() << std::endl;
-  Sequence x = std::move( a );
-  std::cout << a.sequence.data() << std::endl;
-  std::cout << x.sequence.data() << std::endl;
+bool Search( const std::string &queryPath, const std::string &databasePath ) {
+  Sequence seq;
+  Database db( 11 );
+
+  FASTA::Reader dbReader( databasePath );
+  while( !dbReader.EndOfFile() ) {
+    dbReader >> seq;
+    db.AddSequence( seq );
+  }
+
+  FASTA::Reader qryReader( queryPath );
+  while( !qryReader.EndOfFile() )  {
+    qryReader >> seq;
+
+    SequenceList candidates = db.Query( seq );
+    for( auto &candidate : candidates ) {
+      std::cout << seq << "," << candidate << std::endl;
+    }
+  }
+
+  return true;
 }
 
 int main( int argc, const char **argv ) {
-  /* std::string a = "Hello World"; */
-  /* std::string b; */
-
-  /* std::cout << (void*)a.data() << std::endl; */
-  /* std::cout << (void*)b.data() << std::endl; */
-  /* b = std::move( a ); */
-  /* std::cout << (void*)a.data() << std::endl; */
-  /* std::cout << (void*)b.data() << std::endl; */
-
-  Sequence x("ATCG");
-  Seq( x );
-  return 0;
-
   std::map<std::string, docopt::value> args
     = docopt::docopt(USAGE,
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
 
-  if( args["merge"] ) {
+  if( args[ "search" ].asBool() ) {
+    gStats.StartTimer();
+
+    Search( args[ "<query.fasta>" ].asString(),
+        args[ "<database.fasta>" ].asString() );
+
+    gStats.StopTimer();
+
+    std::cout << std::endl;
+    std::cout << "Summary:" << std::endl;
+    PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
+  }
+
+  if( args[ "merge" ].asBool() ) {
     gStats.StartTimer();
 
     Merge( args[ "<forward.fastq>" ].asString(),
