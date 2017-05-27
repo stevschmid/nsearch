@@ -21,14 +21,15 @@ typedef struct {
 
 typedef struct {
   int score;
-  size_t targetStart, targetEnd;
-  size_t queryStart, queryEnd;
+  size_t targetStart, targetLength;
+  size_t queryStart, queryLength;
 } LocalAlignment;
 
 typedef std::shared_ptr< void > QueryProfile;
 
 class Aligner {
 public:
+  // Gap of length L costs -(gapOpenPenalty + L * gapExtendPenalty)
   Aligner( int matchScore = 1, int mismatchScore = -2,
       int gapOpenPenalty = 10, int gapExtendPenalty = 1 );
 
@@ -44,6 +45,6 @@ private:
   int8_t mScoringMatrix[ NUC_MATRIX_SIZE * NUC_MATRIX_SIZE ];
 };
 
-extern void PrettyPrintGlobalAlignment( std::ostream &os, const GlobalAlignment &aln, const Sequence &query, const Sequence &target );
-extern std::ostream& operator<<( std::ostream &os, const GlobalAlignment &aln );
+extern void PrettyPrintGlobalAlignment( const Sequence &query, const Sequence &target, const GlobalAlignment &aln, std::ostream &os = std::cout );
+extern std::string CigarAsString( const Cigar &cigar );
 

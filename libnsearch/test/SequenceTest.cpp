@@ -15,8 +15,11 @@ TEST_CASE( "Sequence" )  {
     REQUIRE( sub.sequence == "CT" );
     REQUIRE( sub.quality == "::" );
 
-    Sequence sub2 = seq.Subsequence( 1 );
-    REQUIRE( sub2.sequence == "CCT" );
+    REQUIRE( seq.Subsequence( 2 ).sequence == "CT" );
+    REQUIRE( seq.Subsequence( 4 ).sequence == "" );
+
+    Sequence sub3 = Sequence( "ATTG" ).Subsequence( 10, 10 );
+    REQUIRE( sub3.sequence == "" );
   }
 
   SECTION( "operator +" ) {

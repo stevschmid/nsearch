@@ -1,6 +1,7 @@
 #include "nsearch/Aligner.h"
 
 #include <iostream>
+#include <sstream>
 
 #include <ksw.h>
 
@@ -53,9 +54,9 @@ LocalAlignment Aligner::LocalAlign( const Sequence &query, const Sequence& targe
   LocalAlignment aln;
   aln.score = result.score;
   aln.targetStart = result.tb;
-  aln.targetEnd = result.te;
+  aln.targetLength = ( result.te - result.tb ) + 1;
   aln.queryStart = result.qb;
-  aln.queryEnd = result.qe;
+  aln.queryLength = ( result.qe - result.qb ) + 1;
 
   if( queryProfile ) {
     if( (*queryProfile).get() != qry ) {
@@ -118,15 +119,15 @@ GlobalAlignment Aligner::GlobalAlign( const Sequence &query, const Sequence& tar
   return aln;
 }
 
-std::ostream& operator<<( std::ostream &os, const GlobalAlignment &aln ) {
-  os << "Score " << aln.score << " Cigar ";
-  for( auto &p : aln.cigar ) {
-    os << (int)p.second << (char)p.first;
+std::string CigarAsString( const Cigar &cigar ) {
+  std::stringstream str;
+  for( auto &p : cigar ) {
+    str << (int)p.second << (char)p.first;
   }
-  return os;
+  return str.str();
 }
 
-void PrettyPrintGlobalAlignment( std::ostream &os, const GlobalAlignment &aln, const Sequence &query, const Sequence &target ) {
+void PrettyPrintGlobalAlignment( const Sequence &query, const Sequence &target, const GlobalAlignment &aln, std::ostream &os ) {
   int qcount = 0;
   int tcount = 0;
 

@@ -45,8 +45,8 @@ Sequence Sequence::Subsequence( size_t pos, size_t len ) const {
   }
 
   return Sequence( identifier,
-      sequence.substr( pos, len ),
-      quality.substr( pos, len ) );
+      pos < sequence.length() ? sequence.substr( pos, len ) : "",
+      pos < quality.length() ? quality.substr( pos, len ) : "" );
 }
 
 Sequence Sequence::operator+( const Sequence& other ) const {

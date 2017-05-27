@@ -37,7 +37,13 @@ public:
 };
 
 static std::ostream &operator<<( std::ostream &os, const Sequence &seq ) {
-  return os << seq.identifier;
+  if( !seq.identifier.empty() )
+    os << " " << seq.identifier;
+  if( !seq.sequence.empty() )
+    os << " " << seq.sequence;
+  if( !seq.quality.empty() )
+    os << " " << seq.quality;
+  return os;
 }
 
 typedef std::deque< Sequence > SequenceList;
