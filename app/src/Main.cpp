@@ -6,7 +6,6 @@
 #include <nsearch/FASTQ/Writer.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
-#include <nsearch/LocalAligner.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"

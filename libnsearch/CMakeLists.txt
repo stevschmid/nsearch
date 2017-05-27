@@ -5,7 +5,6 @@ add_library(libnsearch
   src/Sequence.cpp
   src/TextReader.cpp
   src/PairedEnd/Merger.cpp
-  src/LocalAligner.cpp
   )
 
 target_include_directories(libnsearch PUBLIC
