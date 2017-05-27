@@ -24,13 +24,11 @@ namespace FASTA {
     }
 
     void operator>>( Sequence &seq ) {
-      static std::string lastLine;
-
       std::string identifier, sequence;
-      if( lastLine.empty() ) {
+      if( mLastLine.empty() ) {
         (*mTextReader) >> identifier;
       } else {
-        identifier = lastLine;
+        identifier = mLastLine;
       }
 
       std::string line;
@@ -38,7 +36,7 @@ namespace FASTA {
         (*mTextReader) >> line;
 
         if( line[ 0 ] == '>' ) {
-          lastLine = line;
+          mLastLine = line;
           break;
         }
 
@@ -59,5 +57,6 @@ namespace FASTA {
 
   private:
     std::unique_ptr< TextReader > mTextReader;
+    std::string mLastLine;
   };
 }
