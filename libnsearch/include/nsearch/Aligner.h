@@ -14,7 +14,7 @@ typedef enum {
   CIGAR_HARD_CLIP = 'H',
 } CigarOperation;
 
-typedef struct std::pair< CigarOperation, int > CigarPair;
+typedef struct std::pair< int, CigarOperation > CigarPair;
 typedef std::deque< CigarPair > Cigar;
 
 typedef struct {
@@ -24,7 +24,7 @@ typedef struct {
   std::string cigarString() {
     std::stringstream str;
     for( auto &p : cigar ) {
-      str << (int)p.second << (char)p.first;
+      str << (int)p.first << (char)p.second;
     }
     return str.str();
   }

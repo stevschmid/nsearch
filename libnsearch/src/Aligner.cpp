@@ -72,7 +72,17 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAli
 }
 
 int Aligner::ComputeLocalAlignment( Alignment &alignment, const Sequence &query, const Sequence& target, const LocalAlignmentInfo &info ) const {
-  return GlobalAlign( query.Subsequence( info.queryStart, info.queryLength ), target.Subsequence( info.targetStart, info.targetLength ), &alignment );
+  int score = GlobalAlign( query.Subsequence( info.queryStart, info.queryLength ),
+      target.Subsequence( info.targetStart, info.targetLength ),
+      &alignment );
+
+  int gapHead = info.targetStart;
+  int gapTail = target.Length() - ( info.targetStart + info.targetLength );
+
+  if( gapHead > 0 ) alignment.cigar.push_front( CigarPair( gapHead, CIGAR_SOFT_CLIP ) );
+  if( gapTail > 0 ) alignment.cigar.push_back( CigarPair( gapTail, CIGAR_SOFT_CLIP ) );
+
+  return score;
 }
 
 int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment ) const {
@@ -114,15 +124,18 @@ int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignme
   if( alignment ) {
     alignment->cigar.clear();
     for( int i = 0; i < numCigar; i++ ) {
-      int num = cigar[ i ] >> 4;
-      int op = cigar[ i ] & 0b1111;
       CigarPair cp;
+
+      int num = cigar[ i ] >> 4;
+      cp.first = num;
+
+      int op = cigar[ i ] & 0b1111;
       switch( op ) {
-        case 0: cp.first = CIGAR_MATCH; break;
-        case 1: cp.first = CIGAR_INSERTION; break;
-        case 2: cp.first = CIGAR_DELETION; break;
+        case 0: cp.second = CIGAR_MATCH; break;
+        case 1: cp.second = CIGAR_INSERTION; break;
+        case 2: cp.second = CIGAR_DELETION; break;
       }
-      cp.second = num;
+
       alignment->cigar.push_back( std::move( cp ) );
     }
 
@@ -141,8 +154,8 @@ void PrintAlignment( const Alignment &aln, const Sequence &query, const Sequence
   std::string t;
 
   for( auto &p : aln.cigar ) {
-    CigarOperation op = p.first;
-    int len = p.second;
+    int len = p.first;
+    CigarOperation op = p.second;
 
     for( int i = 0; i < len; i++ ) {
       switch( op ) {
@@ -151,6 +164,8 @@ void PrintAlignment( const Alignment &aln, const Sequence &query, const Sequence
           q += query[ qcount++ ];
           break;
 
+        case 'S':
+        case 'H':
         case 'D':
           q += '.';
           t += target[ tcount++ ];
