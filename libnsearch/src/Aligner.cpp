@@ -1,8 +1,5 @@
 #include "nsearch/Aligner.h"
 
-#include <iostream>
-#include <sstream>
-
 #include <ksw.h>
 
 std::string BinarifySequence( const Sequence &seq ) {
@@ -24,7 +21,7 @@ Aligner::Aligner( int matchScore, int mismatchScore, int gapOpenPenalty, int gap
   }
 }
 
-LocalAlignment Aligner::LocalAlign( const Sequence &query, const Sequence& target, QueryProfile *queryProfile ) const {
+int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAlignmentInfo *info, QueryProfileCache *queryProfile ) const {
   std::string binQuery = BinarifySequence( query );
   std::string binTarget = BinarifySequence( target );
 
@@ -34,6 +31,11 @@ LocalAlignment Aligner::LocalAlign( const Sequence &query, const Sequence& targe
   kswq_t *qry = NULL;
   if( queryProfile ) {
     qry = ( kswq_t* )(*queryProfile).get();
+  }
+
+  int extraFlags = 0;
+  if( info )  {
+    extraFlags |= KSW_XSTART;
   }
 
   kswr_t result = ksw_align(
@@ -48,28 +50,32 @@ LocalAlignment Aligner::LocalAlign( const Sequence &query, const Sequence& targe
 
       mGapOpenPenalty,
       mGapExtendPenalty,
-      KSW_XSTART,
+      extraFlags,
       &qry );
 
-  LocalAlignment aln;
-  aln.score = result.score;
-  aln.targetStart = result.tb;
-  aln.targetLength = ( result.te - result.tb ) + 1;
-  aln.queryStart = result.qb;
-  aln.queryLength = ( result.qe - result.qb ) + 1;
+  if( info ) {
+    info->targetStart = result.tb;
+    info->targetLength = ( result.te - result.tb ) + 1;
+    info->queryStart = result.qb;
+    info->queryLength = ( result.qe - result.qb ) + 1;
+  }
 
   if( queryProfile ) {
     if( (*queryProfile).get() != qry ) {
-      *queryProfile = QueryProfile( qry, [=]( void *ptr ) { free( ptr ); } );
+      *queryProfile = QueryProfileCache( qry, [=]( void *ptr ) { free( ptr ); } );
     }
   } else {
     free( qry );
   }
 
-  return aln;
+  return result.score;
 }
 
-GlobalAlignment Aligner::GlobalAlign( const Sequence &query, const Sequence& target ) const {
+int Aligner::ComputeLocalAlignment( Alignment &alignment, const Sequence &query, const Sequence& target, const LocalAlignmentInfo &info ) const {
+  return GlobalAlign( query.Subsequence( info.queryStart, info.queryLength ), target.Subsequence( info.targetStart, info.targetLength ), &alignment );
+}
+
+int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment ) const {
   std::string binQuery = BinarifySequence( query );
   std::string binTarget = BinarifySequence( target );
 
@@ -80,7 +86,15 @@ GlobalAlignment Aligner::GlobalAlign( const Sequence &query, const Sequence& tar
   int numCigar;
   uint32_t *cigar;
 
-  int global = ksw_global(
+  // Toggle backtracking depending if we want Alignment or just score
+  int *numCigarArg = NULL;
+  uint32_t **cigarArg = NULL;
+  if( alignment ) {
+    numCigarArg = &numCigar;
+    cigarArg = &cigar;
+  }
+
+  int score = ksw_global(
       queryLen,
       (uint8_t*)&binQuery[ 0 ],
 
@@ -94,40 +108,32 @@ GlobalAlignment Aligner::GlobalAlign( const Sequence &query, const Sequence& tar
       mGapExtendPenalty,
 
       bandWidth,
-      &numCigar,
-      &cigar );
+      numCigarArg,
+      cigarArg );
 
-  GlobalAlignment aln;
-  aln.score = global;
-
-  for( int i = 0; i < numCigar; i++ ) {
-    int num = cigar[ i ] >> 4;
-    int op = cigar[ i ] & 0b1111;
-    CigarPair cp;
-    switch( op ) {
-      case 0: cp.first = CIGAR_MATCH; break;
-      case 1: cp.first = CIGAR_INSERTION; break;
-      case 2: cp.first = CIGAR_DELETION; break;
+  if( alignment ) {
+    alignment->cigar.clear();
+    for( int i = 0; i < numCigar; i++ ) {
+      int num = cigar[ i ] >> 4;
+      int op = cigar[ i ] & 0b1111;
+      CigarPair cp;
+      switch( op ) {
+        case 0: cp.first = CIGAR_MATCH; break;
+        case 1: cp.first = CIGAR_INSERTION; break;
+        case 2: cp.first = CIGAR_DELETION; break;
+      }
+      cp.second = num;
+      alignment->cigar.push_back( std::move( cp ) );
     }
-    cp.second = num;
-    aln.cigar.push_back( std::move( cp ) );
+
+    // delete cigar
+    free( cigar );
   }
 
-  // delete cigar
-  free( cigar );
-
-  return aln;
+  return score;
 }
 
-std::string CigarAsString( const Cigar &cigar ) {
-  std::stringstream str;
-  for( auto &p : cigar ) {
-    str << (int)p.second << (char)p.first;
-  }
-  return str.str();
-}
-
-void PrettyPrintGlobalAlignment( const Sequence &query, const Sequence &target, const GlobalAlignment &aln, std::ostream &os ) {
+void PrintAlignment( const Alignment &aln, const Sequence &query, const Sequence &target, std::ostream &os ) {
   int qcount = 0;
   int tcount = 0;
 

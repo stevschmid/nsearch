@@ -6,43 +6,52 @@ TEST_CASE( "Aligner" )  {
   Aligner aligner( 2, -3, 5, 2 );
 
   SECTION( "Global" ) {
-    Sequence seq1( "GACTTAC");
-    Sequence seq2( "CGTGAATTCAT" );
+    Sequence query( "GACTTAC");
+    Sequence target( "CGTGAATTCAT" );
 
-    SECTION( "Default" ) {
-      GlobalAlignment aln = aligner.GlobalAlign( seq1, seq2 );
-      REQUIRE( aln.score == -14 );
-      REQUIRE( CigarAsString( aln.cigar ) == "3D5M1D2M" );
+    SECTION( "Score" ) {
+      REQUIRE( aligner.GlobalAlign( query, target ) == -14 );
     }
 
     SECTION( "Symmetry" ) {
-      REQUIRE( aligner.GlobalAlign( seq1, seq2 ).score == aligner.GlobalAlign( seq2, seq1 ).score );
+      REQUIRE( aligner.GlobalAlign( query, target ) == aligner.GlobalAlign( target, query ) );
+    }
+
+    SECTION( "Alignment" ) {
+      Alignment aln;
+      aligner.GlobalAlign( query, target, &aln );
+      REQUIRE( aln.cigarString() == "3D5M1D2M" );
     }
   }
 
   SECTION( "Local" ) {
-    Sequence seq1( "TACGGGCCCGCTAC" );
-    Sequence seq2( "TAGCCCTATCGGTCA" );
+    Sequence query( "TACGGGCCCGCTAC" );
+    Sequence target( "TAGCCCTATCGGTCA" );
+    LocalAlignmentInfo info;
 
-    SECTION( "Gaps" ) {
-      LocalAlignment aln1 = Aligner( 5, -4, 4, 1 ).LocalAlign( seq1, seq2 );
-      REQUIRE( aln1.score == 27 );
+    SECTION( "Score" ) {
+      Aligner aligner( 5, -4, 4, 1 );
+      REQUIRE( aligner.LocalAlign( query, target, &info ) == 27 );
 
-
-      LocalAlignment aln2 = Aligner( 5, -4, 10, 1 ).LocalAlign( seq1, seq2 );
-      REQUIRE( aln2.score == 20 );
-    }
-
-    SECTION( "Ambiguous Nucleotides" ) {
-      Sequence seq1 = "ATGCTGGTACCTGGGAT";
-      Sequence seq2 =     "TGGYAWNNV"; // W matches A or T, here C (mismatch)
-      LocalAlignment aln = aligner.LocalAlign( seq1, seq2 );
-      REQUIRE( aln.score == 8 * 2 - 1 * 3 );
+      Alignment aln;
+      aligner.ComputeLocalAlignment( aln, query, target, info );
+      REQUIRE( aln.cigarString() == "2M3I4M2I2M" );
     }
 
     SECTION( "Symmetry" ) {
       Aligner aligner;
-      REQUIRE( aligner.LocalAlign( seq1, seq2 ).score == aligner.LocalAlign( seq2, seq1 ).score );
+      REQUIRE( aligner.LocalAlign( query, target ) == aligner.LocalAlign( target, query ) );
+    }
+
+    SECTION( "Gaps" ) {
+      REQUIRE( Aligner( 5, -4, 4, 1 ).LocalAlign( query, target ) == 27 );
+      REQUIRE( Aligner( 5, -4, 10, 1 ).LocalAlign( query, target ) == 20 );
+    }
+
+    SECTION( "Ambiguous Nucleotides" ) {
+      Sequence query = "ATGCTGGTACCTGGGAT";
+      Sequence target =       "TGGYAWNNV"; // W matches A or T, here C (mismatch)
+      REQUIRE( aligner.LocalAlign( query, target ) == 8 * 2 - 1 * 3 );
     }
   }
 }

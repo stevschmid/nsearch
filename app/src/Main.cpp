@@ -8,7 +8,7 @@
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
 #include <nsearch/Database.h>
-#include <nsearch/LocalAligner.h>
+#include <nsearch/Aligner.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
