@@ -76,6 +76,10 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, Alignmen
 
     if( gapHead > 0 ) alignment->cigar.push_front( CigarPair( gapHead, CIGAR_SOFT_CLIP ) );
     if( gapTail > 0 ) alignment->cigar.push_back( CigarPair( gapTail, CIGAR_SOFT_CLIP ) );
+
+    alignment->targetPos = targetStart;
+    alignment->queryPos = queryStart;
+    alignment->score = result.score;
   }
 
   return result.score;
@@ -118,6 +122,11 @@ int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignme
       cigarArg );
 
   if( alignment ) {
+    alignment->targetPos = 0;
+    alignment->queryPos = 0;
+
+    alignment->score = score;
+
     alignment->cigar.clear();
     for( int i = 0; i < numCigar; i++ ) {
       CigarPair cp;

@@ -18,8 +18,11 @@ typedef struct std::pair< int, CigarOperation > CigarPair;
 typedef std::deque< CigarPair > Cigar;
 
 typedef struct {
-  int score;
+  int score = 0;
   Cigar cigar;
+
+  int queryPos = 0;
+  int targetPos = 0;
 
   std::string cigarString() {
     std::stringstream str;
@@ -40,7 +43,7 @@ public:
       int gapOpenPenalty = 10, int gapExtendPenalty = 1 );
 
   // Cache QueryProfileCache for same query to speed up local alignments
-  int LocalAlign( const Sequence &query, const Sequence& target, Alignment *klignment = NULL, QueryProfileCache *queryProfile = NULL ) const;
+  int LocalAlign( const Sequence &query, const Sequence& target, Alignment *alignment = NULL, QueryProfileCache *queryProfile = NULL ) const;
 
   int GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment = NULL ) const;
 

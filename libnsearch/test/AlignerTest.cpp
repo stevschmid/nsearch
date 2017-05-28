@@ -21,6 +21,9 @@ TEST_CASE( "Aligner" )  {
       Alignment aln;
       aligner.GlobalAlign( query, target, &aln );
       REQUIRE( aln.cigarString() == "3D5M1D2M" );
+      REQUIRE( aln.score == -14 );
+      REQUIRE( aln.targetPos == 0 );
+      REQUIRE( aln.queryPos == 0 );
     }
   }
 
@@ -50,11 +53,23 @@ TEST_CASE( "Aligner" )  {
       REQUIRE( aligner.LocalAlign( query, target ) == 8 * 2 - 1 * 3 );
     }
 
+    SECTION( "Alignment" ) {
+      Sequence query =         "TACCTGG";
+      Sequence target = "ATGCTGGTACCTGGGAT";
+      REQUIRE( aligner.LocalAlign( query, target, &aln ) == 14 );
+      REQUIRE( aln.score == 14 );
+      REQUIRE( aln.targetPos == 7 );
+      REQUIRE( aln.queryPos == 0 );
+
+      REQUIRE( aligner.LocalAlign( target, query, &aln ) == 14 );
+      REQUIRE( aln.targetPos == 0 );
+      REQUIRE( aln.queryPos == 7 );
+    }
+
     SECTION( "Clipping" ) {
       Sequence query =      "TGGT";
       Sequence target = "ATGCTGGTACCTGG";
       REQUIRE( aligner.LocalAlign( query, target, &aln ) == 8 );
-      REQUIRE( aln.cigarString() == "4S4M6S" );
     }
   }
 }
