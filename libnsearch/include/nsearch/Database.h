@@ -5,6 +5,7 @@
 
 #include "Sequence.h"
 #include "Utils.h"
+#include "Aligner.h"
 
 struct SequenceHasher {
   size_t operator()( const std::string& sequence ) const {
@@ -46,7 +47,7 @@ public:
     : mWordSize( wordSize )
   {
     // Sequences have to fit in the calculated hash
-    assert( wordLength * 2 <= sizeof( size_t ) * 8 );
+    assert( wordSize * 2 <= sizeof( size_t ) * 8 );
   }
 
   void AddSequence( const Sequence &seq ) {
