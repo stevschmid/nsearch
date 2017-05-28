@@ -30,11 +30,6 @@ typedef struct {
   }
 } Alignment;
 
-typedef struct {
-  size_t targetStart, targetLength;
-  size_t queryStart, queryLength;
-} LocalAlignmentInfo;
-
 typedef std::shared_ptr< void > QueryProfileCache;
 
 // Alignment wrapper for KSW
@@ -44,12 +39,9 @@ public:
   Aligner( int matchScore = 1, int mismatchScore = -2,
       int gapOpenPenalty = 10, int gapExtendPenalty = 1 );
 
-  // Local alignment is blazing fast but we don't get detailed alignment (no cigar)
   // Cache QueryProfileCache for same query to speed up local alignments
-  int LocalAlign( const Sequence &query, const Sequence& target, LocalAlignmentInfo *info = NULL, QueryProfileCache *queryProfile = NULL ) const;
-  int ComputeLocalAlignment( Alignment &alignment, const Sequence &query, const Sequence& target, const LocalAlignmentInfo &info ) const;
+  int LocalAlign( const Sequence &query, const Sequence& target, Alignment *klignment = NULL, QueryProfileCache *queryProfile = NULL ) const;
 
-  // Global alignment is slower but we get detailed alignment
   int GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment = NULL ) const;
 
 private:

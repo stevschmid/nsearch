@@ -21,7 +21,7 @@ Aligner::Aligner( int matchScore, int mismatchScore, int gapOpenPenalty, int gap
   }
 }
 
-int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAlignmentInfo *info, QueryProfileCache *queryProfile ) const {
+int Aligner::LocalAlign( const Sequence &query, const Sequence& target, Alignment *alignment, QueryProfileCache *queryProfile ) const {
   std::string binQuery = BinarifySequence( query );
   std::string binTarget = BinarifySequence( target );
 
@@ -34,7 +34,7 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAli
   }
 
   int extraFlags = 0;
-  if( info )  {
+  if( alignment )  {
     extraFlags |= KSW_XSTART;
   }
 
@@ -53,13 +53,6 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAli
       extraFlags,
       &qry );
 
-  if( info ) {
-    info->targetStart = result.tb;
-    info->targetLength = ( result.te - result.tb ) + 1;
-    info->queryStart = result.qb;
-    info->queryLength = ( result.qe - result.qb ) + 1;
-  }
-
   if( queryProfile ) {
     if( (*queryProfile).get() != qry ) {
       *queryProfile = QueryProfileCache( qry, [=]( void *ptr ) { free( ptr ); } );
@@ -68,21 +61,24 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, LocalAli
     free( qry );
   }
 
+  if( alignment ) {
+    int targetStart = result.tb;
+    int targetLength = ( result.te - result.tb ) + 1;
+    int queryStart = result.qb;
+    int queryLength = ( result.qe - result.qb ) + 1;
+
+    int score = GlobalAlign( query.Subsequence( queryStart, queryLength ),
+        target.Subsequence( targetStart, targetLength ),
+        alignment );
+
+    int gapHead = targetStart;
+    int gapTail = target.Length() - ( targetStart + targetLength );
+
+    if( gapHead > 0 ) alignment->cigar.push_front( CigarPair( gapHead, CIGAR_SOFT_CLIP ) );
+    if( gapTail > 0 ) alignment->cigar.push_back( CigarPair( gapTail, CIGAR_SOFT_CLIP ) );
+  }
+
   return result.score;
-}
-
-int Aligner::ComputeLocalAlignment( Alignment &alignment, const Sequence &query, const Sequence& target, const LocalAlignmentInfo &info ) const {
-  int score = GlobalAlign( query.Subsequence( info.queryStart, info.queryLength ),
-      target.Subsequence( info.targetStart, info.targetLength ),
-      &alignment );
-
-  int gapHead = info.targetStart;
-  int gapTail = target.Length() - ( info.targetStart + info.targetLength );
-
-  if( gapHead > 0 ) alignment.cigar.push_front( CigarPair( gapHead, CIGAR_SOFT_CLIP ) );
-  if( gapTail > 0 ) alignment.cigar.push_back( CigarPair( gapTail, CIGAR_SOFT_CLIP ) );
-
-  return score;
 }
 
 int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment ) const {
