@@ -10,7 +10,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 11)
 
 # Targets
-enable_testing()
 add_subdirectory(libnsearch)
 add_subdirectory(app)
 add_subdirectory(vendor/docopt)

@@ -3,6 +3,8 @@
 #include <string>
 #include <cassert>
 #include <ctype.h>
+#include <numeric>
+#include <map>
 
 static bool IsBlank( const std::string &str ) {
   return str.empty() || std::all_of( str.begin(), str.end(), isspace );
@@ -79,3 +81,59 @@ static inline char NucleotideComplement( char nuc ) {
 
   return nuc;
 }
+
+class Coverage {
+public:
+  Coverage( size_t totalSize )
+    : mTotalSize( totalSize )
+  {
+
+  }
+
+  size_t NumNonOverlaps() const {
+    return mRanges.size();
+  }
+
+  size_t TotalSize() const {
+    return mTotalSize;
+  }
+
+  size_t CoveredSize() const {
+    size_t coveredSize = 0;
+    for( auto &range : mRanges ) {
+      coveredSize += ( range.second - range.first ) + 1;
+    }
+    return coveredSize;
+  }
+
+  float CoveredFraction() const {
+    return float( CoveredSize() ) / float( TotalSize() );
+  }
+
+  void Add( size_t rangeMin, size_t rangeMax ) {
+    assert( rangeMin <= rangeMax );
+
+    std::map< size_t, size_t >::iterator insertIt, afterIt = mRanges.upper_bound( rangeMin );
+
+    if( afterIt == mRanges.begin() || std::prev( afterIt )->second < rangeMin ) {
+      insertIt = mRanges.insert( afterIt, std::pair< size_t, size_t >( rangeMin, rangeMax ) );
+    } else {
+      insertIt = std::prev( afterIt );
+      if( insertIt->second < rangeMax ) {
+        // Extend overlap
+        insertIt->second = rangeMax;
+      }
+    }
+
+    // Merge following ranges if covered fully by this one
+    while( afterIt != mRanges.end() && rangeMax >= afterIt->first ) {
+      insertIt->second = std::max( afterIt->second, insertIt->second );
+      afterIt = mRanges.erase( afterIt );
+    }
+  }
+
+private:
+  size_t mTotalSize;
+  std::map< size_t, size_t > mRanges; // Non overlapping ranges
+};
+

@@ -35,7 +35,6 @@ TEST_CASE( "Aligner" )  {
       REQUIRE( aligner.LocalAlign( query, target, &info ) == 27 );
 
       aligner.ComputeLocalAlignment( aln, query, target, info );
-      PrintAlignment( aln, query, target );
       REQUIRE( aln.cigarString() == "2M3I4M2I2M7S" );
     }
 
