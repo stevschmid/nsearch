@@ -63,5 +63,26 @@ TEST_CASE( "Utils" )  {
       REQUIRE( cov.CoveredSize() == 20 );
       REQUIRE( cov.CoveredFraction() == 1.0 );
     }
+
+    SECTION( "operator<" ) {
+      Coverage small( 10 );
+      small.Add( 1, 3 ); // 3
+      Coverage medium( 10 );
+      medium.Add( 2, 5 ); // 4
+      Coverage big( 10 );
+      big.Add( 3, 9 ); // 7
+
+      REQUIRE( small < medium );
+      REQUIRE( medium < big );
+      REQUIRE( small < big );
+
+      std::set< Coverage > covs;
+      covs.insert( medium );
+      covs.insert( big );
+      covs.insert( small );
+
+      REQUIRE( (*covs.begin()).CoveredSize() == 3 );
+      REQUIRE( (*covs.rbegin()).CoveredSize() == 7 );
+    }
   }
 }

@@ -84,7 +84,7 @@ static inline char NucleotideComplement( char nuc ) {
 
 class Coverage {
 public:
-  Coverage( size_t totalSize )
+  Coverage( size_t totalSize = 0)
     : mTotalSize( totalSize )
   {
 
@@ -130,6 +130,10 @@ public:
       insertIt->second = std::max( afterIt->second, insertIt->second );
       afterIt = mRanges.erase( afterIt );
     }
+  }
+
+  bool operator<( const Coverage &other ) const {
+    return CoveredFraction() < other.CoveredFraction();
   }
 
 private:
