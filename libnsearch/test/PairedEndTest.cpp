@@ -22,7 +22,7 @@ TEST_CASE( "Merger" )  {
 
   SECTION( "staggered overlap (merged sequence is trimmed)" ) {
     Merger merger( 5, 1.0 );
-    Sequence fwd1 = Sequence( "fwd1",      "ATCCCGGA", "JJJJJJJJJJ" );
+    Sequence fwd1 = Sequence( "fwd1",      "ATCCCGGA", "JJJJJJJJ" );
     Sequence rev1 = Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
 
     res = merger.Merge( merged, fwd1, rev1 );
@@ -44,7 +44,7 @@ TEST_CASE( "Merger" )  {
     Merger merger( 5, 1.0 );
 
     Sequence fwd1 = Sequence( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
-    Sequence rev1 = Sequence( "rev1",     "GATAGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
+    Sequence rev1 = Sequence( "rev1",     "GATAGAATCCC", "JJJJJJJJJJJ" ).ReverseComplement();
 
     res = merger.Merge( merged, fwd1, rev1 );
     REQUIRE( res == false );

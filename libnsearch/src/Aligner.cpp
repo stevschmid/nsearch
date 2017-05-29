@@ -71,14 +71,12 @@ int Aligner::LocalAlign( const Sequence &query, const Sequence& target, Alignmen
         target.Subsequence( targetStart, targetLength ),
         alignment );
 
-    int gapHead = targetStart;
-    int gapTail = target.Length() - ( targetStart + targetLength );
-
-    if( gapHead > 0 ) alignment->cigar.push_front( CigarPair( gapHead, CIGAR_SOFT_CLIP ) );
-    if( gapTail > 0 ) alignment->cigar.push_back( CigarPair( gapTail, CIGAR_SOFT_CLIP ) );
-
     alignment->targetPos = targetStart;
+    alignment->targetLength = targetLength;
+
     alignment->queryPos = queryStart;
+    alignment->queryLength = queryLength;
+
     alignment->score = result.score;
   }
 
@@ -129,16 +127,15 @@ int Aligner::GlobalAlign( const Sequence &query, const Sequence& target, Alignme
 
     alignment->cigar.clear();
     for( int i = 0; i < numCigar; i++ ) {
-      CigarPair cp;
+      CigarItem cp;
 
-      int num = cigar[ i ] >> 4;
-      cp.first = num;
+      cp.length = cigar[ i ] >> 4;
 
       int op = cigar[ i ] & 0b1111;
       switch( op ) {
-        case 0: cp.second = CIGAR_MATCH; break;
-        case 1: cp.second = CIGAR_INSERTION; break;
-        case 2: cp.second = CIGAR_DELETION; break;
+        case 0: cp.operation = CIGAR_MATCH; break;
+        case 1: cp.operation = CIGAR_INSERTION; break;
+        case 2: cp.operation = CIGAR_DELETION; break;
       }
 
       alignment->cigar.push_back( std::move( cp ) );
@@ -158,19 +155,14 @@ void PrintAlignment( const Alignment &aln, const Sequence &query, const Sequence
   std::string q;
   std::string t;
 
-  for( auto &p : aln.cigar ) {
-    int len = p.first;
-    CigarOperation op = p.second;
-
-    for( int i = 0; i < len; i++ ) {
-      switch( op ) {
+  for( auto &c : aln.cigar ) {
+    for( int i = 0; i < c.length; i++ ) {
+      switch( c.operation ) {
         case 'I':
           t += '.';
           q += query[ qcount++ ];
           break;
 
-        case 'S':
-        case 'H':
         case 'D':
           q += '.';
           t += target[ tcount++ ];

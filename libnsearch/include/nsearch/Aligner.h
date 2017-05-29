@@ -7,15 +7,20 @@
 #include <sstream>
 
 typedef enum {
-  CIGAR_MATCH = 'M',
-  CIGAR_DELETION = 'D',
+  CIGAR_MATCH     = 'M',
+  CIGAR_DELETION  = 'D',
   CIGAR_INSERTION = 'I',
-  CIGAR_SOFT_CLIP = 'S',
-  CIGAR_HARD_CLIP = 'H',
 } CigarOperation;
 
-typedef struct std::pair< int, CigarOperation > CigarPair;
-typedef std::deque< CigarPair > Cigar;
+typedef struct CigarItem_s {
+  int length;
+  CigarOperation operation;
+
+  CigarItem_s() { }
+  CigarItem_s( int length, CigarOperation operation )
+    : length( length ), operation( operation ) { }
+} CigarItem;
+typedef std::deque< CigarItem > Cigar;
 
 typedef struct {
   int score = 0;
@@ -24,10 +29,13 @@ typedef struct {
   int queryPos = 0;
   int targetPos = 0;
 
+  int queryLength = 0;
+  int targetLength = 0;
+
   std::string cigarString() {
     std::stringstream str;
     for( auto &p : cigar ) {
-      str << (int)p.first << (char)p.second;
+      str << p.length << (char)p.operation;
     }
     return str.str();
   }
@@ -44,7 +52,6 @@ public:
 
   // Cache QueryProfileCache for same query to speed up local alignments
   int LocalAlign( const Sequence &query, const Sequence& target, Alignment *alignment = NULL, QueryProfileCache *queryProfile = NULL ) const;
-
   int GlobalAlign( const Sequence &query, const Sequence& target, Alignment *alignment = NULL ) const;
 
 private:
