@@ -28,15 +28,13 @@ namespace PairedEnd {
       return false;
 
     merged = seq1.Subsequence( 0, overlap.length );
-    Sequence overlap1 = seq1.Subsequence( overlap.pos1, overlap.length );
-    Sequence overlap2 = seq2.Subsequence( overlap.pos2, overlap.length );
 
     for( int i = 0; i < overlap.length; i++ ) {
-      char s1 = overlap1.sequence[ i ];
-      char s2 = overlap2.sequence[ i ];
+      char s1 = seq1.sequence[ overlap.pos1 + i ];
+      char s2 = seq2.sequence[ overlap.pos2 + i ];
 
-      int q1 = overlap1.quality[ i ] - FASTQ::Q_MIN_ASCII_BASE;
-      int q2 = overlap2.quality[ i ] - FASTQ::Q_MIN_ASCII_BASE;
+      int q1 = seq1.quality[ overlap.pos1 + i ] - FASTQ::Q_MIN_ASCII_BASE;
+      int q2 = seq2.quality[ overlap.pos2 + i ] - FASTQ::Q_MIN_ASCII_BASE;
 
       if( q1 >= q2 ) {
         // Call X as merged base
