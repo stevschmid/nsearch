@@ -8,6 +8,51 @@
 #include "Aligner.h"
 #include "Kmer.h"
 
+class Seed {
+public:
+  size_t start1, start2, length;
+
+  Seed( size_t start1, size_t start2, size_t length )
+    : start1( start1 ), start2( start2 ), length( length )
+  {
+  }
+};
+
+typedef std::deque< Seed > SeedList;
+
+class HitTracker
+{
+public:
+  void AddHit( size_t start1, size_t start2, size_t length ) {
+    size_t diagStart1 = 0;
+    size_t diagStart2 = start2 - start1;
+    Coverage &cov = mDiagonals[ std::pair< size_t, size_t >( diagStart1, diagStart2 ) ];
+    cov.Add( start1, start1 + length );
+  }
+
+  SeedList Seeds() const {
+    SeedList seeds;
+
+    for( auto &it : mDiagonals ) {
+      auto &key = it.first;
+      auto &coverage = it.second;
+
+      for( auto &range : coverage.Ranges() ) {
+        // (6,1) -> (8,3)
+        size_t length = range.second - range.first;
+        size_t start1 = range.first;
+        size_t start2 = key.second + start1;
+        seeds.push_back( Seed( start1, start2, length ) );
+      }
+    }
+
+    return seeds;
+  };
+
+private:
+  std::map< std::pair< size_t, size_t >, Coverage > mDiagonals;
+};
+
 class Database {
   typedef std::pair< size_t, const Sequence* > SequenceInfo;
 
@@ -32,7 +77,7 @@ public:
   }
 
   SequenceList Query( const Sequence &query, int maxHits = 10 ) const {
-    std::unordered_map< const Sequence*, Coverage > candidates;
+    std::unordered_map< const Sequence*, HitTracker > candidates;
 
     // Go through each kmer, find candidates
     Kmers kmers( query, mWordSize );
@@ -41,30 +86,42 @@ public:
         size_t candidatePos = seqInfo.first;
         const Sequence *candidateSeq = seqInfo.second;
 
-        if( candidates.find( candidateSeq ) == candidates.end() ) {
-          candidates[ candidateSeq ] = Coverage( query.Length() );
-        }
-
-        Coverage &coverage = candidates[ candidateSeq ];
-        coverage.Add( pos, pos + mWordSize - 1 );
+        /* if( candidates.find( candidateSeq ) == candidates.end() ) { */
+        /*   candidates[ candidateSeq ] = Coverage( query.Length() ); */
+        /* } */
+        candidates[ candidateSeq ].AddHit( pos, candidatePos, mWordSize );
+        /* Coverage &coverage = candidates[ candidateSeq ]; */
+        /* coverage.Add( pos, pos + mWordSize - 1 ); */
       }
     });
 
-    // Sort candidates by coverage
-    std::set< std::pair< Coverage, const Sequence* > > sortedCandidates;
-    for( auto &c : candidates )
-      sortedCandidates.insert( std::pair< Coverage, const Sequence* >( c.second, c.first ) );
+    for( auto &c : candidates ) {
+      if( c.second.Seeds().size() > 1 ) {
+        std::cout << "Number of seeds" << c.second.Seeds().size() << std::endl;
+        /* for( auto &s : c.second.Seeds() ) { */
+        /*   std::cout << "Seed " << s.start1 << " " << s.start2 << " " << s.length << std::endl; */
 
-    // Now score the candidates
-    SequenceList list;
-    for( auto it = sortedCandidates.rbegin(); it != sortedCandidates.rend(); ++it ) {
-      /* std::cout << "Candidate " << (*it).first.CoveredFraction() << std::endl; */
-      list.push_back( *(*it).second );
-
-      if( list.size() >= maxHits )
-        break;
+        /*   std::cout << query.Subsequence( s.start1, s.length ) << std::endl; */
+        /*   std::cout << c.first->Subsequence( s.start2, s.length ) << std::endl; */
+        /* } */
+      }
     }
-    /* std::cout << "====== " << std::endl; */
+
+    // Sort candidates by coverage
+    /* std::set< std::pair< Coverage, const Sequence* > > sortedCandidates; */
+    /* for( auto &c : candidates ) */
+    /*   sortedCandidates.insert( std::pair< Coverage, const Sequence* >( c.second, c.first ) ); */
+
+    /* // Now score the candidates */
+    SequenceList list;
+    /* for( auto it = sortedCandidates.rbegin(); it != sortedCandidates.rend(); ++it ) { */
+    /*   /1* std::cout << "Candidate " << (*it).first.CoveredFraction() << std::endl; *1/ */
+    /*   list.push_back( *(*it).second ); */
+
+    /*   if( list.size() >= maxHits ) */
+    /*     break; */
+    /* } */
+    /* /1* std::cout << "====== " << std::endl; *1/ */
 
     return list;
   }

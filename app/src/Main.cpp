@@ -147,7 +147,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
     SequenceList candidates = db.Query( seq );
     for( auto &candidate : candidates ) {
-      std::cout << seq << "," << candidate << std::endl;
+      /* std::cout << seq << "," << candidate << std::endl; */
     }
   }
 

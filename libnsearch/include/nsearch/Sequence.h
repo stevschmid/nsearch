@@ -39,11 +39,11 @@ public:
 
 static std::ostream &operator<<( std::ostream &os, const Sequence &seq ) {
   if( !seq.identifier.empty() )
-    os << " " << seq.identifier;
+    os << ">" << seq.identifier << std::endl;
   if( !seq.sequence.empty() )
-    os << " " << seq.sequence;
+    os << " " << seq.sequence << std::endl;
   if( !seq.quality.empty() )
-    os << " " << seq.quality;
+    os << " " << seq.quality << std::endl;
   return os;
 }
 

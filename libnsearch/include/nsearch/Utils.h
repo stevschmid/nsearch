@@ -84,18 +84,8 @@ static inline char NucleotideComplement( char nuc ) {
 
 class Coverage {
 public:
-  Coverage( size_t totalSize = 0)
-    : mTotalSize( totalSize )
-  {
-
-  }
-
   size_t NumNonOverlaps() const {
     return mRanges.size();
-  }
-
-  size_t TotalSize() const {
-    return mTotalSize;
   }
 
   size_t CoveredSize() const {
@@ -104,10 +94,6 @@ public:
       coveredSize += ( range.second - range.first ) + 1;
     }
     return coveredSize;
-  }
-
-  float CoveredFraction() const {
-    return float( CoveredSize() ) / float( TotalSize() );
   }
 
   void Add( size_t rangeMin, size_t rangeMax ) {
@@ -133,11 +119,14 @@ public:
   }
 
   bool operator<( const Coverage &other ) const {
-    return CoveredFraction() < other.CoveredFraction();
+    return CoveredSize() < other.CoveredSize();
+  }
+
+  const std::map< size_t, size_t >& Ranges() const {
+    return mRanges;
   }
 
 private:
-  size_t mTotalSize;
   std::map< size_t, size_t > mRanges; // Non overlapping ranges
 };
 
