@@ -17,6 +17,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   UtilsTest.cpp
   Alignment/OptimalChainFinderTest.cpp
   Alignment/RangesTest.cpp
+  Alignment/HitTrackerTest.cpp
   )
 
 add_dependencies(check testnsearch)

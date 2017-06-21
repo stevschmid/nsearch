@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Alignment.h"
+#include "Seed.h"
 
 #include <deque>
 #include <map>
