@@ -26,34 +26,31 @@ class FindOptimalChain
     }
   };
 
+  typedef std::shared_ptr< Rect > RectRef;
+
 public:
   FindOptimalChain( const SegmentList &seeds ) {
-    std::deque< std::shared_ptr< Rect > > rects;
-    std::multimap< size_t, std::shared_ptr< Rect > > points;
-    std::multimap< size_t, std::shared_ptr< Rect > > solutions;
+    std::deque< RectRef > rects;
+    std::multimap< size_t, RectRef > points;
+    std::multimap< size_t, RectRef > solutions;
 
-    auto greaterOrEqualThan = []( const std::multimap< size_t, std::shared_ptr< Rect > >& set, size_t value ) {
+    auto greaterOrEqualThan = []( const std::multimap< size_t, RectRef >& set, size_t value ) {
       return set.lower_bound( value );
     };
-    auto lessOrEqualThan = []( const std::multimap< size_t, std::shared_ptr< Rect > >& set, size_t value ) {
+    auto lessOrEqualThan = []( const std::multimap< size_t, RectRef >& set, size_t value ) {
       if( set.size() == 0 )
         return set.end();
 
-      auto it = set.lower_bound( value );
-      while( (*it).first > value && it != set.begin() ) {
-        it--;
-      }
-
-      if( (*it).first > value ) {
+      auto it = set.upper_bound( value );
+      if( it == set.begin() )
         return set.end();
-      }
 
-      return it;
+      return --it;
     };
 
     for( auto &seed : seeds ) {
       /* std::cout << "Seed " << seed.s1 << " " << seed.s2 << " len " << seed.length << std::endl; */
-      std::shared_ptr< Rect > rect( new Rect( seed.s1, seed.s1 + seed.length, seed.s2, seed.s2 + seed.length, seed.length ) );
+      RectRef rect( new Rect( seed.s1, seed.s1 + seed.length, seed.s2, seed.s2 + seed.length, seed.length ) );
       rects.push_back( rect );
     }
 
@@ -61,17 +58,17 @@ public:
     // (since we need the previous rect in the x1 case)
     // Insertion order is guaranteed in C++11
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, std::shared_ptr< Rect > >( rect->x2, rect ) );
+      points.insert( std::pair< size_t, RectRef >( rect->x2, rect ) );
     }
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, std::shared_ptr< Rect > >( rect->x1, rect ) );
+      points.insert( std::pair< size_t, RectRef >( rect->x1, rect ) );
     }
 
     // Go through each point, from left to right
     for( auto &p : points ) {
 
       size_t px = p.first;
-      std::shared_ptr< Rect > rect = p.second;
+      RectRef rect = p.second;
 
 #ifndef NDEBUG
       std::cout << "(px " << px << ") Rect " << rect->x1 << " "
@@ -90,7 +87,7 @@ public:
         // Find the closest rectangle which can precede this one
         auto closest = lessOrEqualThan( solutions, rect->y1 );
         if( closest != solutions.end() ) {
-          std::shared_ptr< Rect > closestRect = (*closest).second;
+          RectRef closestRect = (*closest).second;
           rect->prev = closestRect.get();
           rect->score += closestRect->score;
 #ifndef NDEBUG
@@ -110,14 +107,16 @@ public:
 
         // Find competing, higher up rectangles
         auto competitor = greaterOrEqualThan( solutions, rect->y1 );
+#ifndef NDEBUG
         std::cout << "search for y2 >= " << rect->y1 << std::endl;
         if( competitor == solutions.end() ) {
           std::cout << "competitor not found " << std::endl;
         } else {
           std::cout << "competitor found " << std::endl;
         }
+#endif
         if( competitor == solutions.end() || competitor->second->score < rect->score ) {
-          solutions.insert( competitor, std::pair< size_t, std::shared_ptr< Rect > >( rect->y2, rect ) );
+          solutions.insert( competitor, std::pair< size_t, RectRef >( rect->y2, rect ) );
         }
 
         // Delete competing solutions this one has beat (higher up but lower score)
@@ -133,8 +132,8 @@ public:
     }
 
     auto bestSolution = std::max_element( solutions.begin(), solutions.end(), [](
-          const std::pair< size_t, std::shared_ptr< Rect > > &left,
-          const std::pair< size_t, std::shared_ptr< Rect > > &right )
+          const std::pair< size_t, RectRef > &left,
+          const std::pair< size_t, RectRef > &right )
     {
       return left.second->score < right.second->score;
     });
