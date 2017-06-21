@@ -11,7 +11,7 @@
  * Adapted from 'Algorithms on Strings, Trees, and Sequences', Gusfield 1997
  * O(n log n)
  */
-class FindOptimalChain
+class OptimalChainFinder
 {
   class Rect {
   public:
@@ -29,7 +29,7 @@ class FindOptimalChain
   typedef std::shared_ptr< Rect > RectRef;
 
 public:
-  FindOptimalChain( const SegmentList &seeds ) {
+  OptimalChainFinder( const SeedList &seeds ) {
     std::deque< RectRef > rects;
     std::multimap< size_t, RectRef > points;
     std::multimap< size_t, RectRef > solutions;
@@ -142,7 +142,7 @@ public:
       Rect *rect = bestSolution->second.get();
       mOptimalChain.clear();
       while( rect ) {
-        mOptimalChain.push_back( Segment( rect->x1, rect->y1, rect->x2 - rect->x1 ) );
+        mOptimalChain.push_back( Seed( rect->x1, rect->y1, rect->x2 - rect->x1 ) );
         rect = rect->prev;
       }
       std::reverse( mOptimalChain.begin(), mOptimalChain.end() );
@@ -157,10 +157,10 @@ public:
 
   };
 
-  SegmentList OptimalChain() const {
+  SeedList OptimalChain() const {
     return mOptimalChain;
   };
 
 private:
-  SegmentList mOptimalChain;
+  SeedList mOptimalChain;
 };

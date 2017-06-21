@@ -10,7 +10,7 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
-#include <nsearch/Alignment/FindOptimalChain.h>
+#include <nsearch/Alignment/OptimalChainFinder.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -163,21 +163,27 @@ int main( int argc, const char **argv ) {
         true, // help
         "nsearch");
 
-  SegmentList seeds;
-  /* seeds.push_back( Segment( 0, 0, 2 ) ); */
-  /* seeds.push_back( Segment( 3, 5, 2 ) ); */
-  /* seeds.push_back( Segment( 4, 2, 3 ) ); */
-  /* seeds.push_back( Segment( 9, 9, 2 ) ); */
-  /* seeds.push_back( Segment( 7, 9, 1 ) ); */
-  /* seeds.push_back( Segment( 3, 7, 3 ) ); */
-  /* seeds.push_back( Segment( 5, 7, 2 ) ); */
+  SeedList seeds;
+  /* seeds.push_back( Seed( 0, 0, 2 ) ); */
+  /* seeds.push_back( Seed( 3, 5, 2 ) ); */
+  /* seeds.push_back( Seed( 4, 2, 3 ) ); */
+  /* seeds.push_back( Seed( 9, 9, 2 ) ); */
+  /* seeds.push_back( Seed( 7, 9, 1 ) ); */
+  /* seeds.push_back( Seed( 3, 7, 3 ) ); */
+  /* seeds.push_back( Seed( 5, 7, 2 ) ); */
 
-  seeds.push_back( Segment( 0, 3, 1 ) );
-  seeds.push_back( Segment( 1, 4, 5 ) );
+  /* seeds.push_back( Seed( 0, 3, 1 ) ); */
+  /* seeds.push_back( Seed( 1, 4, 5 ) ); */
 
-  /* seeds.push_back( Segment( 0, 0, 14 ) ); */
-  /* seeds.push_back( Segment( 13, 20, 13 ) ); */
-  FindOptimalChain ch( seeds );
+  /* seeds.push_back( Seed( 0, 0, 14 ) ); */
+  /* seeds.push_back( Seed( 13, 20, 13 ) ); */
+
+  /* seeds.push_back( Seed( 0, 0, 14 ) ); */
+  /* seeds.push_back( Seed( 13, 20, 13 ) ); */
+
+  seeds.push_back( Seed( 3, 908, 15 ) );
+  seeds.push_back( Seed( 19, 924, 21 ) );
+  OptimalChainFinder ch( seeds );
   return 0;
 
   if( args[ "search" ].asBool() ) {

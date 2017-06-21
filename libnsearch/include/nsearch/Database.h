@@ -9,7 +9,7 @@
 #include "Kmer.h"
 
 #include "Alignment/Alignment.h"
-#include "Alignment/FindOptimalChain.h"
+#include "Alignment/OptimalChainFinder.h"
 
 class HitTracker
 {
@@ -21,8 +21,8 @@ public:
     cov.Add( start1, start1 + length );
   }
 
-  SegmentList Seeds() const {
-    SegmentList seeds;
+  SeedList Seeds() const {
+    SeedList seeds;
 
     for( auto &it : mDiagonals ) {
       auto &key = it.first;
@@ -33,7 +33,7 @@ public:
         size_t length = range.second - range.first;
         size_t start1 = range.first;
         size_t start2 = key.second + start1;
-        seeds.push_back( Segment( start1, start2, length ) );
+        seeds.push_back( Seed( start1, start2, length ) );
       }
     }
 
@@ -88,9 +88,21 @@ public:
 
     for( auto &c : candidates ) {
       if( c.second.Seeds().size() > 1 ) {
-        FindOptimalChain optimalChain( c.second.Seeds() );
-        std::cout << "Number of seeds" << c.second.Seeds().size() << std::endl;
-        std::cout << " Optimal chain size " << optimalChain.OptimalChain().size() << std::endl;
+        if( (*c.first).identifier == "AF189721.1 Citrobacter amalonaticus beta-lactamase CTX-M-8 precursor (blaCTX-M-8) gene, complete cds"
+            && query.identifier == "0-632-AY954516.1 Escherichia coli beta-lactamase CTX-M-39 gene, complete cds" )
+          {
+          OptimalChainFinder optimalChain( c.second.Seeds() );
+
+          std::cout << "=======" << std::endl;
+          std::cout << (*c.first).identifier << std::endl;
+          std::cout << query.identifier << std::endl;
+          std::cout << (*c.first).Length() << std::endl;
+          for( auto &s : c.second.Seeds() ) {
+            std::cout << s.s1 << " " << s.s2 << " " << s.length << std::endl;
+          }
+          std::cout << "Number of seeds" << c.second.Seeds().size() << std::endl;
+          std::cout << " Optimal chain size " << optimalChain.OptimalChain().size() << std::endl;
+        }
       }
     }
 
