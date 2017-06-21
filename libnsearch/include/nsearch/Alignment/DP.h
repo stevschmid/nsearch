@@ -213,10 +213,10 @@ protected:
   AlignmentParams mAP;
 };
 
-class BandedDPAlign : public DPAlign
+class BandedGlobalAlign : public DPAlign
 {
 public:
-  BandedDPAlign( const Sequence &A, const Sequence &B, AlignmentParams ap, size_t bandWidth )
+  BandedGlobalAlign( const Sequence &A, const Sequence &B, AlignmentParams ap, size_t bandWidth )
     : DPAlign( A, B, ap ), mBandWidth( bandWidth )
   {
   }
@@ -235,11 +235,14 @@ public:
     size_t lastCursor = 0;
 
     for( size_t y = 1; y < mHeight; y++ ) {
+
       size_t cursor = mWidth * float( y + 1 ) / float( mHeight );
 
       size_t xFirst = ( cursor > mBandWidth ) ? ( cursor - mBandWidth ) : 0;
       size_t xLast = ( cursor + mBandWidth < mWidth - 1 ) ? ( cursor + mBandWidth ) : ( mWidth - 1 );
 
+      // Make sure we can connect to the previous row
+      // (in case we jump far)
       if( xFirst > lastCursor ) {
         xFirst = lastCursor;
       }

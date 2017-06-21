@@ -171,7 +171,7 @@ int main( int argc, const char **argv ) {
   ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
   ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
 
-  BandedDPAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5 );
+  BandedGlobalAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5 );
   dp.ComputeMatrix();
   std::cout << dp.Cigar() << std::endl;
   dp.DebugPrint( true );
