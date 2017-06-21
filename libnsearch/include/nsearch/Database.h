@@ -12,6 +12,7 @@
 #include "Alignment/Ranges.h"
 #include "Alignment/HitTracker.h"
 #include "Alignment/OptimalChainFinder.h"
+#include "Alignment/DP.h"
 
 class Database {
   typedef std::pair< size_t, const Sequence* > SequenceInfo;
@@ -51,17 +52,6 @@ public:
     });
 
     // Compute the optimal chain for each candidate
-    class Candidate  {
-    public:
-      const Sequence *seq;
-      SeedList optimalChain;
-
-      Candidate( const Sequence *seq, const SeedList &optimalChain )
-        : seq( seq ), optimalChain( optimalChain )
-      {
-      }
-    };
-
     std::multimap< OptimalChainFinder, const Sequence* > highscore;
 
     // Sort candidates based on the score of the optimal chain
@@ -75,8 +65,22 @@ public:
     }
 
     // Now align the candidates
+    AlignmentParams ap;
+    ap.matchScore = 2;
+    ap.mismatchScore = -3;
+    ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
+    ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
+
+    static GuidedBandedGlobalAlign *dp = NULL;
     SequenceList list;
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
+      const OptimalChainFinder &ocf = it->first;
+      const Sequence &reference = *it->second;
+
+      if( dp == NULL ) {
+        dp = new GuidedBandedGlobalAlign( query, reference, ap, 16, ocf.OptimalChain() );
+      }
+      dp->ComputeMatrix();
       list.push_back( *(*it).second );
 
       if( list.size() >= maxHits )

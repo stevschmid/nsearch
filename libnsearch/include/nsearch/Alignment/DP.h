@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdio.h>
 
+#include <set>
 #include <string>
 #include <sstream>
 #include <cassert>
@@ -94,6 +95,14 @@ public:
   }
 
   virtual void ComputeMatrix() = 0;
+
+  int Score() const {
+    size_t x, y;
+    if( !TracebackStartingPosition( x, y ) )
+      return MININT;
+
+    return cell( x, y ).score;
+  }
 
   std::string Cigar() const {
     size_t x, y;
@@ -213,56 +222,110 @@ protected:
   AlignmentParams mAP;
 };
 
-class BandedGlobalAlign : public DPAlign
+class GuidedBandedGlobalAlign : public DPAlign
 {
+  class GuidePoint {
+  public:
+    size_t x, y;
+
+    bool operator<( const GuidePoint &other ) const {
+      if( y < other.y )
+        return true;
+      if( y > other.y )
+        return false;
+      return x < other.x;
+    }
+
+    GuidePoint( size_t x = 0, size_t y = 0 )
+      : x( x ), y ( y )
+    {
+    }
+  };
+
 public:
-  BandedGlobalAlign( const Sequence &A, const Sequence &B, AlignmentParams ap, size_t bandWidth )
+  GuidedBandedGlobalAlign( const Sequence &A, const Sequence &B, AlignmentParams ap, size_t bandWidth, const SeedList &chain = SeedList() )
     : DPAlign( A, B, ap ), mBandWidth( bandWidth )
   {
+    for( auto &pos : chain ) {
+      mGuidePoints.insert( GuidePoint( pos.s1, pos.s2 ) );
+      mGuidePoints.insert( GuidePoint( pos.s1 + pos.length, pos.s2 + pos.length ) );
+    }
+
+    if( !mGuidePoints.empty() ) {
+      // Start position must intersect with matrix
+      auto &fgp = *mGuidePoints.begin();
+      if( fgp.x != 0 && fgp.y != 0 ){
+        size_t offset = std::min( fgp.x, fgp.y );
+        mGuidePoints.insert( GuidePoint( fgp.x - offset, fgp.y - offset ) );
+      }
+
+      // End position must intersect with matrix
+      auto &lgp = *mGuidePoints.rbegin();
+      if( lgp.x != mWidth - 1 && lgp.y != mHeight - 1 ) {
+        size_t offset = std::min( mWidth - 1 - lgp.x, mHeight - 1 - lgp.y );
+        mGuidePoints.insert( GuidePoint( lgp.x + offset, lgp.y + offset ) );
+      }
+    } else {
+      // Straight diagonal
+      mGuidePoints.insert( GuidePoint( 0, 0 ) );
+      mGuidePoints.insert( GuidePoint( mWidth - 1, mHeight - 1 ) );
+    }
   }
 
   void ComputeMatrix() {
-    for( size_t x = 0; x < mWidth; x++ ) {
-      if( x > mBandWidth )
-        break;
+    if( mGuidePoints.empty() )
+      return;
 
-      ComputeCell( x, 0 );
-    }
-
-    size_t xFirst;
-    size_t xLast;
+    size_t yStart = (*mGuidePoints.begin()).y;
+    size_t yEnd = (*mGuidePoints.rbegin()).y;
 
     size_t lastCursor = 0;
 
-    for( size_t y = 1; y < mHeight; y++ ) {
+    for( size_t y = yStart; y <= yEnd; y++ ) {
+      // Current guide point
+      auto currentIt = mGuidePoints.upper_bound( GuidePoint( y, 0 ) );
+      if( currentIt != mGuidePoints.begin() ) {
+        currentIt--;
+      }
+      const GuidePoint& currentGP = *currentIt;
 
-      size_t cursor = mWidth * float( y + 1 ) / float( mHeight );
+      // Next guide point
+      auto nextIt = mGuidePoints.upper_bound( currentGP );
+      assert( nextIt != mGuidePoints.end() );
+      const GuidePoint& nextGP = *nextIt;
+
+      float ratio = float( y - currentGP.y ) / float( nextGP.y - currentGP.y );
+      size_t cursor = currentGP.x + ratio * ( nextGP.x - currentGP.x);
 
       size_t xFirst = ( cursor > mBandWidth ) ? ( cursor - mBandWidth ) : 0;
       size_t xLast = ( cursor + mBandWidth < mWidth - 1 ) ? ( cursor + mBandWidth ) : ( mWidth - 1 );
 
       // Make sure we can connect to the previous row
       // (in case we jump far)
-      if( xFirst > lastCursor ) {
+      if( xFirst > lastCursor )
         xFirst = lastCursor;
-      }
+      lastCursor = cursor;
 
-      std::cout << "xfirst " << xFirst << " cursor " << cursor << " xlast " << xLast << std::endl;
-
+      /* std::cout << "Y " << y */
+      /*   << " CurrentGP " << "(" << currentGP.x << "," << currentGP.y << ")" */
+      /*   << " NextGP " << "(" << nextGP.x << "," << nextGP.y << ")" */
+      /*   << std::endl; */
+      /* std::cout << "Ratio " << ratio << std::endl; */
+      /* std::cout << "Cursor " << cursor << std::endl; */
       for( size_t x = xFirst; x <= xLast; x++ ) {
         ComputeCell( x, y );
-      } // for x
-
-      lastCursor = cursor;
+      }
     } // for y
   }
 
   bool TracebackStartingPosition( size_t &x, size_t &y ) const {
+    // Needleman Wunsch
     x = mWidth - 1;
     y = mHeight - 1;
     return true;
   }
 
-protected:
+private:
   size_t mBandWidth;
+  std::multiset< GuidePoint > mGuidePoints;
 };

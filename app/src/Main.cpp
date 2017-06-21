@@ -148,11 +148,11 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
     qryReader >> seq;
 
     SequenceList candidates = db.Query( seq );
-    std::cout << seq.identifier << std::endl;
-    for( auto &candidate : candidates ) {
-      std::cout << " " << candidate.identifier << std::endl;
-    }
-    std::cout << "===" << std::endl;
+    /* std::cout << seq.identifier << std::endl; */
+    /* for( auto &candidate : candidates ) { */
+    /*   std::cout << " " << candidate.identifier << std::endl; */
+    /* } */
+    /* std::cout << "===" << std::endl; */
   }
 
   return true;
@@ -171,11 +171,13 @@ int main( int argc, const char **argv ) {
   ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
   ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
 
-  BandedGlobalAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5 );
-  dp.ComputeMatrix();
-  std::cout << dp.Cigar() << std::endl;
-  dp.DebugPrint( true );
-  return 1;
+  /* SeedList chain; */
+  /* chain.push_back( Seed( 1, 0, 3 ) ); */
+  /* GuidedBandedGlobalAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5, chain ); */
+  /* dp.ComputeMatrix(); */
+  /* std::cout << dp.Cigar() << std::endl; */
+  /* dp.DebugPrint( true ); */
+  /* return 1; */
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
