@@ -110,16 +110,29 @@ public:
       return left.second->score < right.second->score;
     });
 
+    mOptimalChain.clear();
     if( bestSolution != solutions.end() ) {
       Rect::Ref rect = bestSolution->second;
-      mOptimalChain.clear();
       while( rect ) {
         mOptimalChain.push_back( Seed( rect->x1, rect->y1, rect->x2 - rect->x1 ) );
         rect = rect->prev;
       }
       std::reverse( mOptimalChain.begin(), mOptimalChain.end() );
     }
+
+    mScore = 0;
+    for( auto &s : mOptimalChain ) {
+      mScore += s.length;
+    }
   };
+
+  size_t Score() const {
+    return mScore;
+  }
+
+  bool operator<( const OptimalChainFinder &other) const {
+    return Score() < other.Score();
+  }
 
   SeedList OptimalChain() const {
     return mOptimalChain;
@@ -127,4 +140,5 @@ public:
 
 private:
   SeedList mOptimalChain;
+  size_t mScore;
 };

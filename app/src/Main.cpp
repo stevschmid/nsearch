@@ -148,9 +148,11 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
     qryReader >> seq;
 
     SequenceList candidates = db.Query( seq );
+    std::cout << seq.identifier << std::endl;
     for( auto &candidate : candidates ) {
-      /* std::cout << seq << "," << candidate << std::endl; */
+      std::cout << " " << candidate.identifier << std::endl;
     }
+    std::cout << "===" << std::endl;
   }
 
   return true;

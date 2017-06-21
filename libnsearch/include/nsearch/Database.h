@@ -50,35 +50,38 @@ public:
       }
     });
 
-    for( auto &c : candidates ) {
-      OptimalChainFinder optimalChain( c.second.Seeds() );
+    // Compute the optimal chain for each candidate
+    class Candidate  {
+    public:
+      const Sequence *seq;
+      SeedList optimalChain;
 
-      /* std::cout << "=======" << std::endl; */
-      /* std::cout << (*c.first).identifier << std::endl; */
-      /* std::cout << query.identifier << std::endl; */
-      /* std::cout << (*c.first).Length() << std::endl; */
-      /* for( auto &s : c.second.Seeds() ) { */
-      /*   std::cout << s.s1 << " " << s.s2 << " " << s.length << std::endl; */
-      /* } */
-      /* std::cout << "Number of seeds" << c.second.Seeds().size() << std::endl; */
-      /* std::cout << " Optimal chain size " << optimalChain.OptimalChain().size() << std::endl; */
+      Candidate( const Sequence *seq, const SeedList &optimalChain )
+        : seq( seq ), optimalChain( optimalChain )
+      {
+      }
+    };
+
+    std::multimap< OptimalChainFinder, const Sequence* > highscore;
+
+    // Sort candidates based on the score of the optimal chain
+    for( auto &c : candidates ) {
+      const Sequence *seq = c.first;
+      const HitTracker &hitTracker = c.second;
+
+      // Compute optimal chain
+      OptimalChainFinder ocf( hitTracker.Seeds() );
+      highscore.insert( std::pair< OptimalChainFinder, const Sequence* >( ocf, seq ) );
     }
 
-    // Sort candidates by coverage
-    /* std::set< std::pair< Coverage, const Sequence* > > sortedCandidates; */
-    /* for( auto &c : candidates ) */
-    /*   sortedCandidates.insert( std::pair< Coverage, const Sequence* >( c.second, c.first ) ); */
-
-    /* // Now score the candidates */
+    // Now align the candidates
     SequenceList list;
-    /* for( auto it = sortedCandidates.rbegin(); it != sortedCandidates.rend(); ++it ) { */
-    /*   /1* std::cout << "Candidate " << (*it).first.CoveredFraction() << std::endl; *1/ */
-    /*   list.push_back( *(*it).second ); */
+    for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
+      list.push_back( *(*it).second );
 
-    /*   if( list.size() >= maxHits ) */
-    /*     break; */
-    /* } */
-    /* /1* std::cout << "====== " << std::endl; *1/ */
+      if( list.size() >= maxHits )
+        break;
+    }
 
     return list;
   }
