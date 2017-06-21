@@ -41,6 +41,18 @@ TEST_CASE( "OptimalChainFinder" )  {
     REQUIRE( optimalChain[ 1 ] == Seed( 7, 4, 3 ) );
   }
 
+  SECTION( "Seed order should not matter" ) {
+    SeedList seeds;
+    seeds.push_back( Seed( 0, 0, 2 ) );
+    seeds.push_back( Seed( 2, 2, 2 ) );
+    OptimalChainFinder ch( seeds );
+    REQUIRE( ch.OptimalChain().size() == 2 );
+
+    std::reverse( seeds.begin(), seeds.end() );
+    OptimalChainFinder chRev( seeds );
+    REQUIRE( chRev.OptimalChain().size() == 2 );
+  }
+
   {
     // https://github.com/seqan/seqan/issues/2082
     SeedList seeds;

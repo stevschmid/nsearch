@@ -58,6 +58,7 @@ public:
       rects.push_back( rect );
     }
 
+    // Seed order should not matter:
     // For the same x-value, x2 (rectangle end) needs to come before x1 (rectangle start)
     // (since we need the previous rect in the x1 case)
     // Insertion order is guaranteed in C++11
