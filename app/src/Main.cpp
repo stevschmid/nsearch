@@ -10,6 +10,8 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
+#include <nsearch/Alignment/FindOptimalChain.h>
+
 #include "Stats.h"
 #include "WorkerQueue.h"
 
@@ -160,6 +162,23 @@ int main( int argc, const char **argv ) {
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
+
+  SegmentList seeds;
+  /* seeds.push_back( Segment( 0, 0, 2 ) ); */
+  /* seeds.push_back( Segment( 3, 5, 2 ) ); */
+  /* seeds.push_back( Segment( 4, 2, 3 ) ); */
+  /* seeds.push_back( Segment( 9, 9, 2 ) ); */
+  /* seeds.push_back( Segment( 7, 9, 1 ) ); */
+  /* seeds.push_back( Segment( 3, 7, 3 ) ); */
+  /* seeds.push_back( Segment( 5, 7, 2 ) ); */
+
+  seeds.push_back( Segment( 0, 3, 1 ) );
+  seeds.push_back( Segment( 1, 4, 5 ) );
+
+  /* seeds.push_back( Segment( 0, 0, 14 ) ); */
+  /* seeds.push_back( Segment( 13, 20, 13 ) ); */
+  FindOptimalChain ch( seeds );
+  return 0;
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

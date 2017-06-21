@@ -8,17 +8,8 @@
 #include "Aligner.h"
 #include "Kmer.h"
 
-class Seed {
-public:
-  size_t start1, start2, length;
-
-  Seed( size_t start1, size_t start2, size_t length )
-    : start1( start1 ), start2( start2 ), length( length )
-  {
-  }
-};
-
-typedef std::deque< Seed > SeedList;
+#include "Alignment/Alignment.h"
+#include "Alignment/FindOptimalChain.h"
 
 class HitTracker
 {
@@ -30,8 +21,8 @@ public:
     cov.Add( start1, start1 + length );
   }
 
-  SeedList Seeds() const {
-    SeedList seeds;
+  SegmentList Seeds() const {
+    SegmentList seeds;
 
     for( auto &it : mDiagonals ) {
       auto &key = it.first;
@@ -42,7 +33,7 @@ public:
         size_t length = range.second - range.first;
         size_t start1 = range.first;
         size_t start2 = key.second + start1;
-        seeds.push_back( Seed( start1, start2, length ) );
+        seeds.push_back( Segment( start1, start2, length ) );
       }
     }
 
@@ -97,13 +88,9 @@ public:
 
     for( auto &c : candidates ) {
       if( c.second.Seeds().size() > 1 ) {
+        FindOptimalChain optimalChain( c.second.Seeds() );
         std::cout << "Number of seeds" << c.second.Seeds().size() << std::endl;
-        /* for( auto &s : c.second.Seeds() ) { */
-        /*   std::cout << "Seed " << s.start1 << " " << s.start2 << " " << s.length << std::endl; */
-
-        /*   std::cout << query.Subsequence( s.start1, s.length ) << std::endl; */
-        /*   std::cout << c.first->Subsequence( s.start2, s.length ) << std::endl; */
-        /* } */
+        std::cout << " Optimal chain size " << optimalChain.OptimalChain().size() << std::endl;
       }
     }
 

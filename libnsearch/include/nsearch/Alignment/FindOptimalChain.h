@@ -87,7 +87,7 @@ public:
         std::cout << " (left end)" << std::endl;
 #endif
 
-        // Find the closest solution which is <= y1
+        // Find the closest rectangle which can precede this one
         auto closest = lessOrEqualThan( solutions, rect->y1 );
         if( closest != solutions.end() ) {
           std::shared_ptr< Rect > closestRect = (*closest).second;
@@ -108,7 +108,7 @@ public:
         std::cout << " (right end)" << std::endl;
 #endif
 
-        // Find competing solutions
+        // Find competing, higher up rectangles
         auto competitor = greaterOrEqualThan( solutions, rect->y1 );
         std::cout << "search for y2 >= " << rect->y1 << std::endl;
         if( competitor == solutions.end() ) {
