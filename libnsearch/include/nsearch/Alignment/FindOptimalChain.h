@@ -39,13 +39,14 @@ public:
       if( set.size() == 0 )
         return set.end();
 
-      auto it = set.upper_bound( value );
+      auto it = set.lower_bound( value );
       while( (*it).first > value && it != set.begin() ) {
         it--;
       }
 
-      if( (*it).first > value )
+      if( (*it).first > value ) {
         return set.end();
+      }
 
       return it;
     };
@@ -108,8 +109,16 @@ public:
 #endif
 
         // Find competing solutions
-        auto competitor = greaterOrEqualThan( solutions, rect->y2 );
-        solutions.insert( competitor, std::pair< size_t, std::shared_ptr< Rect > >( rect->y2, rect ) );
+        auto competitor = greaterOrEqualThan( solutions, rect->y1 );
+        std::cout << "search for y2 >= " << rect->y1 << std::endl;
+        if( competitor == solutions.end() ) {
+          std::cout << "competitor not found " << std::endl;
+        } else {
+          std::cout << "competitor found " << std::endl;
+        }
+        if( competitor == solutions.end() || competitor->second->score < rect->score ) {
+          solutions.insert( competitor, std::pair< size_t, std::shared_ptr< Rect > >( rect->y2, rect ) );
+        }
 
         // Delete competing solutions this one has beat (higher up but lower score)
         auto it = competitor;
@@ -123,14 +132,22 @@ public:
       }
     }
 
-    Rect *rect = (*solutions.rbegin()).second.get();
-    mOptimalChain.clear();
-    while( rect ) {
-      mOptimalChain.push_back( Segment( rect->x1, rect->y1, rect->x2 - rect->x1 ) );
-      rect = rect->prev;
-    }
+    auto bestSolution = std::max_element( solutions.begin(), solutions.end(), [](
+          const std::pair< size_t, std::shared_ptr< Rect > > &left,
+          const std::pair< size_t, std::shared_ptr< Rect > > &right )
+    {
+      return left.second->score < right.second->score;
+    });
 
-    std::reverse( mOptimalChain.begin(), mOptimalChain.end() );
+    if( bestSolution != solutions.end() ) {
+      Rect *rect = bestSolution->second.get();
+      mOptimalChain.clear();
+      while( rect ) {
+        mOptimalChain.push_back( Segment( rect->x1, rect->y1, rect->x2 - rect->x1 ) );
+        rect = rect->prev;
+      }
+      std::reverse( mOptimalChain.begin(), mOptimalChain.end() );
+    }
 
 #ifndef NDEBUG
     std::cout << "Optimal Chain " << std::endl;;
