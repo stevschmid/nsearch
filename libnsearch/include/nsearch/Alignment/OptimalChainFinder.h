@@ -14,29 +14,32 @@ class OptimalChainFinder
 {
   class Rect {
   public:
+    typedef std::shared_ptr< Rect > Ref;
+
     size_t x1, x2;
     size_t y1, y2;
     int score;
-    Rect *prev;
+    Ref prev;
 
     Rect( size_t x1, size_t x2, size_t y1, size_t y2, size_t score )
-      : x1( x1 ), x2( x2 ), y1( y1 ), y2( y2 ), score( score ), prev( NULL )
+      : x1( x1 ), x2( x2 ), y1( y1 ), y2( y2 ), score( score )
     {
     }
   };
 
-  typedef std::shared_ptr< Rect > RectRef;
+  typedef std::multimap< size_t, Rect::Ref > RectsByCoordinate;
+  typedef std::deque< Rect::Ref > RectRefs;
 
 public:
   OptimalChainFinder( const SeedList &seeds ) {
-    std::deque< RectRef > rects;
-    std::multimap< size_t, RectRef > points;
-    std::multimap< size_t, RectRef > solutions;
+    RectRefs rects;
+    RectsByCoordinate points;
+    RectsByCoordinate solutions;
 
-    auto greaterOrEqualThan = []( const std::multimap< size_t, RectRef >& set, size_t value ) {
+    auto greaterOrEqualThan = []( const RectsByCoordinate& set, size_t value ) {
       return set.lower_bound( value );
     };
-    auto lessOrEqualThan = []( const std::multimap< size_t, RectRef >& set, size_t value ) {
+    auto lessOrEqualThan = []( const RectsByCoordinate& set, size_t value ) {
       if( set.size() == 0 )
         return set.end();
 
@@ -48,7 +51,7 @@ public:
     };
 
     for( auto &seed : seeds ) {
-      RectRef rect( new Rect( seed.s1, seed.s1 + seed.length, seed.s2, seed.s2 + seed.length, seed.length ) );
+      Rect::Ref rect( new Rect( seed.s1, seed.s1 + seed.length, seed.s2, seed.s2 + seed.length, seed.length ) );
       rects.push_back( rect );
     }
 
@@ -57,17 +60,17 @@ public:
     // (since we need the previous rect in the x1 case)
     // Insertion order is guaranteed in C++11
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, RectRef >( rect->x2, rect ) );
+      points.insert( std::pair< size_t, Rect::Ref >( rect->x2, rect ) );
     }
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, RectRef >( rect->x1, rect ) );
+      points.insert( std::pair< size_t, Rect::Ref >( rect->x1, rect ) );
     }
 
     // Go through each point, from left to right
     for( auto &p : points ) {
 
       size_t px = p.first;
-      RectRef rect = p.second;
+      Rect::Ref rect = p.second;
 
       if( px == rect->x1 ) {
         // Left end of rectangle
@@ -75,8 +78,8 @@ public:
         // Find the closest rectangle which can precede this one
         auto closest = lessOrEqualThan( solutions, rect->y1 );
         if( closest != solutions.end() ) {
-          RectRef closestRect = (*closest).second;
-          rect->prev = closestRect.get();
+          Rect::Ref closestRect = (*closest).second;
+          rect->prev = closestRect;
           rect->score += closestRect->score;
         }
       } else {
@@ -85,7 +88,7 @@ public:
         // Find competing, higher up rectangles
         auto competitor = greaterOrEqualThan( solutions, rect->y1 );
         if( competitor == solutions.end() || competitor->second->score < rect->score ) {
-          solutions.insert( competitor, std::pair< size_t, RectRef >( rect->y2, rect ) );
+          solutions.insert( competitor, std::pair< size_t, Rect::Ref >( rect->y2, rect ) );
         }
 
         // Delete competing solutions this one has beat (higher up but lower score)
@@ -101,14 +104,14 @@ public:
     }
 
     auto bestSolution = std::max_element( solutions.begin(), solutions.end(), [](
-          const std::pair< size_t, RectRef > &left,
-          const std::pair< size_t, RectRef > &right )
+          const std::pair< size_t, Rect::Ref > &left,
+          const std::pair< size_t, Rect::Ref > &right )
     {
       return left.second->score < right.second->score;
     });
 
     if( bestSolution != solutions.end() ) {
-      Rect *rect = bestSolution->second.get();
+      Rect::Ref rect = bestSolution->second;
       mOptimalChain.clear();
       while( rect ) {
         mOptimalChain.push_back( Seed( rect->x1, rect->y1, rect->x2 - rect->x1 ) );

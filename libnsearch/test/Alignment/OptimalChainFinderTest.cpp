@@ -55,13 +55,13 @@ TEST_CASE( "OptimalChainFinder" )  {
   {
     // https://github.com/seqan/seqan/issues/2082
     SeedList seeds;
-    seeds.push_back( Seed( 0, 0, 14 ) );
-    seeds.push_back( Seed( 13, 20, 13 ) );
+    seeds.push_back( Seed( 0, 0, 100 ) );
+    seeds.push_back( Seed( 95, 95, 10 ) );
     OptimalChainFinder ch( seeds );
 
     SeedList optimalChain = ch.OptimalChain();
     REQUIRE( optimalChain.size() == 1 );
-    REQUIRE( optimalChain[ 0 ] == Seed( 0, 0, 14 ) );
+    REQUIRE( optimalChain[ 0 ] == Seed( 0, 0, 100 ) );
   }
 
   {
