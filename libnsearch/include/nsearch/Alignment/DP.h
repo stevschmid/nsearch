@@ -1,8 +1,10 @@
 #pragma once
 
 #include <iostream>
+#include <stdio.h>
+
 #include <string>
-#include <vector>
+#include <sstream>
 #include <cassert>
 
 #include "../Utils.h"
@@ -91,11 +93,67 @@ public:
     }
   }
 
-protected:
-  /* virtual const Cell& TracebackStartingCell() const = 0; */
   virtual void ComputeMatrix() = 0;
 
-  void Traceback();
+  std::string Cigar() const {
+    size_t x, y;
+    if( !TracebackStartingPosition( x, y ) )
+      return "";
+
+    std::string aln;
+    while( true ) {
+      const Cell &cur = cell( x, y );
+      if( cur.score <= MININT )
+        break;
+
+      if( cur.score == cur.hGap ) {
+        // go left
+        if( x == 0 )
+          break;
+
+        x--;
+        aln += 'I';
+      } else if( cur.score == cur.vGap ) {
+        // go up
+        if( y == 0 )
+          break;
+
+        aln += 'D';
+        y--;
+      } else {
+        // go diagonal
+        if( x == 0 || y == 0 )
+          break;
+
+        x--;
+        y--;
+        aln += 'M';
+      }
+    }
+
+    std::stringstream cigar;
+    char lastChar = 0;
+    size_t lastCharCount = 0;
+    for( auto it = aln.rbegin(); it != aln.rend(); it++ ) {
+      if( *it != lastChar ) {
+        if( lastChar ) {
+          cigar << lastCharCount << lastChar;
+        }
+        lastChar = *it;
+        lastCharCount = 0;
+      }
+      lastCharCount++;
+    }
+    if( lastChar ) {
+      cigar << lastCharCount << lastChar;
+    }
+
+    return cigar.str();
+  }
+
+protected:
+  virtual bool TracebackStartingPosition( size_t &x, size_t &y ) const = 0;
+
   void ComputeCell( size_t x, size_t y ) {
     Cell& cur = cell( x, y );
 
@@ -136,6 +194,12 @@ protected:
     int vGap = MININT;
     int hGap = MININT;
   };
+
+  inline const Cell& cell( size_t x, size_t y ) const {
+    assert( y >= 0 && y < mHeight );
+    assert( x >= 0 && x < mWidth );
+    return mCells[ y * mWidth + x ];
+  }
 
   inline Cell& cell( size_t x, size_t y ) {
     assert( y >= 0 && y < mHeight );
@@ -188,6 +252,12 @@ public:
 
       lastCursor = cursor;
     } // for y
+  }
+
+  bool TracebackStartingPosition( size_t &x, size_t &y ) const {
+    x = mWidth - 1;
+    y = mHeight - 1;
+    return true;
   }
 
 protected:

@@ -10,7 +10,7 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
-#include <nsearch/Alignment/OptimalChainFinder.h>
+#include <nsearch/Alignment/DP.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -164,6 +164,18 @@ int main( int argc, const char **argv ) {
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
+
+  AlignmentParams ap;
+  ap.matchScore = 2;
+  ap.mismatchScore = -3;
+  ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
+  ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
+
+  BandedDPAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5 );
+  dp.ComputeMatrix();
+  std::cout << dp.Cigar() << std::endl;
+  dp.DebugPrint( true );
+  return 1;
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
