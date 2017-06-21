@@ -2,13 +2,8 @@
 
 #include "Alignment.h"
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
-
 #include <deque>
 #include <map>
-#include <set>
 
 /*
  * Solving the two-dimensional chain problem
@@ -53,7 +48,6 @@ public:
     };
 
     for( auto &seed : seeds ) {
-      /* std::cout << "Seed " << seed.s1 << " " << seed.s2 << " len " << seed.length << std::endl; */
       RectRef rect( new Rect( seed.s1, seed.s1 + seed.length, seed.s2, seed.s2 + seed.length, seed.length ) );
       rects.push_back( rect );
     }
@@ -75,19 +69,8 @@ public:
       size_t px = p.first;
       RectRef rect = p.second;
 
-#ifndef NDEBUG
-      std::cout << "(px " << px << ") Rect " << rect->x1 << " "
-        << rect->y1 << " "
-        << rect->x2 << " "
-        << rect->y2 << " "
-        << " score: " << rect->score;
-#endif
-
       if( px == rect->x1 ) {
         // Left end of rectangle
-#ifndef NDEBUG
-        std::cout << " (left end)" << std::endl;
-#endif
 
         // Find the closest rectangle which can precede this one
         auto closest = lessOrEqualThan( solutions, rect->y1 );
@@ -95,31 +78,12 @@ public:
           RectRef closestRect = (*closest).second;
           rect->prev = closestRect.get();
           rect->score += closestRect->score;
-#ifndef NDEBUG
-          std::cout << " Closest entry found " <<
-            (*closest).second->x1 << " " <<
-            (*closest).second->y1 << " " <<
-            (*closest).second->x2 << " " <<
-            (*closest).second->y2 << " " << std::endl;
-          std::cout << " New score " << rect->score << std::endl;
-#endif
         }
       } else {
         // Right end of rectangle
-#ifndef NDEBUG
-        std::cout << " (right end)" << std::endl;
-#endif
 
         // Find competing, higher up rectangles
         auto competitor = greaterOrEqualThan( solutions, rect->y1 );
-#ifndef NDEBUG
-        std::cout << "search for y2 >= " << rect->y1 << std::endl;
-        if( competitor == solutions.end() ) {
-          std::cout << "competitor not found " << std::endl;
-        } else {
-          std::cout << "competitor found " << std::endl;
-        }
-#endif
         if( competitor == solutions.end() || competitor->second->score < rect->score ) {
           solutions.insert( competitor, std::pair< size_t, RectRef >( rect->y2, rect ) );
         }
@@ -152,14 +116,6 @@ public:
       }
       std::reverse( mOptimalChain.begin(), mOptimalChain.end() );
     }
-
-#ifndef NDEBUG
-    std::cout << "Optimal Chain " << std::endl;;
-    for( auto& s : mOptimalChain ) {
-      std::cout << " " << s.s1 << " " << s.s2 << " " << std::endl;
-    }
-#endif
-
   };
 
   SeedList OptimalChain() const {

@@ -35,7 +35,6 @@ TEST_CASE( "OptimalChainFinder" )  {
     OptimalChainFinder ch( seeds );
 
     SeedList optimalChain = ch.OptimalChain();
-    std::cout << optimalChain.size() << std::endl;
     REQUIRE( optimalChain.size() == 2 );
     REQUIRE( optimalChain[ 0 ] == Seed( 3, 0, 4 ) );
     REQUIRE( optimalChain[ 1 ] == Seed( 7, 4, 3 ) );
