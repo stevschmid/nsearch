@@ -3,7 +3,7 @@
 #include <map>
 #include <cassert>
 
-class RangeMerger {
+class Ranges {
 public:
   size_t NumRanges() const {
     return mRanges.size();
@@ -40,11 +40,11 @@ public:
     }
   }
 
-  bool operator<( const RangeMerger &other ) const {
+  bool operator<( const Ranges &other ) const {
     return Size() < other.Size();
   }
 
-  const std::map< size_t, size_t >& Ranges() const {
+  const std::map< size_t, size_t >& Get() const {
     return mRanges;
   }
 
