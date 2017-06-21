@@ -5,10 +5,10 @@
 #include <vector>
 #include <cassert>
 
-#define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
 
-typedef struct {
+class AlignmentParams {
+public:
   int matchScore = 1;
   int mismatchScore = -2;
 
@@ -18,22 +18,33 @@ typedef struct {
   int interiorGapOpenPenalty = 10;
   int interiorGapExtensionPenalty = 1;
 
-  int xDrop = 16;
-} AlignmentParams;
+  int GapOpenScore( bool terminal ) const {
+    return -( terminal ? terminalGapOpenPenalty : interiorGapOpenPenalty );
+  }
 
-class SemiGappedAlign
+  int GapExtensionScore( int length, bool terminal ) const {
+    return length * -( terminal ? terminalGapExtensionPenalty : interiorGapExtensionPenalty );
+  }
+
+  int GapScore( int length, bool terminal ) const {
+    return GapOpenScore( terminal ) + GapExtensionScore( length, terminal );
+  }
+};
+
+class BandedDP
 {
 public:
-  SemiGappedAlign( const std::string &A, const std::string &B, AlignmentParams ap = AlignmentParams() )
+  BandedDP( const std::string &A, const std::string &B, size_t bandWidth, AlignmentParams ap = AlignmentParams() )
     : mWidth( A.length() + 1 ), mHeight( B.length() + 1 ),
       mSequenceA( A ), mSequenceB( B ),
+      mBandWidth( bandWidth ),
       mAP( ap )
   {
     // Todo: Intelligent cache
     mCells = new Cell[ mWidth * mHeight ];
   }
 
-  ~SemiGappedAlign() {
+  ~BandedDP() {
     delete[] mCells;
   }
 
@@ -43,82 +54,69 @@ public:
 
     cell( 0, 0 ).score = 0;
 
-    auto gapOpenScore = [&]( bool terminal ) { return -( terminal ? mAP.terminalGapOpenPenalty : mAP.interiorGapOpenPenalty ); };
-    auto gapExtensionScore = [&]( int length, bool terminal ) { return length * -( terminal ? mAP.terminalGapExtensionPenalty : mAP.interiorGapExtensionPenalty ); };
-    auto gapScore = [&]( int length, bool terminal ) { return gapOpenScore( terminal ) + gapExtensionScore( length, terminal ); };
-
     for( x = 1; x < mWidth; x++ ) {
-      Cell& cur = cell( x, 0 );
-      int score = gapScore( x, true );
-      if( score < -mAP.xDrop )
+      if( x > mBandWidth )
         break;
-      cur.score = cur.hGap = score;
-    }
-    rowWidth = x;
-
-    for( y = 1; y < mHeight; y++ ) {
-      Cell& cur = cell( 0, y );
-      int score = gapScore( y, true );
-      if( score < -mAP.xDrop )
-        break;
-      cur.score = cur.vGap = score;
+      ComputeCell( x, 0 );
     }
 
-    int bestScore = 0;
+    size_t xFirst;
+    size_t xLast;
 
-    size_t xStart = 1;
-    size_t xEnd = mWidth;
+    size_t lastCursor = 0;
 
     for( size_t y = 1; y < mHeight; y++ ) {
+      size_t cursor = mWidth * float( y + 1 ) / float( mHeight );
 
-      for( size_t x = xStart; x < rowWidth; x++ ) {
-        Cell& cur = cell( x, y );
-        const Cell& leftCell = cell( x - 1, y );
-        const Cell& upperCell = cell( x, y - 1 );
-        const Cell& leftUpperCell = cell( x - 1, y - 1 );
+      size_t xFirst = ( cursor > mBandWidth ) ? ( cursor - mBandWidth ) : 0;
+      size_t xLast = ( cursor + mBandWidth < mWidth - 1 ) ? ( cursor + mBandWidth ) : ( mWidth - 1 );
 
-        cur.hGap = std::max(
-            leftCell.score + gapScore( 1, x == mWidth - 1 ),
-            leftCell.hGap + gapExtensionScore( 1, x == mWidth - 1 ) );
-
-        cur.vGap = std::max(
-            upperCell.score + gapScore( 1, y == mHeight -1 ),
-            upperCell.vGap + gapExtensionScore( 1, y == mHeight - 1 ) );
-
-        int diagScore = leftUpperCell.score + ( mSequenceA[ x - 1 ] == mSequenceB[ y - 1 ] ? mAP.matchScore : mAP.mismatchScore );
-
-        int score = std::max( { diagScore, cur.hGap, cur.vGap } );
-
-        if( bestScore - score > mAP.xDrop ) {
-          if( x == xStart ) {
-            xStart++;
-          }
-        } else {
-          xEnd = x;
-          cur.score = score;
-          bestScore = std::max( cur.score, bestScore );
-        }
+      if( xFirst > lastCursor ) {
+        xFirst = lastCursor;
       }
 
-      if( xEnd < rowWidth - 1 ) {
-        // Shorter bounds next row
-        rowWidth = xEnd + 1;
-      } else {
-        // This row is not finished yet, so extend it until x-drop test fails
-        while( rowWidth < mWidth ) {
-          Cell& cur = cell( rowWidth, y );
-          const Cell& prev = cell( rowWidth - 1, y );
-          int score = prev.hGap + gapExtensionScore( 1, x == mWidth - 1 );
-          if( bestScore - score > mAP.xDrop ) {
-            break;
-          }
+      std::cout << "xfirst " << xFirst << " cursor " << cursor << " xlast " << xLast << std::endl;
 
-          cur.score = cur.hGap = score;
-          rowWidth++;
-        }
-      }
+      for( size_t x = xFirst; x <= xLast; x++ ) {
+        ComputeCell( x, y );
+      } // for x
 
+      lastCursor = cursor;
+    } // for y
+  }
+
+  void ComputeCell( size_t x, size_t y ) {
+    Cell& cur = cell( x, y );
+
+    if( x == 0 && y == 0 ) {
+      cur.score = cur.vGap = cur.hGap = 0;
+      return;
     }
+
+    if( y == 0 ) {
+      cur.score = cur.hGap = mAP.GapScore( x, true );
+      return;
+    }
+
+    if( x == 0 ) {
+      cur.score = cur.vGap = mAP.GapScore( y, true );
+      return;
+    }
+
+    const Cell& leftCell = cell( x - 1, y );
+    const Cell& upperCell = cell( x, y - 1 );
+    const Cell& leftUpperCell = cell( x - 1, y - 1 );
+
+    cur.hGap = std::max(
+        leftCell.score + mAP.GapScore( 1, x == mWidth - 1 ),
+        leftCell.hGap + mAP.GapExtensionScore( 1, x == mWidth - 1 ) );
+
+    cur.vGap = std::max(
+        upperCell.score + mAP.GapScore( 1, y == mHeight -1 ),
+        upperCell.vGap + mAP.GapExtensionScore( 1, y == mHeight - 1 ) );
+
+    int diagScore = leftUpperCell.score + ( mSequenceA[ x - 1 ] == mSequenceB[ y - 1 ] ? mAP.matchScore : mAP.mismatchScore );
+    cur.score = std::max( { diagScore, cur.hGap, cur.vGap } );
   }
 
   void DebugPrint( bool withArrows = false ) {
@@ -171,12 +169,13 @@ private:
     int hGap = MININT;
   };
 
-  Cell& cell( size_t x, size_t y ) {
+  inline Cell& cell( size_t x, size_t y ) {
     assert( y >= 0 && y < mHeight );
     assert( x >= 0 && x < mWidth );
     return mCells[ y * mWidth + x ];
   }
 
+  size_t mBandWidth;
   size_t mWidth, mHeight;
   std::string mSequenceA, mSequenceB;
   Cell *mCells;
