@@ -10,6 +10,10 @@ public:
     : s1( s1 ), s2( s2 ), length( length )
   {
   }
+
+  bool operator==( const Seed &other ) const {
+    return s1 == other.s1 && s2 == other.s2 && length == other.length;
+  }
 };
 
 typedef std::deque< Seed > SeedList;

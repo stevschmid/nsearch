@@ -2,6 +2,10 @@
 
 #include "Alignment.h"
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
+
 #include <deque>
 #include <map>
 #include <set>
