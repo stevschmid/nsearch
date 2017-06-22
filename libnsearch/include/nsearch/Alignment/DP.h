@@ -17,8 +17,8 @@ public:
   int matchScore = 1;
   int mismatchScore = -2;
 
-  int terminalGapOpenPenalty = 1;
-  int terminalGapExtensionPenalty = 1;
+  int terminalGapOpenPenalty = 0;
+  int terminalGapExtensionPenalty = 0;
 
   int interiorGapOpenPenalty = 10;
   int interiorGapExtensionPenalty = 1;
@@ -87,6 +87,13 @@ public:
 
       mNumCellsReserved = mWidth * mHeight;
       mCells = new Cell[ mNumCellsReserved ];
+    }
+
+    // Reset matrix
+    Cell *cell = mCells;
+    while( cell < mCells + mNumCellsReserved ) {
+      cell->score = cell->vGap = cell->hGap = MININT;
+      cell++;
     }
 
     // Now Compute Matrix
@@ -242,13 +249,16 @@ protected:
     const Cell& upperCell = cell( x, y - 1 );
     const Cell& leftUpperCell = cell( x - 1, y - 1 );
 
+    bool terminalRow = ( y == 0 || y == mHeight - 1 );
+    bool terminalCol = ( x == 0 || x == mWidth - 1 );
+
     cur.hGap = std::max(
-        leftCell.score + mAP.GapScore( 1, x == mWidth - 1 ),
-        leftCell.hGap + mAP.GapExtensionScore( 1, x == mWidth - 1 ) );
+        leftCell.score + mAP.GapScore( 1, terminalRow ),
+        leftCell.hGap + mAP.GapExtensionScore( 1, terminalRow ) );
 
     cur.vGap = std::max(
-        upperCell.score + mAP.GapScore( 1, y == mHeight -1 ),
-        upperCell.vGap + mAP.GapExtensionScore( 1, y == mHeight - 1 ) );
+        upperCell.score + mAP.GapScore( 1, terminalCol ),
+        upperCell.vGap + mAP.GapExtensionScore( 1, terminalCol ) );
 
     int diagScore = leftUpperCell.score +
       ( DoNucleotidesMatch( mSequenceA[ x - 1 ], mSequenceB[ y - 1 ] ) ? mAP.matchScore : mAP.mismatchScore );
@@ -341,12 +351,25 @@ public:
     if( mGuidePoints.empty() )
       return;
 
-    size_t yStart = (*mGuidePoints.begin()).y;
-    size_t yEnd = (*mGuidePoints.rbegin()).y;
+    const GuidePoint& firstGP = *mGuidePoints.begin();
+    const GuidePoint& lastGP = *mGuidePoints.rbegin();
 
     size_t lastCursor = 0;
 
-    for( size_t y = yStart; y <= yEnd; y++ ) {
+    // Calculate from 0, 0 to intersection point (first GP)
+    if( firstGP.x == 0 ) {
+      // Intersects at Y-axis
+      for( size_t y = 0; y < firstGP.y; y++ ) {
+        ComputeCell( 0, y );
+      }
+    } else {
+      // Intersects at X-axis
+      for( size_t x = 0; x < firstGP.x; x++ ) {
+        ComputeCell( x, 0 );
+      }
+    }
+
+    for( size_t y = firstGP.y; y <= lastGP.y; y++ ) {
       // Current guide point
       auto currentIt = mGuidePoints.upper_bound( GuidePoint( y, 0 ) );
       if( currentIt != mGuidePoints.begin() ) {
@@ -381,12 +404,52 @@ public:
         ComputeCell( x, y );
       }
     } // for y
+
+    // Calculate from last GP to end of matrix
+    if( lastGP.x == mWidth - 1 ) {
+      // Intersects at Y-axis
+      for( size_t y = lastGP.y; y < mHeight; y++ ) {
+        ComputeCell( mWidth - 1, y );
+      }
+    } else {
+      // Intersects at X-axis
+      for( size_t x = lastGP.x; x < mWidth; x++ ) {
+        ComputeCell( x, mHeight - 1 );
+      }
+    }
   }
 
-  bool TracebackStartingPosition( size_t &x, size_t &y ) const {
-    // Needleman Wunsch
-    x = mWidth - 1;
-    y = mHeight - 1;
+  bool TracebackStartingPosition( size_t &tx, size_t &ty ) const {
+    /* size_t bestX = 0, bestY = 0; */
+    /* int bestScore = MININT; */
+
+    /* for( size_t x = 0; x < mWidth; x++ ) { */
+    /*   const Cell &cur = cell( x, mHeight - 1 ); */
+    /*   if( cur.score > bestScore ) { */
+    /*     bestScore = cur.score; */
+    /*     bestX = x; */
+    /*     bestY = mHeight - 1; */
+    /*   } */
+    /* } */
+
+    /* for( size_t y = 0; y < mHeight; y++ ) { */
+    /*   const Cell &cur = cell( mWidth - 1, y ); */
+    /*   if( cur.score > bestScore ) { */
+    /*     bestScore = cur.score; */
+    /*     bestX = mWidth - 1; */
+    /*     bestY = y; */
+    /*   } */
+    /* } */
+
+    /* tx = bestX; */
+    /* ty = bestY; */
+
+    /* return true; */
+
+    // Needleman-Wunsch
+    tx = mWidth - 1;
+    ty = mHeight - 1;
+
     return true;
   }
 

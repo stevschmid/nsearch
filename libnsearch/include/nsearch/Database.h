@@ -66,16 +66,25 @@ public:
 
     Alignment aln;
     SequenceList list;
+    std::cout << "===" << std::endl;
+    std::cout << "QRY " << query.identifier << std::endl;
+
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
       const OptimalChainFinder &ocf = it->first;
       const Sequence &reference = *it->second;
 
       int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain() );
       list.push_back( *(*it).second );
+      std::cout << reference.identifier << std::endl;
+      std::cout << " Chain Score " << ocf.Score()
+        << std::endl << " Align Score: " << score
+        << std::endl << " Ref Length " << reference.Length() << std::endl;
+      /* mDP.DebugPrint(); */
 
       if( list.size() >= maxHits )
         break;
     }
+    std::cout << "=====" << std::endl;
 
     return list;
   }
