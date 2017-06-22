@@ -19,7 +19,7 @@ class Database {
 
 public:
   Database( int wordSize )
-    : mWordSize( wordSize )
+    : mWordSize( wordSize ), mDP( 16 )
   {
     // Sequences have to fit in the calculated hash
     assert( wordSize * 2 <= sizeof( size_t ) * 8 );
@@ -37,7 +37,7 @@ public:
     });
   }
 
-  SequenceList Query( const Sequence &query, int maxHits = 10 ) const {
+  SequenceList Query( const Sequence &query, int maxHits = 10 ) {
     std::unordered_map< const Sequence*, HitTracker > candidates;
 
     // Go through each kmer, find candidates
@@ -64,23 +64,13 @@ public:
       highscore.insert( std::pair< OptimalChainFinder, const Sequence* >( ocf, seq ) );
     }
 
-    // Now align the candidates
-    AlignmentParams ap;
-    ap.matchScore = 2;
-    ap.mismatchScore = -3;
-    ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
-    ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
-
-    static GuidedBandedGlobalAlign *dp = NULL;
+    Alignment aln;
     SequenceList list;
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
       const OptimalChainFinder &ocf = it->first;
       const Sequence &reference = *it->second;
 
-      if( dp == NULL ) {
-        dp = new GuidedBandedGlobalAlign( query, reference, ap, 16, ocf.OptimalChain() );
-      }
-      dp->ComputeMatrix();
+      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain() );
       list.push_back( *(*it).second );
 
       if( list.size() >= maxHits )
@@ -95,6 +85,7 @@ public:
   }
 
 private:
+  GuidedBandedGlobalAlign mDP;
   int mWordSize;
   SequenceList mSequences;
   std::unordered_map< Sequence, std::deque< SequenceInfo > > mWords;

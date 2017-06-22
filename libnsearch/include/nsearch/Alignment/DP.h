@@ -36,19 +36,76 @@ public:
   }
 };
 
+class Alignment {
+public:
+  Alignment()
+    : mScore( 0 )
+  {
+  }
+
+  Alignment( const Sequence &A, const Sequence &B, int score, const std::string &cigar )
+    : mSequenceA( A ), mSequenceB( B ), mScore( score ), mCigar( cigar )
+  {
+  }
+
+  int Score() const {
+    return mScore;
+  }
+
+  std::string Cigar() const {
+    return mCigar;
+  }
+
+private:
+  Sequence mSequenceA, mSequenceB;
+  int mScore;
+  std::string mCigar;
+};
+
 class DPAlign {
 public:
-  DPAlign( const Sequence &A, const Sequence &B, AlignmentParams ap = AlignmentParams() )
-    : mSequenceA( A ), mSequenceB( B ), mAP( ap )
+  DPAlign( AlignmentParams ap = AlignmentParams() )
+    : mAP( ap ), mWidth( 0 ), mHeight( 0 ), mCells( NULL ), mNumCellsReserved( 0 )
   {
+  }
+
+  int Align( const Sequence &A, const Sequence &B, Alignment *aln = NULL ) {
+    mSequenceA = A;
+    mSequenceB = B;
+
     // Todo: Intelligent cache
     mWidth = A.Length() + 1;
     mHeight = B.Length() + 1;
-    mCells = new Cell[ mWidth * mHeight ];
+
+    // Enlarge cells if we need more
+    // (Reserving memory is a heavy task)
+    if( mNumCellsReserved < mWidth * mHeight ) {
+      std::cout << "Resize cells " << mNumCellsReserved << " -> " << (mWidth * mHeight) << std::endl;
+
+      if( mCells )
+        delete[] mCells;
+
+      mNumCellsReserved = mWidth * mHeight;
+      mCells = new Cell[ mNumCellsReserved ];
+    }
+
+    // Now Compute Matrix
+    ComputeMatrix();
+
+    // Populate aln
+    int score = Score();
+
+    if( aln ) {
+      *aln = Alignment( A, B, score, Cigar() );
+    }
+
+    return score;
   }
 
   virtual ~DPAlign() {
-    delete[] mCells;
+    if( mCells ) {
+      delete[] mCells;
+    }
   }
 
   void DebugPrint( bool withArrows = false ) {
@@ -219,6 +276,7 @@ protected:
   size_t mWidth, mHeight;
   Sequence mSequenceA, mSequenceB;
   Cell *mCells;
+  size_t mNumCellsReserved;
   AlignmentParams mAP;
 };
 
@@ -243,9 +301,14 @@ class GuidedBandedGlobalAlign : public DPAlign
   };
 
 public:
-  GuidedBandedGlobalAlign( const Sequence &A, const Sequence &B, AlignmentParams ap, size_t bandWidth, const SeedList &chain = SeedList() )
-    : DPAlign( A, B, ap ), mBandWidth( bandWidth )
+  GuidedBandedGlobalAlign( size_t bandWidth, AlignmentParams ap = AlignmentParams() )
+    : DPAlign( ap ), mBandWidth( bandWidth )
   {
+  }
+
+  int AlignAlongChain( const Sequence &A, const Sequence &B, const SeedList &chain = SeedList(), Alignment *aln = NULL ) {
+    mGuidePoints.clear();
+
     for( auto &pos : chain ) {
       mGuidePoints.insert( GuidePoint( pos.s1, pos.s2 ) );
       mGuidePoints.insert( GuidePoint( pos.s1 + pos.length, pos.s2 + pos.length ) );
@@ -261,15 +324,17 @@ public:
 
       // End position must intersect with matrix
       auto &lgp = *mGuidePoints.rbegin();
-      if( lgp.x != mWidth - 1 && lgp.y != mHeight - 1 ) {
-        size_t offset = std::min( mWidth - 1 - lgp.x, mHeight - 1 - lgp.y );
+      if( lgp.x != A.Length() && lgp.y != B.Length() ) {
+        size_t offset = std::min( A.Length() - lgp.x, B.Length() - lgp.y );
         mGuidePoints.insert( GuidePoint( lgp.x + offset, lgp.y + offset ) );
       }
     } else {
       // Straight diagonal
       mGuidePoints.insert( GuidePoint( 0, 0 ) );
-      mGuidePoints.insert( GuidePoint( mWidth - 1, mHeight - 1 ) );
+      mGuidePoints.insert( GuidePoint( A.Length(), B.Length() ) );
     }
+
+    return Align( A, B, aln );
   }
 
   void ComputeMatrix() {
