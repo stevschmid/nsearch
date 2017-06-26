@@ -73,11 +73,12 @@ public:
       const OptimalChainFinder &ocf = it->first;
       const Sequence &reference = *it->second;
 
-      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain() );
+      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain(), &aln );
       list.push_back( *(*it).second );
       std::cout << reference.identifier << std::endl;
       std::cout << " Chain Score " << ocf.Score()
         << std::endl << " Align Score: " << score
+        << std::endl << " Alignment: " << aln
         << std::endl << " Ref Length " << reference.Length() << std::endl;
       /* mDP.DebugPrint(); */
 

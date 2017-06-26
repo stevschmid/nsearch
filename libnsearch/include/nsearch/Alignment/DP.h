@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <set>
+#include <deque>
 #include <string>
 #include <sstream>
 #include <cassert>
@@ -36,6 +37,28 @@ public:
   }
 };
 
+typedef enum {
+  CIGAR_UNKNOWN   = 0,
+  CIGAR_MATCH     = 'M',
+  CIGAR_DELETION  = 'D',
+  CIGAR_INSERTION = 'I',
+} CigarOp;
+
+class CigarEntry {
+public:
+  int length;
+  CigarOp op;
+
+  CigarEntry()
+    : CigarEntry( 0, CIGAR_UNKNOWN )
+  {
+  }
+
+  CigarEntry( int length, CigarOp op )
+    : length( length ), op( op ) { }
+};
+typedef std::deque< CigarEntry > Cigar;
+
 class Alignment {
 public:
   Alignment()
@@ -43,7 +66,7 @@ public:
   {
   }
 
-  Alignment( const Sequence &A, const Sequence &B, int score, const std::string &cigar )
+  Alignment( const Sequence &A, const Sequence &B, int score, const Cigar &cigar = ::Cigar()  )
     : mSequenceA( A ), mSequenceB( B ), mScore( score ), mCigar( cigar )
   {
   }
@@ -52,14 +75,67 @@ public:
     return mScore;
   }
 
-  std::string Cigar() const {
+  ::Cigar Cigar() const {
     return mCigar;
+  }
+
+  friend std::ostream &operator<<( std::ostream &os, const Alignment &aln ) {
+    int qcount = 0;
+    int tcount = 0;
+
+    std::string q;
+    std::string t;
+
+    const Sequence &query = aln.mSequenceA;
+    const Sequence &target = aln.mSequenceB;
+
+    const ::Cigar &cigar = aln.Cigar();
+
+    for( auto &c : cigar ) {
+      for( int i = 0; i < c.length; i++ ) {
+        switch( c.op ) {
+          case CIGAR_INSERTION:
+            t += '.';
+            q += query[ qcount++ ];
+            break;
+
+          case CIGAR_DELETION:
+            q += '.';
+            t += target[ tcount++ ];
+            break;
+
+          case CIGAR_MATCH:
+            q += query[ qcount++ ];
+            t += target[ tcount++ ];
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    if( cigar.front().op != CIGAR_MATCH ) {
+      t = t.substr( cigar.front().length );
+      q = q.substr( cigar.front().length );
+    }
+
+    if( cigar.back().op != CIGAR_MATCH ) {
+      t = t.substr( 0, t.length() - cigar.back().length );
+      q = q.substr( 0, q.length() - cigar.back().length );
+    }
+
+
+    os << std::endl;
+    os << "REF " << t << std::endl;
+    os << "QRY " << q << std::endl;
+    return os;
   }
 
 private:
   Sequence mSequenceA, mSequenceB;
   int mScore;
-  std::string mCigar;
+  ::Cigar mCigar;
 };
 
 class DPAlign {
@@ -168,12 +244,12 @@ public:
     return cell( x, y ).score;
   }
 
-  std::string Cigar() const {
+  Cigar Cigar() const {
     size_t x, y;
     if( !TracebackStartingPosition( x, y ) )
-      return "";
+      return Cigar();
 
-    std::string aln;
+    std::deque< CigarOp > rawOps;
     while( true ) {
       const Cell &cur = cell( x, y );
       if( cur.score <= MININT )
@@ -185,14 +261,14 @@ public:
           break;
 
         x--;
-        aln += 'I';
+        rawOps.push_back( CIGAR_INSERTION );
       } else if( cur.score == cur.vGap ) {
         // go up
         if( y == 0 )
           break;
 
-        aln += 'D';
         y--;
+        rawOps.push_back( CIGAR_DELETION );
       } else {
         // go diagonal
         if( x == 0 || y == 0 )
@@ -200,28 +276,28 @@ public:
 
         x--;
         y--;
-        aln += 'M';
+        rawOps.push_back( CIGAR_MATCH );
       }
     }
 
-    std::stringstream cigar;
-    char lastChar = 0;
-    size_t lastCharCount = 0;
-    for( auto it = aln.rbegin(); it != aln.rend(); it++ ) {
-      if( *it != lastChar ) {
-        if( lastChar ) {
-          cigar << lastCharCount << lastChar;
+    ::Cigar cigar;
+    CigarOp lastOp = CIGAR_UNKNOWN;
+    size_t lastOpCount = 0;
+    for( auto it = rawOps.rbegin(); it != rawOps.rend(); it++ ) {
+      if( *it != lastOp ) {
+        if( lastOp != CIGAR_UNKNOWN ) {
+          cigar.push_back( CigarEntry( lastOpCount, lastOp ) );
         }
-        lastChar = *it;
-        lastCharCount = 0;
+        lastOp = *it;
+        lastOpCount = 0;
       }
-      lastCharCount++;
+      lastOpCount++;
     }
-    if( lastChar ) {
-      cigar << lastCharCount << lastChar;
+    if( lastOp != CIGAR_UNKNOWN ) {
+      cigar.push_back( CigarEntry( lastOpCount, lastOp ) );
     }
 
-    return cigar.str();
+    return cigar;
   }
 
 protected:
