@@ -15,14 +15,14 @@
 
 class AlignmentParams {
 public:
-  int matchScore = 1;
-  int mismatchScore = -2;
+  int matchScore = 2;
+  int mismatchScore = -4;
 
-  int terminalGapOpenPenalty = 0;
-  int terminalGapExtensionPenalty = 0;
+  int terminalGapOpenPenalty = 2;
+  int terminalGapExtensionPenalty = 1;
 
-  int interiorGapOpenPenalty = 10;
-  int interiorGapExtensionPenalty = 1;
+  int interiorGapOpenPenalty = 20;
+  int interiorGapExtensionPenalty = 2;
 
   int GapOpenScore( bool terminal ) const {
     return -( terminal ? terminalGapOpenPenalty : interiorGapOpenPenalty );
@@ -85,6 +85,7 @@ public:
 
     std::string q;
     std::string t;
+    std::string a;
 
     const Sequence &query = aln.mSequenceA;
     const Sequence &target = aln.mSequenceB;
@@ -97,14 +98,17 @@ public:
           case CIGAR_INSERTION:
             t += '.';
             q += query[ qcount++ ];
+            a += ' ';
             break;
 
           case CIGAR_DELETION:
             q += '.';
             t += target[ tcount++ ];
+            a += ' ';
             break;
 
           case CIGAR_MATCH:
+            a += DoNucleotidesMatch( query[ qcount ], target[ tcount ] ) ? '|' : ' ';
             q += query[ qcount++ ];
             t += target[ tcount++ ];
             break;
@@ -115,20 +119,10 @@ public:
       }
     }
 
-    if( cigar.front().op != CIGAR_MATCH ) {
-      t = t.substr( cigar.front().length );
-      q = q.substr( cigar.front().length );
-    }
-
-    if( cigar.back().op != CIGAR_MATCH ) {
-      t = t.substr( 0, t.length() - cigar.back().length );
-      q = q.substr( 0, q.length() - cigar.back().length );
-    }
-
-
     os << std::endl;
-    os << "REF " << t << std::endl;
     os << "QRY " << q << std::endl;
+    os << "    " << a << std::endl;
+    os << "REF " << t << std::endl;
     return os;
   }
 
