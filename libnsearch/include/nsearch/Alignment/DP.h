@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip>
 #include <stdio.h>
 
 #include <set>
@@ -80,8 +81,6 @@ public:
   }
 
   friend std::ostream &operator<<( std::ostream &os, const Alignment &aln ) {
-    int qcount = 0;
-    int tcount = 0;
 
     std::string q;
     std::string t;
@@ -90,25 +89,67 @@ public:
     const Sequence &query = aln.mSequenceA;
     const Sequence &target = aln.mSequenceB;
 
-    const ::Cigar &cigar = aln.Cigar();
+    size_t queryStart = 0;
+    size_t targetStart = 0;
+    size_t queryEnd = query.Length();
+    size_t targetEnd = target.Length();
+
+    ::Cigar cigar = aln.Cigar();
+
+    // Dont take left terminal gap into account
+    if( !cigar.empty() ) {
+      const CigarEntry &fce = cigar.front();
+      if( fce.op != CIGAR_MATCH ) {
+        if( fce.op == CIGAR_DELETION ) {
+          targetStart = fce.length;
+        } else {
+          queryStart = fce.length;
+        }
+        cigar.pop_front();
+      }
+    }
+
+    // Don't take right terminal gap into account
+    if( !cigar.empty() ) {
+      const CigarEntry &bce = cigar.back();
+      if( bce.op != CIGAR_MATCH ) {
+        if( bce.op == CIGAR_DELETION ) {
+          targetEnd = target.Length() - bce.length;
+        } else {
+          queryEnd = query.Length() - bce.length;
+        }
+        cigar.pop_back();
+      }
+    }
+
+    bool match;
+    size_t numMatches = 0;
+    size_t numCols = 0;
+
+    size_t qcount = queryStart;
+    size_t tcount = targetStart;
 
     for( auto &c : cigar ) {
       for( int i = 0; i < c.length; i++ ) {
         switch( c.op ) {
           case CIGAR_INSERTION:
-            t += '.';
+            t += '-';
             q += query[ qcount++ ];
             a += ' ';
             break;
 
           case CIGAR_DELETION:
-            q += '.';
+            q += '-';
             t += target[ tcount++ ];
             a += ' ';
             break;
 
           case CIGAR_MATCH:
-            a += DoNucleotidesMatch( query[ qcount ], target[ tcount ] ) ? '|' : ' ';
+            match = DoNucleotidesMatch( query[ qcount ], target[ tcount ] );
+            if( match ) {
+              numMatches++;
+            }
+            a += match ? '|' : ' ';
             q += query[ qcount++ ];
             t += target[ tcount++ ];
             break;
@@ -116,13 +157,19 @@ public:
           default:
             break;
         }
+
+        numCols++;
       }
     }
 
     os << std::endl;
-    os << "QRY " << q << std::endl;
-    os << "    " << a << std::endl;
-    os << "REF " << t << std::endl;
+    os << "QRY " << std::setw( 10 ) << ( queryStart + 1 ) << " " << q << " " << ( queryEnd ) << std::endl;
+    os << std::string( 15, ' ' ) << a << std::endl;
+    os << "REF " << std::setw( 10 ) << ( targetStart + 1 ) << " " << t << " " << ( targetEnd ) << std::endl;
+    os << std::endl;
+    os <<  numCols << " cols, " << numMatches << " ids (" <<
+      std::fixed << std::setprecision( 1 ) << ( 100.0f * float( numMatches ) / float( numCols ) )
+      << "%)" << std::endl;
     return os;
   }
 
@@ -415,7 +462,7 @@ public:
     if( !mGuidePoints.empty() ) {
       // Start position must intersect with matrix
       auto &fgp = *mGuidePoints.begin();
-      if( fgp.x != 0 && fgp.y != 0 ){
+      if( fgp.x != 0 && fgp.y != 0 ) {
         size_t offset = std::min( fgp.x, fgp.y );
         mGuidePoints.insert( GuidePoint( fgp.x - offset, fgp.y - offset ) );
       }
@@ -438,6 +485,10 @@ public:
   void ComputeMatrix() {
     if( mGuidePoints.empty() )
       return;
+
+    /* for( auto &gp : mGuidePoints ) { */
+    /*   std::cout << "GuidePoint x: " << gp.x << " y: " << gp.y << std::endl; */
+    /* } */
 
     const GuidePoint& firstGP = *mGuidePoints.begin();
     const GuidePoint& lastGP = *mGuidePoints.rbegin();

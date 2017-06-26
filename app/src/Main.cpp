@@ -165,20 +165,6 @@ int main( int argc, const char **argv ) {
         true, // help
         "nsearch");
 
-  AlignmentParams ap;
-  ap.matchScore = 2;
-  ap.mismatchScore = -3;
-  ap.interiorGapOpenPenalty = ap.terminalGapOpenPenalty = 5;
-  ap.interiorGapExtensionPenalty = ap.terminalGapExtensionPenalty = 2;
-
-  /* SeedList chain; */
-  /* chain.push_back( Seed( 1, 0, 3 ) ); */
-  /* GuidedBandedGlobalAlign dp( "GACTTAC", "CGTGAATTCAT", ap, 5, chain ); */
-  /* dp.ComputeMatrix(); */
-  /* std::cout << dp.Cigar() << std::endl; */
-  /* dp.DebugPrint( true ); */
-  /* return 1; */
-
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 

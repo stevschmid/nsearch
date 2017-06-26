@@ -19,7 +19,7 @@ class Database {
 
 public:
   Database( int wordSize )
-    : mWordSize( wordSize ), mDP( 16 )
+    : mWordSize( wordSize ), mDP( 32 )
   {
     // Sequences have to fit in the calculated hash
     assert( wordSize * 2 <= sizeof( size_t ) * 8 );
@@ -68,26 +68,25 @@ public:
 
     Alignment aln;
     SequenceList list;
-    std::cout << "===" << std::endl;
-    std::cout << "QRY " << query.identifier << std::endl;
 
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
       const OptimalChainFinder &ocf = it->first;
       const Sequence &reference = *it->second;
 
-      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain() );
+      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain(), &aln );
       list.push_back( *(*it).second );
 
-      std::cout << reference.identifier << std::endl;
+      std::cout << "Query " << query.identifier << std::endl;
+      std::cout << "Reference " << reference.identifier << std::endl;
+      std::cout << aln << std::endl;
       std::cout << " Chain Score " << ocf.Score()
         << std::endl << " Align Score: " << score
-        /* << std::endl << " Alignment: " << aln */
         << std::endl << " Ref Length " << reference.Length() << std::endl;
+      /* mDP.DebugPrint( true ); */
 
       if( list.size() >= maxHits )
         break;
     }
-    std::cout << "=====" << std::endl;
 
     return list;
   }
