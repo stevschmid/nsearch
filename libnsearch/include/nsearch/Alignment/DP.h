@@ -459,7 +459,7 @@ public:
 
     for( size_t y = firstGP.y; y <= lastGP.y; y++ ) {
       // Current guide point
-      auto currentIt = mGuidePoints.upper_bound( GuidePoint( y, 0 ) );
+      auto currentIt = mGuidePoints.upper_bound( GuidePoint( 0, y ) );
       if( currentIt != mGuidePoints.begin() ) {
         currentIt--;
       }
