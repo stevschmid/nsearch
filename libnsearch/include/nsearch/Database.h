@@ -43,11 +43,13 @@ public:
     // Go through each kmer, find candidates
     Kmers kmers( query, mWordSize );
     kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      for( auto &seqInfo : mWords.at( kmer ) ) {
-        size_t candidatePos = seqInfo.first;
-        const Sequence *candidateSeq = seqInfo.second;
-
-        candidates[ candidateSeq ].AddHit( pos, candidatePos, mWordSize );
+      auto mapIt = mWords.find( kmer );
+      if( mapIt != mWords.end() ) {
+        for( auto &seqInfo : mapIt->second ) {
+          size_t candidatePos = seqInfo.first;
+          const Sequence *candidateSeq = seqInfo.second;
+          candidates[ candidateSeq ].AddHit( pos, candidatePos, mWordSize );
+        }
       }
     });
 
