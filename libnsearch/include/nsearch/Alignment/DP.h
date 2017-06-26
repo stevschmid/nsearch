@@ -135,7 +135,7 @@ private:
 class DPAlign {
 public:
   DPAlign( AlignmentParams ap = AlignmentParams() )
-    : mAP( ap ), mWidth( 0 ), mHeight( 0 ), mCells( NULL ), mNumCellsReserved( 0 )
+    : mAP( ap ), mWidth( 0 ), mHeight( 0 ), mCells( NULL ), mCellInitialized( NULL ), mNumCellsReserved( 0 )
   {
   }
 
@@ -155,16 +155,16 @@ public:
       if( mCells )
         delete[] mCells;
 
+      if( mCellInitialized )
+        delete[] mCellInitialized;
+
       mNumCellsReserved = mWidth * mHeight;
       mCells = new Cell[ mNumCellsReserved ];
+      mCellInitialized = new bool[ mNumCellsReserved ];
     }
 
     // Reset matrix
-    Cell *cell = mCells;
-    while( cell < mCells + mNumCellsReserved ) {
-      cell->score = cell->vGap = cell->hGap = MININT;
-      cell++;
-    }
+    memset( mCellInitialized, false, mNumCellsReserved * sizeof( bool ) );
 
     // Now Compute Matrix
     ComputeMatrix();
@@ -182,6 +182,10 @@ public:
   virtual ~DPAlign() {
     if( mCells ) {
       delete[] mCells;
+    }
+
+    if( mCellInitialized ) {
+      delete[] mCellInitialized;
     }
   }
 
@@ -230,7 +234,7 @@ public:
 
   virtual void ComputeMatrix() = 0;
 
-  int Score() const {
+  int Score() {
     size_t x, y;
     if( !TracebackStartingPosition( x, y ) )
       return MININT;
@@ -238,7 +242,7 @@ public:
     return cell( x, y ).score;
   }
 
-  Cigar Cigar() const {
+  Cigar Cigar() {
     size_t x, y;
     if( !TracebackStartingPosition( x, y ) )
       return Cigar();
@@ -336,26 +340,40 @@ protected:
   }
 
   struct Cell {
-    int score = MININT;
-    int vGap = MININT;
-    int hGap = MININT;
-  };
+    int score, vGap, hGap;
 
-  inline const Cell& cell( size_t x, size_t y ) const {
-    assert( y >= 0 && y < mHeight );
-    assert( x >= 0 && x < mWidth );
-    return mCells[ y * mWidth + x ];
-  }
+    Cell()
+      : Cell( MININT, MININT, MININT )
+    {
+    }
+
+    Cell( int score, int vGap, int hGap )
+      : score( score ), vGap( vGap ), hGap( hGap )
+    {
+    }
+  };
 
   inline Cell& cell( size_t x, size_t y ) {
     assert( y >= 0 && y < mHeight );
     assert( x >= 0 && x < mWidth );
-    return mCells[ y * mWidth + x ];
+
+    size_t idx = y * mWidth + x;
+
+    Cell &cur = mCells[ idx ];
+    bool &init = mCellInitialized[ idx ];
+
+    if( !init ) {
+      cur.score = cur.vGap = cur.hGap = MININT;
+      init = true;
+    }
+
+    return cur;
   }
 
   size_t mWidth, mHeight;
   Sequence mSequenceA, mSequenceB;
   Cell *mCells;
+  bool *mCellInitialized;
   size_t mNumCellsReserved;
   AlignmentParams mAP;
 };
@@ -490,32 +508,6 @@ public:
   }
 
   bool TracebackStartingPosition( size_t &tx, size_t &ty ) const {
-    /* size_t bestX = 0, bestY = 0; */
-    /* int bestScore = MININT; */
-
-    /* for( size_t x = 0; x < mWidth; x++ ) { */
-    /*   const Cell &cur = cell( x, mHeight - 1 ); */
-    /*   if( cur.score > bestScore ) { */
-    /*     bestScore = cur.score; */
-    /*     bestX = x; */
-    /*     bestY = mHeight - 1; */
-    /*   } */
-    /* } */
-
-    /* for( size_t y = 0; y < mHeight; y++ ) { */
-    /*   const Cell &cur = cell( mWidth - 1, y ); */
-    /*   if( cur.score > bestScore ) { */
-    /*     bestScore = cur.score; */
-    /*     bestX = mWidth - 1; */
-    /*     bestY = y; */
-    /*   } */
-    /* } */
-
-    /* tx = bestX; */
-    /* ty = bestY; */
-
-    /* return true; */
-
     // Needleman-Wunsch
     tx = mWidth - 1;
     ty = mHeight - 1;
