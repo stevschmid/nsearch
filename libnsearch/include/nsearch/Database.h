@@ -15,7 +15,8 @@
 #include "Alignment/DP.h"
 
 class Database {
-  typedef std::pair< size_t, const Sequence* > SequenceInfo;
+  using SequenceRef = std::shared_ptr< Sequence >;
+  using SequenceInfo = std::pair< size_t, SequenceRef >;
 
 public:
   Database( int wordSize )
@@ -27,8 +28,8 @@ public:
 
   void AddSequence( const Sequence &seq ) {
     // Save
-    mSequences.push_back( seq );
-    const Sequence *ref = &mSequences.back();
+    mSequences.push_back( std::make_shared< Sequence >( seq ) );
+    SequenceRef ref = mSequences.back();
 
     // Map words
     Kmers kmers( *ref, mWordSize );
@@ -38,7 +39,7 @@ public:
   }
 
   SequenceList Query( const Sequence &query, int maxHits = 10 ) {
-    std::unordered_map< const Sequence*, HitTracker > candidates;
+    std::unordered_map< SequenceRef, HitTracker > candidates;
 
     // Go through each kmer, find candidates
     Kmers kmers( query, mWordSize );
@@ -47,23 +48,23 @@ public:
       if( mapIt != mWords.end() ) {
         for( auto &seqInfo : mapIt->second ) {
           size_t candidatePos = seqInfo.first;
-          const Sequence *candidateSeq = seqInfo.second;
-          candidates[ candidateSeq ].AddHit( pos, candidatePos, mWordSize );
+          SequenceRef candidateSeqRef = seqInfo.second;
+          candidates[ candidateSeqRef ].AddHit( pos, candidatePos, mWordSize );
         }
       }
     });
 
     // Compute the optimal chain for each candidate
-    std::multimap< OptimalChainFinder, const Sequence* > highscore;
+    std::multimap< OptimalChainFinder, SequenceRef > highscore;
 
     // Sort candidates based on the score of the optimal chain
     for( auto &c : candidates ) {
-      const Sequence *seq = c.first;
+      SequenceRef seq = c.first;
       const HitTracker &hitTracker = c.second;
 
       // Compute optimal chain
       OptimalChainFinder ocf( hitTracker.Seeds() );
-      highscore.insert( std::pair< OptimalChainFinder, const Sequence* >( ocf, seq ) );
+      highscore.insert( std::pair< OptimalChainFinder, SequenceRef >( ocf, seq ) );
     }
 
     Alignment aln;
@@ -98,6 +99,6 @@ public:
 private:
   GuidedBandedGlobalAlign mDP;
   int mWordSize;
-  SequenceList mSequences;
+  std::deque< SequenceRef > mSequences;
   std::unordered_map< Sequence, std::deque< SequenceInfo > > mWords;
 };
