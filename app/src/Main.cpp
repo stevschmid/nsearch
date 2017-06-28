@@ -135,18 +135,19 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  Database db( 11 );
+  Database db( 11, 5 );
 
   FASTA::Reader dbReader( databasePath );
+  std::cout << "Indexing DB" << std::endl;
   while( !dbReader.EndOfFile() ) {
     dbReader >> seq;
     db.AddSequence( seq );
   }
 
+  std::cout << "Querying DB" << std::endl;
   FASTA::Reader qryReader( queryPath );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
-
     SequenceList candidates = db.Query( seq );
     /* std::cout << seq.identifier << std::endl; */
     /* for( auto &candidate : candidates ) { */

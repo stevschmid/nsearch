@@ -1,7 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-#include <set>
+#include <unordered_set>
 
 #include "Sequence.h"
 #include "Utils.h"
@@ -17,13 +17,15 @@
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
   using SequenceInfo = std::pair< size_t, SequenceRef >;
+  using SequenceMappingDatabase = std::unordered_map< Sequence, std::deque< SequenceInfo > >;
 
 public:
-  Database( int wordSize )
-    : mWordSize( wordSize ), mDP( 32 )
+  Database( int indexingWordSize, int alignmentSeedSize )
+    : mIndexingWordSize( indexingWordSize ), mAlignmentSeedSize( alignmentSeedSize ), mDP( 32 )
   {
     // Sequences have to fit in the calculated hash
-    assert( wordSize * 2 <= sizeof( size_t ) * 8 );
+    assert( indexingWordSize * 2 <= sizeof( size_t ) * 8 );
+    assert( alignmentSeedSize * 2 <= sizeof( size_t ) * 8 );
   }
 
   void AddSequence( const Sequence &seq ) {
@@ -31,25 +33,44 @@ public:
     mSequences.push_back( std::make_shared< Sequence >( seq ) );
     SequenceRef ref = mSequences.back();
 
-    // Map words
-    Kmers kmers( *ref, mWordSize );
-    kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      this->mWords[ kmer ].push_back( SequenceInfo( pos, ref ) );
-    });
+    {
+      // Kmers for Indexing
+      Kmers kmers( *ref, mIndexingWordSize );
+      kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
+        this->mIndexingDB[ kmer ].push_back( SequenceInfo( pos, ref ) );
+      });
+    }
+
+    {
+      // Kmers for Seeding
+      Kmers kmers( *ref, mAlignmentSeedSize );
+      kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
+        this->mSeedDB[ ref ][ kmer ].push_back( SequenceInfo( pos, ref ) );
+      });
+    }
   }
 
   SequenceList Query( const Sequence &query, int maxHits = 10 ) {
-    std::unordered_map< SequenceRef, HitTracker > candidates;
+    std::unordered_set< SequenceRef > rawCandidates;
 
     // Go through each kmer, find candidates
-    Kmers kmers( query, mWordSize );
+    Kmers kmers( query, mIndexingWordSize );
     kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      auto mapIt = mWords.find( kmer );
-      if( mapIt != mWords.end() ) {
-        for( auto &seqInfo : mapIt->second ) {
-          size_t candidatePos = seqInfo.first;
-          SequenceRef candidateSeqRef = seqInfo.second;
-          candidates[ candidateSeqRef ].AddHit( pos, candidatePos, mWordSize );
+      for( auto &seqInfo : mIndexingDB[ kmer ] ) {
+        SequenceRef seq = seqInfo.second;
+        rawCandidates.insert( seq );
+      }
+    });
+
+    // For each candidate, find alignment
+    std::unordered_map< SequenceRef, HitTracker > candidates;
+    Kmers kmers2( query, mAlignmentSeedSize );
+    kmers2.ForEach( [&]( const Sequence &kmer, size_t pos ) {
+      for( auto &candidate : rawCandidates ) {
+        for( auto &seqInfo : mSeedDB[ candidate ][ kmer ] ) {
+          size_t cpos = seqInfo.first;
+          SequenceRef cseq = seqInfo.second;
+          candidates[ cseq ].AddHit( pos, cpos, mAlignmentSeedSize );
         }
       }
     });
@@ -92,13 +113,11 @@ public:
     return list;
   }
 
-  size_t NumWords() const {
-    return mWords.size();
-  }
-
 private:
   GuidedBandedGlobalAlign mDP;
-  int mWordSize;
+  size_t mIndexingWordSize, mAlignmentSeedSize;
   std::deque< SequenceRef > mSequences;
-  std::unordered_map< Sequence, std::deque< SequenceInfo > > mWords;
+
+  SequenceMappingDatabase mIndexingDB;
+  std::unordered_map< SequenceRef, SequenceMappingDatabase > mSeedDB;
 };
