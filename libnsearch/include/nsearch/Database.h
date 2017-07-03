@@ -12,7 +12,7 @@
 #include "Alignment/Ranges.h"
 #include "Alignment/HitTracker.h"
 #include "Alignment/OptimalChainFinder.h"
-#include "Alignment/DP.h"
+#include "Alignment/ExtendAlign.h"
 
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
@@ -21,8 +21,12 @@ class Database {
 
 public:
   Database( int indexingWordSize, int alignmentSeedSize )
-    : mIndexingWordSize( indexingWordSize ), mAlignmentSeedSize( alignmentSeedSize ), mDP( 32 )
+    : mIndexingWordSize( indexingWordSize ), mAlignmentSeedSize( alignmentSeedSize )
   {
+    AlignmentParams ap;
+    ap.xDrop = 32;
+    mDP = ExtendAlign( ap );
+
     // Sequences have to fit in the calculated hash
     assert( indexingWordSize * 2 <= sizeof( size_t ) * 8 );
     assert( alignmentSeedSize * 2 <= sizeof( size_t ) * 8 );
@@ -75,46 +79,64 @@ public:
       }
     });
 
-    // Compute the optimal chain for each candidate
-    std::multimap< OptimalChainFinder, SequenceRef > highscore;
-
-    // Sort candidates based on the score of the optimal chain
     for( auto &c : candidates ) {
       SequenceRef seq = c.first;
       const HitTracker &hitTracker = c.second;
 
-      // Compute optimal chain
-      OptimalChainFinder ocf( hitTracker.Seeds() );
-      highscore.insert( std::pair< OptimalChainFinder, SequenceRef >( ocf, seq ) );
+      for( auto &seed : hitTracker.Seeds() ) {
+        mDP.Extend( query, *seq,
+            ExtendAlign::ExtendDirection::backwards,
+            seed.s1, seed.s2 );
+
+        mDP.Extend( query, *seq,
+            ExtendAlign::ExtendDirection::forwards,
+            seed.s1 + seed.length, seed.s2 + seed.length );
+      }
     }
+    return SequenceList();
 
-    Alignment aln;
-    SequenceList list;
+    // Extend each seed -> HSP
 
-    for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
-      const OptimalChainFinder &ocf = it->first;
-      const Sequence &reference = *it->second;
+    // Try to join HSPs together
 
-      int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain(), &aln );
-      list.push_back( *(*it).second );
+    // Sort candidates based on the score
+    /* for( auto &c : candidates ) { */
+    /*   SequenceRef seq = c.first; */
+    /*   const HitTracker &hitTracker = c.second; */
 
-      std::cout << "Query " << query.identifier << std::endl;
-      std::cout << "Reference " << reference.identifier << std::endl;
-      std::cout << aln << std::endl;
-      std::cout << " Chain Score " << ocf.Score()
-        << std::endl << " Align Score: " << score
-        << std::endl << " Ref Length " << reference.Length() << std::endl;
-      /* mDP.DebugPrint( true ); */
+    /*   // Compute optimal chain */
+    /*   OptimalChainFinder ocf( hitTracker.Seeds() ); */
+    /*   highscore.insert( std::pair< OptimalChainFinder, SequenceRef >( ocf, seq ) ); */
+    /* } */
 
-      if( list.size() >= maxHits )
-        break;
-    }
+    /* Alignment aln; */
+    /* SequenceList list; */
 
-    return list;
+    /* for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) { */
+    /*   const OptimalChainFinder &ocf = it->first; */
+    /*   const Sequence &reference = *it->second; */
+
+    /*   int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain(), &aln ); */
+    /*   list.push_back( *(*it).second ); */
+
+    /*   std::cout << "Query " << query.identifier << std::endl; */
+    /*   std::cout << "Reference " << reference.identifier << std::endl; */
+    /*   std::cout << aln << std::endl; */
+    /*   std::cout << " Chain Score " << ocf.Score() */
+    /*     << std::endl << " Align Score: " << score */
+    /*     << std::endl << " Ref Length " << reference.Length() << std::endl; */
+    /*   /1* mDP.DebugPrint( true ); *1/ */
+
+    /*   if( list.size() >= maxHits ) */
+    /*     break; */
+    /* } */
+
+    /* return list; */
   }
 
 private:
-  GuidedBandedGlobalAlign mDP;
+  /* XDropExtension mDP; */
+  ExtendAlign mDP;
   size_t mIndexingWordSize, mAlignmentSeedSize;
   std::deque< SequenceRef > mSequences;
 

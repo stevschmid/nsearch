@@ -11,6 +11,7 @@
 #include <nsearch/Aligner.h>
 
 #include <nsearch/Alignment/DP.h>
+#include <nsearch/Alignment/ExtendAlign.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -135,7 +136,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  Database db( 11, 5 );
+  Database db( 11, 7 );
 
   FASTA::Reader dbReader( databasePath );
   std::cout << "Indexing DB" << std::endl;
@@ -165,6 +166,13 @@ int main( int argc, const char **argv ) {
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
+
+  /* AlignmentParams ap; */
+  /* ap.xDrop = 32; */
+  /* ExtendAlign ea( ap ); */
+  /* int score = ea.Extend( "TTATATAGGGG", "TTATCCCCGGGG" ); */
+  /* std::cout << score << std::endl; */
+  /* return 0; */
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
