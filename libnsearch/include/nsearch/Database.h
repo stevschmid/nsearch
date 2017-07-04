@@ -80,17 +80,33 @@ public:
     });
 
     for( auto &c : candidates ) {
-      SequenceRef seq = c.first;
+      const Sequence &candidate = *c.first;
       const HitTracker &hitTracker = c.second;
 
       for( auto &seed : hitTracker.Seeds() ) {
-        mDP.Extend( query, *seq,
+        size_t leftQuery, leftCandidate;
+        int left = mDP.Extend( query, candidate,
             ExtendAlign::ExtendDirection::backwards,
-            seed.s1, seed.s2 );
+            seed.s1, seed.s2,
+            &leftQuery, &leftCandidate);
 
-        mDP.Extend( query, *seq,
+        size_t rightQuery, rightCandidate;
+        int right = mDP.Extend( query, candidate,
             ExtendAlign::ExtendDirection::forwards,
-            seed.s1 + seed.length, seed.s2 + seed.length );
+            seed.s1 + seed.length, seed.s2 + seed.length,
+            &rightQuery, &rightCandidate );
+
+        Seed ext = seed;
+        ext.s1 = leftQuery;
+        ext.s2 = leftCandidate;
+        ext.length = rightQuery - ext.s1;
+        if( ext.length != seed.length ) {
+          std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl;
+          std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl;
+          std::cout << "Length: " << ext.length << std::endl;
+          std::cout << "=========" << std::endl;
+        }
+
       }
     }
     return SequenceList();

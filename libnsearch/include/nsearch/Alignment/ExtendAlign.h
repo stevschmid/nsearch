@@ -5,6 +5,8 @@
 #include <vector>
 #include <cassert>
 
+#include "../Utils.h"
+
 #define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
 
@@ -53,10 +55,12 @@ public:
   // Heavily influenced by Blast's SemiGappedAlign function
   int Extend( const Sequence &A, const Sequence &B,
       ExtendDirection dir = ExtendDirection::forwards,
-      size_t startA = 0, size_t startB = 0 )
+      size_t startA = 0, size_t startB = 0,
+      size_t *bestA = NULL, size_t *bestB = NULL )
   {
     int score;
     size_t x, y;
+    size_t aIdx, bIdx;
 
     size_t width, height;
 
@@ -73,6 +77,13 @@ public:
       std::cout << "Enlarge row from " << mRow.capacity()
         << " to " << width << std::endl;
       mRow = Cells( width * 2 );
+    }
+
+    if( bestA ) {
+      *bestA = startA;
+    }
+    if( bestB ) {
+      *bestB = startB;
     }
 
     int bestScore = 0;
@@ -105,9 +116,10 @@ public:
       for( x = firstX; x < rowSize; x++ ) {
         int colGap = mRow[ x ].scoreGap;
 
+        aIdx = 0;
+        bIdx = 0;
         if( x > 0 ) {
           // diagScore: score at col-1, row-1
-          size_t aIdx, bIdx;
 
           if( dir == ExtendDirection::forwards ) {
             aIdx = startA + x - 1;
@@ -119,7 +131,7 @@ public:
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
 
-          score = diagScore + ( A[ aIdx ] == B[ bIdx ] ? mAP.matchScore : mAP.mismatchScore );
+          score = diagScore + ( DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] ) ? mAP.matchScore : mAP.mismatchScore );
         }
 
         // select highest score
@@ -149,6 +161,12 @@ public:
           // Check if we achieved new highscore
           if( score > bestScore ) {
             bestScore = score;
+            if( bestA ) {
+              *bestA = aIdx;
+            }
+            if( bestB ) {
+              *bestB = bIdx;
+            }
           }
 
           // Record new score
