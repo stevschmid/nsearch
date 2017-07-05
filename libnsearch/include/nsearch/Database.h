@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 
 #include "Sequence.h"
 #include "Utils.h"
@@ -20,16 +21,11 @@ class Database {
   using SequenceMappingDatabase = std::unordered_map< Sequence, std::deque< SequenceInfo > >;
 
 public:
-  Database( int indexingWordSize, int alignmentSeedSize )
-    : mIndexingWordSize( indexingWordSize ), mAlignmentSeedSize( alignmentSeedSize )
+  Database( size_t wordSize )
+    : mWordSize( wordSize )
   {
-    AlignmentParams ap;
-    ap.xDrop = 32;
-    mDP = ExtendAlign( ap );
-
     // Sequences have to fit in the calculated hash
-    assert( indexingWordSize * 2 <= sizeof( size_t ) * 8 );
-    assert( alignmentSeedSize * 2 <= sizeof( size_t ) * 8 );
+    assert( mWordSize * 2 <= sizeof( size_t ) * 8 );
   }
 
   void AddSequence( const Sequence &seq ) {
@@ -37,79 +33,142 @@ public:
     mSequences.push_back( std::make_shared< Sequence >( seq ) );
     SequenceRef ref = mSequences.back();
 
-    {
-      // Kmers for Indexing
-      Kmers kmers( *ref, mIndexingWordSize );
-      kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-        this->mIndexingDB[ kmer ].push_back( SequenceInfo( pos, ref ) );
-      });
-    }
-
-    {
-      // Kmers for Seeding
-      Kmers kmers( *ref, mAlignmentSeedSize );
-      kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-        this->mSeedDB[ ref ][ kmer ].push_back( SequenceInfo( pos, ref ) );
-      });
-    }
+    // Kmers for Indexing
+    Kmers kmers( *ref, mWordSize );
+    kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
+      this->mWordDB[ kmer ].push_back( SequenceInfo( pos, ref ) );
+    });
   }
 
   SequenceList Query( const Sequence &query, int maxHits = 10 ) {
-    std::unordered_set< SequenceRef > rawCandidates;
+    const int xDrop = 32;
+
+    std::unordered_map< SequenceRef, HitTracker > hits;
 
     // Go through each kmer, find candidates
-    Kmers kmers( query, mIndexingWordSize );
+    Kmers kmers( query, mWordSize );
     kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      for( auto &seqInfo : mIndexingDB[ kmer ] ) {
-        SequenceRef seq = seqInfo.second;
-        rawCandidates.insert( seq );
+      for( auto &seqInfo : mWordDB[ kmer ] ) {
+        size_t candidatePos = seqInfo.first;
+        SequenceRef candidateRef = seqInfo.second;
+
+        hits[ candidateRef ].AddHit( pos, candidatePos, mWordSize );
+        /* hits[ candidateRef ].push_back( Seed( pos, candidatePos, mWordSize ) ); */
       }
     });
 
-    // For each candidate, find alignment
-    std::unordered_map< SequenceRef, HitTracker > candidates;
-    Kmers kmers2( query, mAlignmentSeedSize );
-    kmers2.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      for( auto &candidate : rawCandidates ) {
-        for( auto &seqInfo : mSeedDB[ candidate ][ kmer ] ) {
-          size_t cpos = seqInfo.first;
-          SequenceRef cseq = seqInfo.second;
-          candidates[ cseq ].AddHit( pos, cpos, mAlignmentSeedSize );
-        }
+    // Order candidates by number of shared words (hits)
+    using Candidate = std::pair< SequenceRef, HitTracker >;
+    struct CandidateCompare {
+      bool operator() ( const Candidate &left, const Candidate &right ) const {
+        return left.second.Score() < right.second.Score();
       }
-    });
+    };
+    using Highscore = std::set< Candidate , CandidateCompare >;
+    Highscore highscore;
+    for( auto &h : hits ) {
+      highscore.insert( std::make_pair( h.first, h.second ) );
+    }
 
-    for( auto &c : candidates ) {
-      const Sequence &candidate = *c.first;
-      const HitTracker &hitTracker = c.second;
+    // For each candidate:
+    // - Get HSPs,
+    // - Check for good HSP (>= similarity threshold)
+    // - Join HSP together
+    // - Align
+    // - Check similarity
+    std::cout << "=====" << std::endl;
+    for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
+      const Candidate &candidate = *it;
+      const Sequence &candidateSeq = *candidate.first;
 
-      for( auto &seed : hitTracker.Seeds() ) {
+      // some yolo preliminary optimization
+      /* if( candidate.second.Score() < 0.5 * query.Length() ) { */
+      /*   continue; */
+      /* } */
+
+      // Find all HSP
+      // Sort by length
+      // Try to find best chain
+      // Fill space between with banded align
+
+      for( auto &seed : candidate.second.Seeds() ) {
+        std::cout << "Seed " << std::endl;
         size_t leftQuery, leftCandidate;
-        int left = mDP.Extend( query, candidate,
-            ExtendAlign::ExtendDirection::backwards,
+        int leftScore = mXDropExtender.Extend( query, candidateSeq,
+            xDrop,
+            AlignExtendDirection::backwards,
             seed.s1, seed.s2,
-            &leftQuery, &leftCandidate);
+            &leftQuery, &leftCandidate );
 
         size_t rightQuery, rightCandidate;
-        int right = mDP.Extend( query, candidate,
-            ExtendAlign::ExtendDirection::forwards,
+        int rightScore = mXDropExtender.Extend( query, candidateSeq,
+            xDrop,
+            AlignExtendDirection::forwards,
             seed.s1 + seed.length, seed.s2 + seed.length,
             &rightQuery, &rightCandidate );
 
-        Seed ext = seed;
-        ext.s1 = leftQuery;
-        ext.s2 = leftCandidate;
-        ext.length = rightQuery - ext.s1;
-        if( ext.length != seed.length ) {
-          std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl;
-          std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl;
-          std::cout << "Length: " << ext.length << std::endl;
-          std::cout << "=========" << std::endl;
-        }
+        /* ht.AddHit( leftQuery, leftCandidate, rightQuery - leftQuery ); */
 
+        /* int score = seed.length * mDP.AP().matchScore; // initial seed is an exact match */
+        /* score += leftScore; // left extended */
+        /* score += rightScore; // right extended */
+
+        /* if( ext.length != seed.length ) { */
+        /*   std::cout << "Length: " << ext.length << " (ext " */
+        /*     << ( ext.length - seed.length ) << ")" << std::endl; */
+        /*   std::cout << ext.s1 << " " << ext.s2 << std::endl; */
+        /*   /1* std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl; *1/ */
+        /*   /1* std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl; *1/ */
+        /*   std::cout << "=========" << std::endl; */
+        /* } */
       }
+
+
     }
     return SequenceList();
+
+    /* for( auto &c : candidates ) { */
+    /*   SequenceRef cref = c.first; */
+    /*   const Sequence &candidate = *cref; */
+    /*   const HitTracker &hitTracker = c.second; */
+
+    /*   for( auto &seed : hitTracker.Seeds() ) { */
+    /*     size_t leftQuery, leftCandidate; */
+    /*     int leftScore = mXDropExtender.Extend( query, candidate, */
+    /*         xDrop, */
+    /*         AlignExtendDirection::backwards, */
+    /*         seed.s1, seed.s2, */
+    /*         &leftQuery, &leftCandidate); */
+
+    /*     size_t rightQuery, rightCandidate; */
+    /*     int rightScore = mXDropExtender.Extend( query, candidate, */
+    /*         xDrop, */
+    /*         AlignExtendDirection::forwards, */
+    /*         seed.s1 + seed.length, seed.s2 + seed.length, */
+    /*         &rightQuery, &rightCandidate ); */
+
+    /*     Seed ext = seed; */
+    /*     ext.s1 = leftQuery; */
+    /*     ext.s2 = leftCandidate; */
+    /*     ext.length = rightQuery - ext.s1; */
+
+    /*     /1* int score = seed.length * mDP.AP().matchScore; // initial seed is an exact match *1/ */
+    /*     /1* score += leftScore; // left extended *1/ */
+    /*     /1* score += rightScore; // right extended *1/ */
+
+    /*     /1* if( ext.length != seed.length ) { *1/ */
+    /*     /1*   std::cout << "Length: " << ext.length << " (ext " *1/ */
+    /*     /1*     << ( ext.length - seed.length ) << ")" << std::endl; *1/ */
+    /*     /1*   std::cout << ext.s1 << " " << ext.s2 << std::endl; *1/ */
+    /*     /1*   /2* std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl; *2/ *1/ */
+    /*     /1*   /2* std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl; *2/ *1/ */
+    /*     /1*   std::cout << "=========" << std::endl; *1/ */
+    /*     /1* } *1/ */
+
+    /*   } */
+    /* } */
+
+    /* return SequenceList(); */
 
     // Extend each seed -> HSP
 
@@ -122,7 +181,7 @@ public:
 
     /*   // Compute optimal chain */
     /*   OptimalChainFinder ocf( hitTracker.Seeds() ); */
-    /*   highscore.insert( std::pair< OptimalChainFinder, SequenceRef >( ocf, seq ) ); */
+    /*   highscore.insert( std::make_pair( ocf, seq ) ); */
     /* } */
 
     /* Alignment aln; */
@@ -151,11 +210,9 @@ public:
   }
 
 private:
-  /* XDropExtension mDP; */
-  ExtendAlign mDP;
-  size_t mIndexingWordSize, mAlignmentSeedSize;
+  XDropExtendAlign mXDropExtender;
+  size_t mWordSize;
   std::deque< SequenceRef > mSequences;
 
-  SequenceMappingDatabase mIndexingDB;
-  std::unordered_map< SequenceRef, SequenceMappingDatabase > mSeedDB;
+  SequenceMappingDatabase mWordDB;
 };

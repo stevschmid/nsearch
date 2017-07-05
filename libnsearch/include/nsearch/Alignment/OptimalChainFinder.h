@@ -60,10 +60,10 @@ public:
     // (since we need the previous rect in the x1 case)
     // Insertion order is guaranteed in C++11
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, Rect::Ref >( rect->x2, rect ) );
+      points.insert( std::make_pair( rect->x2, rect ) );
     }
     for( auto &rect : rects ) {
-      points.insert( std::pair< size_t, Rect::Ref >( rect->x1, rect ) );
+      points.insert( std::make_pair( rect->x1, rect ) );
     }
 
     // Go through each point, from left to right
@@ -88,7 +88,7 @@ public:
         // Find competing, higher up rectangles
         auto competitor = greaterOrEqualThan( solutions, rect->y1 );
         if( competitor == solutions.end() || competitor->second->score < rect->score ) {
-          solutions.insert( competitor, std::pair< size_t, Rect::Ref >( rect->y2, rect ) );
+          solutions.insert( competitor, std::make_pair( rect->y2, rect ) );
         }
 
         // Delete competing solutions this one has beat (higher up but lower score)

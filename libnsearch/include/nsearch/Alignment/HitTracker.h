@@ -17,6 +17,18 @@ public:
     ranges.Add( start1, start1 + length );
   }
 
+  size_t Score() const {
+    size_t score = 0;
+
+    for( auto &it : mDiagonals ) {
+      for( auto &range : it.second.Get() ) {
+        score += (range.second - range.first);
+      }
+    }
+
+    return score;
+  };
+
   SeedList Seeds() const {
     SeedList seeds;
 

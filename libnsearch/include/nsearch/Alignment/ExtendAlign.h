@@ -16,14 +16,13 @@ typedef struct {
 
   int gapOpenScore = -20;
   int gapExtendScore = -2;
-
-  int xDrop = MAXINT;
 } AlignmentParams;
 
-// Influenced by Blast's SemiGappedAlign function
-class ExtendAlign {
-private:
+enum class AlignExtendDirection { forwards, backwards };
 
+// Influenced by Blast's SemiGappedAlign function
+class XDropExtendAlign {
+private:
   struct Cell {
     int score = MININT;
     int scoreGap = MININT;
@@ -45,16 +44,19 @@ private:
   Cells mRow;
 
 public:
-  enum class ExtendDirection { forwards, backwards };
-
-  ExtendAlign( const AlignmentParams& ap = AlignmentParams() )
+  XDropExtendAlign( const AlignmentParams& ap = AlignmentParams() )
     : mAP( ap )
   {
   }
 
+  const AlignmentParams& AP() const {
+    return mAP;
+  }
+
   // Heavily influenced by Blast's SemiGappedAlign function
   int Extend( const Sequence &A, const Sequence &B,
-      ExtendDirection dir = ExtendDirection::forwards,
+      int xDrop,
+      AlignExtendDirection dir = AlignExtendDirection::forwards,
       size_t startA = 0, size_t startB = 0,
       size_t *bestA = NULL, size_t *bestB = NULL )
   {
@@ -64,7 +66,7 @@ public:
 
     size_t width, height;
 
-    if( dir == ExtendDirection::forwards ) {
+    if( dir == AlignExtendDirection::forwards ) {
       width = A.Length() - startA + 1;
       height = B.Length() - startB + 1;
     } else {
@@ -93,7 +95,7 @@ public:
     for( x = 1; x < width; x++ ) {
       score = mAP.gapOpenScore + x * mAP.gapExtendScore;
 
-      if( score < -mAP.xDrop )
+      if( score < -xDrop )
         break;
 
       mRow[ x ].score = score;
@@ -121,7 +123,7 @@ public:
         if( x > 0 ) {
           // diagScore: score at col-1, row-1
 
-          if( dir == ExtendDirection::forwards ) {
+          if( dir == AlignExtendDirection::forwards ) {
             aIdx = startA + x - 1;
             bIdx = startB + y - 1;
           } else {
@@ -147,7 +149,7 @@ public:
         // we will use to compute the diagonal score at (x)
         diagScore = mRow[ x ].score;
 
-        if( bestScore - score > mAP.xDrop ) {
+        if( bestScore - score > xDrop ) {
           // X-Drop test failed
           mRow[ x ].score = MININT;
 
@@ -187,7 +189,7 @@ public:
         rowSize = lastX + 1;
       } else {
         // Extend row, since last checked column didn't fail X-Drop test
-        while( rowGap >= ( bestScore - mAP.xDrop ) && rowSize < width ) {
+        while( rowGap >= ( bestScore - xDrop ) && rowSize < width ) {
           mRow[ rowSize ].score = rowGap;
           mRow[ rowSize ].scoreGap = rowGap + mAP.gapOpenScore + mAP.gapExtendScore;
           rowGap += mAP.gapExtendScore;

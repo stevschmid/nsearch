@@ -24,7 +24,7 @@ public:
     std::map< size_t, size_t >::iterator insertIt, afterIt = mRanges.upper_bound( rangeMin );
 
     if( afterIt == mRanges.begin() || std::prev( afterIt )->second < rangeMin ) {
-      insertIt = mRanges.insert( afterIt, std::pair< size_t, size_t >( rangeMin, rangeMax ) );
+      insertIt = mRanges.insert( afterIt, std::make_pair( rangeMin, rangeMax ) );
     } else {
       insertIt = std::prev( afterIt );
       if( insertIt->second < rangeMax ) {

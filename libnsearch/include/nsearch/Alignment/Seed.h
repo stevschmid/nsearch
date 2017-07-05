@@ -16,4 +16,4 @@ public:
   }
 };
 
-typedef std::deque< Seed > SeedList;
+using SeedList = std::deque< Seed >;
