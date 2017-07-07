@@ -167,16 +167,22 @@ int main( int argc, const char **argv ) {
         true, // help
         "nsearch");
 
-/*   BandedAlignParams bap; */
-/*   bap.bandwidth = 3; */
-/*   BandedAlign ba( bap ); */
-/*   Cigar cig; */
-/*   Sequence A = "ATGCCC"; */
-/*   Sequence B = ""; */
-/*   int score = ba.Align( A, B, &cig ); */
-/*   std::cout << score << std::endl; */
-/*   std::cout << cig << std::endl; */
-/*   return 0; */
+  // Test cases
+  // A>>>>B
+  // B>>>>A
+  // Empty A
+  // Empty B
+  // A breaking case when first row is not initialized properly (beyond bandwidth)
+  BandedAlignParams bap;
+  bap.bandwidth = 3;
+  BandedAlign ba( bap );
+  Cigar cig;
+  Sequence A = "ATGCCCGGGGGGGGGGGGG";
+  Sequence B = "ATTTCC";
+  int score = ba.Align( A, B, &cig );
+  std::cout << score << std::endl;
+  std::cout << cig << std::endl;
+  return 0;
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

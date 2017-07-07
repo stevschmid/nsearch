@@ -171,11 +171,12 @@ public:
       for( size_t x = leftBound; x <= rightBound; x++ ) {
         // Calculate diagonal score
         size_t aIdx = 0, bIdx = 0;
+        bool match;
         if( x > 0 ) {
           aIdx = ( dir == AlignmentDirection::forwards ) ? startA + x - 1 : startA - x;
           bIdx = ( dir == AlignmentDirection::forwards ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
-          bool match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
+          match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
         }
 
@@ -203,7 +204,7 @@ public:
         } else if( score == verticalGap.Score() ) {
           op = 'I';
         } else {
-          op = 'M';
+          op = match ? 'M' : 'X';
         }
         mOperations[ y * width + x ] = op;
 
@@ -232,6 +233,7 @@ public:
           case 'D': x--; break;
           case 'I': y--; break;
           case 'M': x--; y--; break;
+          case 'X': x--; y--; break;
         }
       }
       std::reverse( cigar->begin(), cigar->end() );
