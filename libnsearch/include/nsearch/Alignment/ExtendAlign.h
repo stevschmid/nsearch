@@ -15,15 +15,239 @@ typedef struct { int matchScore = 2;
 
   int gapOpenScore = -20;
   int gapExtendScore = -2;
+
+  int terminalGapOpenScore = -2;
+  int terminalGapExtendScore = -1;
 } AlignmentParams;
 
 enum class AlignExtendDirection { forwards, backwards };
+
+class DP {
+protected:
+  struct Cell {
+    int best = MININT;
+
+    struct {
+      int best = MININT;
+      int extendingScore = 0;
+    } vGap;
+  };
+  using Cells = std::vector< Cell >;
+
+  AlignmentParams mAP;
+  Cells mRow;
+  AlignExtendDirection mDirection;
+  size_t mWidth, mHeight, mStartA, mStartB;
+
+  const Sequence *mA = NULL;
+  const Sequence *mB = NULL;
+
+  void PrintRow() {
+    for( int i = 0; i < mWidth; i++ ) {
+      auto &c = mRow[ i ];
+      if( c.best <= MININT ) {
+        printf( "%5c", 'X' );
+      }  else {
+        printf( "%5d", c.best );
+      }
+    }
+    printf("\n");
+  }
+
+  inline int MatchScore( bool match ) const {
+    return match ? mAP.matchScore : mAP.mismatchScore;
+  };
+
+  inline int GapOpenScore( bool terminal ) const {
+    return terminal ? mAP.terminalGapOpenScore : mAP.gapOpenScore;
+  }
+
+  inline int GapExtendScore( bool terminal ) const {
+    return terminal ? mAP.terminalGapExtendScore : mAP.gapExtendScore;
+  }
+
+  inline int GapScore( bool terminal, size_t length ) const {
+    return GapOpenScore( terminal ) + length * GapExtendScore( terminal );
+  }
+
+  inline size_t MapXToSequenceA( size_t x ) const {
+    return mDirection == AlignExtendDirection::forwards ? mStartA + x - 1 : mStartA - x;
+  }
+
+  inline size_t MapYToSequenceB( size_t y ) const {
+    return mDirection == AlignExtendDirection::forwards ? mStartB + y - 1 : mStartB - y;
+  }
+
+  virtual void InitializeFirstRow() = 0;
+  virtual bool ComputeRow( size_t y ) = 0;
+  virtual int Traceback( size_t *outA = NULL, size_t *outB = NULL ) = 0;
+
+public:
+  DP( const AlignmentParams &ap = AlignmentParams() )
+    : mAP( ap )
+  {
+  }
+
+  int Align( const Sequence &A, const Sequence &B,
+      AlignExtendDirection dir = AlignExtendDirection::forwards,
+      size_t startA = 0, size_t startB = 0 )
+  {
+    mA = &A;
+    mB = &B;
+
+    mStartA = startA;
+    mStartB = startB;
+
+    mDirection = dir;
+
+    if( dir == AlignExtendDirection::forwards ) {
+      mWidth = A.Length() - startA + 1;
+      mHeight = B.Length() - startB + 1;
+    } else {
+      mWidth = startA + 1;
+      mHeight = startB + 1;
+    }
+
+    if( mRow.capacity() < mWidth ) {
+      // Allocate new row if current one is insufficient in size
+      mRow = Cells( mWidth * 1.5  );
+    }
+
+    InitializeFirstRow();
+    for( size_t y = 1; y < mHeight; y++ ) {
+      if( !ComputeRow( y ) )
+        break;
+    }
+    return Traceback();
+  }
+};
+
+class BandedDP : public DP {
+protected:
+  size_t mBandWidth;
+  size_t mPreviousCenter;
+
+  virtual void InitializeFirstRow() {
+    size_t x;
+    mRow[ 0 ].best = 0;
+    mRow[ 0 ].vGap.best = GapScore( true, 1 );
+    mRow[ 0 ].vGap.extendingScore = GapExtendScore( true );
+
+    for( x = 1; x < mWidth && x <= mBandWidth; x++ ) {
+      mRow[ x ].best = GapScore( true, x );
+      mRow[ x ].vGap.best = MININT;
+    }
+    PrintRow();
+
+    mPreviousCenter = 0;
+  }
+
+  virtual bool ComputeRow( size_t y ) {
+    size_t aIdx, bIdx;
+
+    int rowGap = MININT;
+    int rowGapExtend = MININT;
+    int score = MININT;
+
+    size_t center = mPreviousCenter + 1;
+
+    // Make sure we don't jump too far, so we can stil "connect the rows"
+    size_t firstX = center > mBandWidth ? ( center - mBandWidth ) : 0;
+    size_t lastX = std::min( center + mBandWidth, mWidth - 1 );
+
+    if( y == mHeight - 1 ) {
+      lastX = mWidth - 1;
+    }
+
+    int diagScore = MININT;
+    if( firstX > 0 ) {
+      diagScore = mRow[ firstX - 1 ].best;
+      mRow[ firstX - 1 ].best = MININT;
+    }
+
+    for( size_t x = firstX; x <= lastX; x++ ) {
+      int colGap = mRow[ x ].vGap.best;
+      int colGapExtend = mRow[ x ].vGap.extendingScore;
+
+      aIdx = 0;
+      bIdx = 0;
+      if( x > 0 ) {
+        aIdx = MapXToSequenceA( x );
+        bIdx = MapYToSequenceB( y );
+        // diagScore: score at col-1, row-1
+        bool match = DoNucleotidesMatch( (*mA)[ aIdx ], (*mB)[ bIdx ] );
+        score = diagScore + MatchScore( match );
+      }
+
+      // select highest score
+      //  - coming from diag (current),
+      //  - coming from left (row)
+      //  - coming from top (col)
+      if( score < rowGap )
+        score = rowGap;
+      if( score < colGap )
+        score = colGap;
+
+      // Save the prev score at (x - 1) which
+      // we will use to compute the diagonal score at (x)
+      diagScore = mRow[ x ].best;
+
+      // Record new score
+      mRow[ x ].best = score;
+
+      {
+        // Horizontal gaps
+        bool terminal = bIdx == 0 || bIdx + 1 == mHeight - 1;
+
+        int scoreNewGap = score + GapOpenScore( terminal ) + GapExtendScore( terminal );
+        int scoreExtendingGap = rowGap + rowGapExtend;
+
+        if( scoreNewGap > scoreExtendingGap ) {
+          rowGap = scoreNewGap;
+          rowGapExtend = GapExtendScore( terminal );
+        } else {
+          rowGap = scoreExtendingGap;
+        }
+      }
+
+      {
+        // Vertical gaps
+        bool terminal = aIdx == 0 || aIdx + 1 == mWidth - 1;
+
+        int scoreNewGap = score + GapOpenScore( terminal ) + GapExtendScore( terminal );
+        int scoreExtendingGap = colGap + colGapExtend;
+
+        if( scoreNewGap > scoreExtendingGap ) {
+          mRow[ x ].vGap.best = scoreNewGap;
+          mRow[ x ].vGap.extendingScore = GapExtendScore( terminal );
+        } else {
+          mRow[ x ].vGap.best = scoreExtendingGap;
+        }
+      }
+
+    }
+    PrintRow();
+    mPreviousCenter = center;
+
+    return true;
+  }
+
+  virtual int Traceback( size_t *outA = NULL, size_t *outB = NULL ) {
+    return 0;
+  }
+
+public:
+  BandedDP( size_t bandWidth,
+      const AlignmentParams &ap = AlignmentParams() )
+    : DP( ap ), mBandWidth( bandWidth )
+  {
+  }
+};
 
 class BandedAlign {
 private:
   struct Cell {
     int score = MININT;
-    int scoreGap = MININT;
 
     struct {
       int score = MININT;
@@ -78,23 +302,14 @@ public:
       mRow = Cells( width  );
     }
 
-    auto SeqPosA = [&]( size_t x ) {
-      return dir == AlignExtendDirection::forwards ? startA + x - 1 : startA - x;
-    };
-    auto SeqPosB = [&]( size_t y ) {
-      return dir == AlignExtendDirection::forwards ? startB + y - 1 : startB - y;
-    };
-
     int bestScore = 0;
     mRow[ 0 ].score = 0;
-    /* mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore; */
-    mRow[ 0 ].vGap.score = mAP.gapOpenScore + mAP.gapExtendScore;
-    mRow[ 0 ].vGap.scoreToExtend = mAP.gapExtendScore;
+    mRow[ 0 ].vGap.score = mAP.terminalGapOpenScore + mAP.terminalGapExtendScore;
+    mRow[ 0 ].vGap.scoreToExtend = mAP.terminalGapExtendScore;
 
     for( x = 1; x < width && x <= bandWidth; x++ ) {
-      score = mAP.gapOpenScore + x * mAP.gapExtendScore;
+      score = mAP.terminalGapOpenScore + x * mAP.terminalGapExtendScore;
       mRow[ x ].score = score;
-      /* mRow[ x ].scoreGap = MININT; */
       mRow[ x ].vGap.score = MININT;
     }
     Print( mRow );
@@ -131,8 +346,8 @@ public:
         aIdx = 0;
         bIdx = 0;
         if( x > 0 ) {
-          aIdx = SeqPosA( x );
-          bIdx = SeqPosB( y );
+          aIdx = ( dir == AlignExtendDirection::forwards ) ? startA + x - 1 : startA - x;
+          bIdx = ( dir == AlignExtendDirection::forwards ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
           score = diagScore + ( DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] ) ? mAP.matchScore : mAP.mismatchScore );
         }
@@ -153,24 +368,38 @@ public:
         // Record new score
         mRow[ x ].score = score;
 
-        int scoreNewVGap = score + mAP.gapOpenScore + mAP.gapExtendScore;
-        int scoreExtendVGap = colGap + colGapExtend;
+        {
+          // Horizontal gaps
+          bool terminalGap = bIdx == 0 || bIdx == height - 1;
+          int newGapOpen = terminalGap ? mAP.terminalGapOpenScore : mAP.gapOpenScore;
+          int newGapExtend = terminalGap ? mAP.terminalGapExtendScore : mAP.gapExtendScore;
 
-        if( scoreNewVGap > scoreExtendVGap ) {
-          mRow[ x ].vGap.score = scoreNewVGap;
-          mRow[ x ].vGap.scoreToExtend = mAP.gapExtendScore;
-        } else {
-          mRow[ x ].vGap.score = scoreExtendVGap;
+          int scoreNewGap = score + newGapOpen + newGapExtend;
+          int scoreExtendingGap = rowGap + rowGapExtend;
+          if( scoreNewGap > scoreExtendingGap ) {
+            rowGap = scoreNewGap;
+            rowGapExtend = newGapExtend;
+          } else {
+            rowGap = scoreExtendingGap;
+          }
         }
 
-        int scoreNewHGap = score + mAP.gapOpenScore + mAP.gapExtendScore;
-        int scoreExtendHGap = rowGap + rowGapExtend;
-        if( scoreNewHGap > scoreExtendHGap ) {
-          rowGap = scoreNewHGap;
-          rowGapExtend = mAP.gapExtendScore;
-        } else {
-          rowGap = scoreExtendHGap;
+        {
+          // Vertical gaps
+          bool terminalGap = aIdx == 0 || aIdx == width - 1;
+          int newGapOpen = terminalGap ? mAP.terminalGapOpenScore : mAP.gapOpenScore;
+          int newGapExtend = terminalGap ? mAP.terminalGapExtendScore : mAP.gapExtendScore;
+
+          int scoreNewGap = score + newGapOpen + newGapExtend;
+          int scoreExtendingGap = colGap + colGapExtend;
+          if( scoreNewGap > scoreExtendingGap ) {
+            mRow[ x ].vGap.score = scoreNewGap;
+            mRow[ x ].vGap.scoreToExtend = newGapExtend;
+          } else {
+            mRow[ x ].vGap.score = scoreExtendingGap;
+          }
         }
+
       }
       Print( mRow );
 
