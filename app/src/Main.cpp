@@ -175,9 +175,10 @@ int main( int argc, const char **argv ) {
   /* return 0; */
 
   BandedAlignParams bap;
-  bap.bandwidth = 3;
   BandedAlign ba( bap );
-  ba.Align( "ATCGGGG", "ATCGGGG" );
+  Alignment aln = ba.Align( "ATGCCC", "GCCC", true );
+  std::cout << aln.score << std::endl;
+  std::cout << aln.ops << std::endl;
   return 0;
 
   if( args[ "search" ].asBool() ) {

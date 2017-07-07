@@ -13,7 +13,6 @@
 #include "Alignment/Ranges.h"
 #include "Alignment/HitTracker.h"
 #include "Alignment/OptimalChainFinder.h"
-#include "Alignment/ExtendAlign.h"
 
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;

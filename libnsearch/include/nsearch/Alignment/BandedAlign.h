@@ -9,6 +9,15 @@ enum class AlignmentDirection {
   forwards, backwards
 };
 
+typedef struct {
+  int score;
+
+  size_t a1, a2;
+  size_t b1, b2;
+
+  std::string ops;
+} Alignment;
+
 class BandedAlignParams
 {
 public:
@@ -39,7 +48,8 @@ private:
       :
         mTerminalGapScore( params.terminalGapOpenScore + params.terminalGapExtendScore ),
         mTerminalGapExtendScore( params.terminalGapExtendScore ),
-        mInteriorGapScore( params.interiorGapOpenScore + params.terminalGapExtendScore ),
+
+        mInteriorGapScore( params.interiorGapOpenScore + params.interiorGapExtendScore ),
         mInteriorGapExtendScore( params.interiorGapExtendScore )
     {
       Reset();
@@ -67,6 +77,7 @@ private:
 
   using Scores = std::vector< int >;
   using Gaps = std::vector< Gap >;
+  using Operations = std::vector< char >;
 
   void PrintRow( size_t width ) {
     for( int i = 0; i < width; i++ ) {
@@ -82,6 +93,7 @@ private:
 
   Scores mScores;
   Gaps mVerticalGaps;
+  Operations mOperations;
   BandedAlignParams mParams;
 
 public:
@@ -91,10 +103,13 @@ public:
 
   }
 
-  int Align( const Sequence &A, const Sequence &B,
+  Alignment Align( const Sequence &A, const Sequence &B,
+      bool backtrack = false,
       size_t startA = 0, size_t startB = 0,
       AlignmentDirection dir = AlignmentDirection::forwards )
   {
+    Alignment aln;
+
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
     // A will be on the X axis (width of matrix)
@@ -121,6 +136,10 @@ public:
       mVerticalGaps = Gaps( width * 1.5, mParams );
     }
 
+    if( mOperations.capacity() < width * height ) {
+      mOperations = Operations( width * height * 1.5 );
+    }
+
     // Initialize first row
     size_t bw = mParams.bandwidth;
 
@@ -135,6 +154,7 @@ public:
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
       mScores[ x ] = horizontalGap.Score();
       mVerticalGaps[ x ].Reset();
+      mOperations[ x ] = 'D';
     }
     PrintRow( width );
 
@@ -144,7 +164,7 @@ public:
       int score = MININT;
 
       // Calculate band bounds
-      size_t leftBound = center > bw ? ( center - bw ) : 0;
+      size_t leftBound = std::min( center > bw ? ( center - bw ) : 0, width - 1 );
       size_t rightBound = std::min( center + bw, width - 1 );
 
       // If we are in the last row, make sure we calculate up to the last cell (for traceback)
@@ -154,7 +174,7 @@ public:
 
       // Set diagonal score for first calculated cell in row
       int diagScore = MININT;
-      if( leftBound ) {
+      if( leftBound > 0 ) {
         diagScore = mScores[ leftBound - 1 ];
         mScores[ leftBound - 1 ] = MININT;
       }
@@ -190,11 +210,26 @@ public:
         // Save new score
         mScores[ x ] = score;
 
-        // Calculate potential gaps
-        bool isTerminalB = ( bIdx == 0 || bIdx == lenB - 1 );
-        horizontalGap.OpenOrExtend( score, isTerminalB );
+        char op;
+        if( score == horizontalGap.Score() ) {
+          op = 'D';
+        } else if( score == verticalGap.Score() ) {
+          op = 'I';
+        } else {
+          op = 'M';
+        }
+        mOperations[ y * width + x ] = op;
 
-        bool isTerminalA = ( aIdx == 0 || aIdx == lenA - 1 );
+        // Calculate potential gaps
+        bool isTerminalA = ( x == 0 || x == width - 1 );
+        bool isTerminalB = ( y == 0 || y == height - 1 );
+
+        horizontalGap.OpenOrExtend( score, isTerminalB );
+        /* if( y == 1 ){ */
+        /*   std::cout << score << std::endl; */
+        /*   std::cout << isTerminalB << std::endl; */
+        /*   std::cout << x << " " << horizontalGap.Score() << std::endl; */
+        /* } */
         verticalGap.OpenOrExtend( score, isTerminalA );
       }
       PrintRow( width );
@@ -203,6 +238,22 @@ public:
       center++;
     }
 
-    return 0;
+    // Backtrack
+    if( backtrack ) {
+      size_t x = width - 1;
+      size_t y = height - 1;
+      while( x != 0 || y != 0 ) {
+        char op = mOperations[ y * width + x ];
+        aln.ops.push_back( op );
+        switch( op ) {
+          case 'D': x--; break;
+          case 'I': y--; break;
+          case 'M': x--; y--; break;
+        }
+      }
+      std::reverse( aln.ops.begin(), aln.ops.end() );
+    }
+
+    return aln;
   }
 };
