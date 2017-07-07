@@ -42,18 +42,20 @@ public:
 
   SequenceList Query( const Sequence &query, int maxHits = 10 ) {
     const int xDrop = 32;
+    const size_t defaultMinHSPLength = 16;
+    const size_t maxHSPJoinDistance = 16;
+
+    size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
     std::unordered_map< SequenceRef, HitTracker > hits;
 
-    // Go through each kmer, find candidates
+    // Go through each kmer, find hits
     Kmers kmers( query, mWordSize );
     kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
       for( auto &seqInfo : mWordDB[ kmer ] ) {
         size_t candidatePos = seqInfo.first;
         SequenceRef candidateRef = seqInfo.second;
-
         hits[ candidateRef ].AddHit( pos, candidatePos, mWordSize );
-        /* hits[ candidateRef ].push_back( Seed( pos, candidatePos, mWordSize ) ); */
       }
     });
 
@@ -76,7 +78,9 @@ public:
     // - Join HSP together
     // - Align
     // - Check similarity
-    std::cout << "=====" << std::endl;
+    /* std::cout << "=====NEWQUERY=====" << std::endl; */
+    /* std::cout << "MinHSP Length " << minHSPLength << std::endl; */
+
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
       const Candidate &candidate = *it;
       const Sequence &candidateSeq = *candidate.first;
@@ -91,122 +95,92 @@ public:
       // Try to find best chain
       // Fill space between with banded align
 
+      std::multimap< size_t, Seed > hsps;
+
       for( auto &seed : candidate.second.Seeds() ) {
-        std::cout << "Seed " << std::endl;
         size_t leftQuery, leftCandidate;
         int leftScore = mXDropExtender.Extend( query, candidateSeq,
             xDrop,
-            AlignExtendDirection::backwards,
+            AlignmentDirection::backwards,
             seed.s1, seed.s2,
             &leftQuery, &leftCandidate );
 
         size_t rightQuery, rightCandidate;
         int rightScore = mXDropExtender.Extend( query, candidateSeq,
             xDrop,
-            AlignExtendDirection::forwards,
+            AlignmentDirection::forwards,
             seed.s1 + seed.length, seed.s2 + seed.length,
             &rightQuery, &rightCandidate );
 
-        /* ht.AddHit( leftQuery, leftCandidate, rightQuery - leftQuery ); */
+        Seed hsp = seed;
+        hsp.s1 = leftQuery;
+        hsp.s2 = leftCandidate;
+        hsp.length = rightQuery - leftQuery;
 
-        /* int score = seed.length * mDP.AP().matchScore; // initial seed is an exact match */
-        /* score += leftScore; // left extended */
-        /* score += rightScore; // right extended */
-
-        /* if( ext.length != seed.length ) { */
-        /*   std::cout << "Length: " << ext.length << " (ext " */
-        /*     << ( ext.length - seed.length ) << ")" << std::endl; */
-        /*   std::cout << ext.s1 << " " << ext.s2 << std::endl; */
-        /*   /1* std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl; *1/ */
-        /*   /1* std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl; *1/ */
-        /*   std::cout << "=========" << std::endl; */
-        /* } */
+        if( hsp.length >= minHSPLength ) {
+          hsps.insert( std::make_pair( hsp.length, hsp ) );
+        }
       }
 
+      // Greedy join HSPs if close
+      auto precede = []( const Seed &seed, const Seed &other ) {
+        return seed.s1 + seed.length <= other.s1 &&
+          seed.s2 + seed.length <= other.s2;
+      };
 
+      auto succeed = []( const Seed &seed, const Seed &other ) {
+        return seed.s1 >= other.s1 + other.length &&
+          seed.s2 >= other.s2 + other.length;
+      };
+
+      struct SeedCompare {
+        bool operator() ( const Seed &left, const Seed &right ) const {
+          return left.s1 < right.s1 && left.s2 < right.s2;
+        }
+      };
+
+      std::set< Seed, SeedCompare > chain;
+      for( auto &p : hsps ) {
+        const Seed &hsp = p.second;
+        if( chain.empty() ) {
+          chain.insert( hsp );
+        } else {
+          const Seed &left = *chain.begin();
+          const Seed &right = *chain.rbegin();
+
+          if( precede( hsp, left ) ) {
+            size_t dist = std::max( left.s1 - ( hsp.s1 + hsp.length ),
+                left.s2 - ( hsp.s2 + hsp.length ) );
+
+            if( dist <= maxHSPJoinDistance ) {
+              chain.insert( hsp );
+            }
+          } else if( succeed( hsp, right ) ) {
+            size_t dist = std::max( hsp.s1 - ( right.s1 + right.length ),
+                hsp.s2 - ( right.s2 + right.length ) );
+
+            if( dist <= maxHSPJoinDistance ) {
+              chain.insert( hsp );
+            }
+          }
+        }
+      }
+
+      if( chain.size() > 1 || hsps.size() > 1 ) {
+        std::cout << "HSPs size " << hsps.size() << std::endl;
+        for( auto &p : hsps ) {
+          const Seed &hsp = p.second;
+          std::cout << "HSP " << hsp.s1 << " " << hsp.s2 << " " << hsp.length << std::endl;
+        }
+        std::cout << "Chain size " << chain.size() << std::endl;
+        for( auto &hsp : chain ) {
+          std::cout << "Chain " << hsp.s1 << " " << hsp.s2 << " " << hsp.length << std::endl;
+        }
+        std::cout << "===" << std::endl;
+      }
     }
+
     return SequenceList();
-
-    /* for( auto &c : candidates ) { */
-    /*   SequenceRef cref = c.first; */
-    /*   const Sequence &candidate = *cref; */
-    /*   const HitTracker &hitTracker = c.second; */
-
-    /*   for( auto &seed : hitTracker.Seeds() ) { */
-    /*     size_t leftQuery, leftCandidate; */
-    /*     int leftScore = mXDropExtender.Extend( query, candidate, */
-    /*         xDrop, */
-    /*         AlignExtendDirection::backwards, */
-    /*         seed.s1, seed.s2, */
-    /*         &leftQuery, &leftCandidate); */
-
-    /*     size_t rightQuery, rightCandidate; */
-    /*     int rightScore = mXDropExtender.Extend( query, candidate, */
-    /*         xDrop, */
-    /*         AlignExtendDirection::forwards, */
-    /*         seed.s1 + seed.length, seed.s2 + seed.length, */
-    /*         &rightQuery, &rightCandidate ); */
-
-    /*     Seed ext = seed; */
-    /*     ext.s1 = leftQuery; */
-    /*     ext.s2 = leftCandidate; */
-    /*     ext.length = rightQuery - ext.s1; */
-
-    /*     /1* int score = seed.length * mDP.AP().matchScore; // initial seed is an exact match *1/ */
-    /*     /1* score += leftScore; // left extended *1/ */
-    /*     /1* score += rightScore; // right extended *1/ */
-
-    /*     /1* if( ext.length != seed.length ) { *1/ */
-    /*     /1*   std::cout << "Length: " << ext.length << " (ext " *1/ */
-    /*     /1*     << ( ext.length - seed.length ) << ")" << std::endl; *1/ */
-    /*     /1*   std::cout << ext.s1 << " " << ext.s2 << std::endl; *1/ */
-    /*     /1*   /2* std::cout << query.Subsequence( ext.s1, ext.length ) << std::endl; *2/ *1/ */
-    /*     /1*   /2* std::cout << candidate.Subsequence( ext.s2, ext.length ) << std::endl; *2/ *1/ */
-    /*     /1*   std::cout << "=========" << std::endl; *1/ */
-    /*     /1* } *1/ */
-
-    /*   } */
-    /* } */
-
-    /* return SequenceList(); */
-
-    // Extend each seed -> HSP
-
-    // Try to join HSPs together
-
-    // Sort candidates based on the score
-    /* for( auto &c : candidates ) { */
-    /*   SequenceRef seq = c.first; */
-    /*   const HitTracker &hitTracker = c.second; */
-
-    /*   // Compute optimal chain */
-    /*   OptimalChainFinder ocf( hitTracker.Seeds() ); */
-    /*   highscore.insert( std::make_pair( ocf, seq ) ); */
-    /* } */
-
-    /* Alignment aln; */
-    /* SequenceList list; */
-
-    /* for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) { */
-    /*   const OptimalChainFinder &ocf = it->first; */
-    /*   const Sequence &reference = *it->second; */
-
-    /*   int score = mDP.AlignAlongChain( query, reference, ocf.OptimalChain(), &aln ); */
-    /*   list.push_back( *(*it).second ); */
-
-    /*   std::cout << "Query " << query.identifier << std::endl; */
-    /*   std::cout << "Reference " << reference.identifier << std::endl; */
-    /*   std::cout << aln << std::endl; */
-    /*   std::cout << " Chain Score " << ocf.Score() */
-    /*     << std::endl << " Align Score: " << score */
-    /*     << std::endl << " Ref Length " << reference.Length() << std::endl; */
-    /*   /1* mDP.DebugPrint( true ); *1/ */
-
-    /*   if( list.size() >= maxHits ) */
-    /*     break; */
-    /* } */
-
-    /* return list; */
   }
 
 private:

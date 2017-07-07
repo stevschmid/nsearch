@@ -174,6 +174,14 @@ int main( int argc, const char **argv ) {
   /* std::cout << score << std::endl; */
   /* return 0; */
 
+  AlignmentParams ap;
+  BandedAlign ba;
+  ba.Align( "ATCGAAAGGG", "GGGG", 3, ap,
+      AlignmentDirection::forwards,
+      5, 0
+      );
+  return 0;
+
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 
