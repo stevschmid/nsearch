@@ -10,8 +10,7 @@
 #define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
 
-typedef struct {
-  int matchScore = 2;
+typedef struct { int matchScore = 2;
   int mismatchScore = -4;
 
   int gapOpenScore = -20;
@@ -19,6 +18,141 @@ typedef struct {
 } AlignmentParams;
 
 enum class AlignExtendDirection { forwards, backwards };
+
+class BandedAlign {
+private:
+  struct Cell {
+    int score = MININT;
+    int scoreGap = MININT;
+  };
+  using Cells = std::vector< Cell >;
+
+  void Print( const Cells& row ) {
+    for( auto &c : row ) {
+      if( c.score <= MININT ) {
+        printf( "%5c", 'X' );
+      }  else {
+        printf( "%5d", c.score );
+      }
+    }
+    printf("\n");
+  }
+
+  AlignmentParams mAP;
+  Cells mRow;
+
+public:
+  BandedAlign( const AlignmentParams& ap = AlignmentParams() )
+    : mAP( ap )
+  {
+  }
+
+  int Align( const Sequence &A, const Sequence &B,
+      size_t bandWidth,
+      AlignExtendDirection dir = AlignExtendDirection::forwards,
+      size_t startA = 0, size_t startB = 0 )
+  {
+    int score;
+    size_t x, y;
+    size_t aIdx, bIdx;
+
+    size_t width, height;
+
+    if( dir == AlignExtendDirection::forwards ) {
+      width = A.Length() - startA + 1;
+      height = B.Length() - startB + 1;
+    } else {
+      width = startA + 1;
+      height = startB + 1;
+    }
+
+    if( mRow.capacity() < width ) {
+      // Enlarge vector
+      std::cout << "Enlarge row from " << mRow.capacity()
+        << " to " << width << std::endl;
+      mRow = Cells( width  );
+    }
+
+    auto SeqPosA = [&]( size_t x ) {
+      return dir == AlignExtendDirection::forwards ? startA + x - 1 : startA - x;
+    };
+    auto SeqPosB = [&]( size_t y ) {
+      return dir == AlignExtendDirection::forwards ? startB + y - 1 : startB - y;
+    };
+
+    int bestScore = 0;
+    mRow[ 0 ].score = 0;
+    mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
+
+    for( x = 1; x < width && x <= bandWidth; x++ ) {
+      score = mAP.gapOpenScore + x * mAP.gapExtendScore;
+      mRow[ x ].score = score;
+      mRow[ x ].scoreGap = MININT;
+    }
+    Print( mRow );
+    size_t rowSize = x;
+
+    size_t prevCenterX = 0;
+
+    for( y = 1; y < height; y++ ) {
+
+      int rowGap = MININT;
+      int score = MININT;
+
+      size_t centerX = prevCenterX + 1;
+
+      // Make sure we don't jump too far, so we can stil "connect the rows"
+      size_t firstX = centerX > bandWidth ? ( centerX - bandWidth ) : 0;
+      size_t lastX = std::min( centerX + bandWidth, width - 1 );
+
+      if( y == height - 1 ) {
+        lastX = width - 1;
+      }
+
+      int diagScore = MININT;
+      if( firstX > 0 ) {
+        diagScore = mRow[ firstX - 1 ].score;
+        mRow[ firstX - 1 ].score = MININT;
+      }
+
+      for( x = firstX; x <= lastX; x++ ) {
+        int colGap = mRow[ x ].scoreGap;
+
+        aIdx = 0;
+        bIdx = 0;
+        if( x > 0 ) {
+          aIdx = SeqPosA( x );
+          bIdx = SeqPosB( y );
+          // diagScore: score at col-1, row-1
+          score = diagScore + ( DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] ) ? mAP.matchScore : mAP.mismatchScore );
+        }
+
+        // select highest score
+        //  - coming from diag (current),
+        //  - coming from left (row)
+        //  - coming from top (col)
+        if( score < rowGap )
+          score = rowGap;
+        if( score < colGap )
+          score = colGap;
+
+        // Save the prev score at (x - 1) which
+        // we will use to compute the diagonal score at (x)
+        diagScore = mRow[ x ].score;
+
+        // Record new score
+        mRow[ x ].score = score;
+        mRow[ x ].scoreGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, colGap + mAP.gapExtendScore );
+        rowGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, rowGap + mAP.gapExtendScore );
+      }
+      Print( mRow );
+
+      prevCenterX = centerX;
+    }
+
+    return bestScore;
+  }
+};
 
 // Influenced by Blast's SemiGappedAlign function
 class XDropExtendAlign {
@@ -89,8 +223,7 @@ public:
     }
 
     int bestScore = 0;
-    mRow[ 0 ].score = 0;
-    mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
+    mRow[ 0 ].score = 0; mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
 
     for( x = 1; x < width; x++ ) {
       score = mAP.gapOpenScore + x * mAP.gapExtendScore;
@@ -145,8 +278,8 @@ public:
         if( score < colGap )
           score = colGap;
 
-        // Save the prev score at (x - 1) which
-        // we will use to compute the diagonal score at (x)
+        // mRow[ x ] right now points to the previous row, so use this
+        // in the next iteration for the diagonal computation of (x, y )
         diagScore = mRow[ x ].score;
 
         if( bestScore - score > xDrop ) {
