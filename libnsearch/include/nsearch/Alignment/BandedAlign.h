@@ -9,14 +9,7 @@ enum class AlignmentDirection {
   forwards, backwards
 };
 
-typedef struct {
-  int score;
-
-  size_t a1, a2;
-  size_t b1, b2;
-
-  std::string ops;
-} Alignment;
+using Cigar = std::string;
 
 class BandedAlignParams
 {
@@ -103,13 +96,11 @@ public:
 
   }
 
-  Alignment Align( const Sequence &A, const Sequence &B,
-      bool backtrack = false,
+  int Align( const Sequence &A, const Sequence &B,
+      Cigar *cigar = NULL,
       size_t startA = 0, size_t startB = 0,
       AlignmentDirection dir = AlignmentDirection::forwards )
   {
-    Alignment aln;
-
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
     // A will be on the X axis (width of matrix)
@@ -159,7 +150,7 @@ public:
     PrintRow( width );
 
     // Row by row...
-    size_t center = 0;
+    size_t center = 1;
     for( size_t y = 1; y < height; y++ ) {
       int score = MININT;
 
@@ -225,11 +216,6 @@ public:
         bool isTerminalB = ( y == 0 || y == height - 1 );
 
         horizontalGap.OpenOrExtend( score, isTerminalB );
-        /* if( y == 1 ){ */
-        /*   std::cout << score << std::endl; */
-        /*   std::cout << isTerminalB << std::endl; */
-        /*   std::cout << x << " " << horizontalGap.Score() << std::endl; */
-        /* } */
         verticalGap.OpenOrExtend( score, isTerminalA );
       }
       PrintRow( width );
@@ -239,21 +225,21 @@ public:
     }
 
     // Backtrack
-    if( backtrack ) {
+    if( cigar ) {
       size_t x = width - 1;
       size_t y = height - 1;
       while( x != 0 || y != 0 ) {
         char op = mOperations[ y * width + x ];
-        aln.ops.push_back( op );
+        cigar->push_back( op );
         switch( op ) {
           case 'D': x--; break;
           case 'I': y--; break;
           case 'M': x--; y--; break;
         }
       }
-      std::reverse( aln.ops.begin(), aln.ops.end() );
+      std::reverse( cigar->begin(), cigar->end() );
     }
 
-    return aln;
+    return mScores[ width - 1 ];
   }
 };

@@ -175,10 +175,12 @@ int main( int argc, const char **argv ) {
   /* return 0; */
 
   BandedAlignParams bap;
+  bap.bandwidth = 3;
   BandedAlign ba( bap );
-  Alignment aln = ba.Align( "ATGCCC", "GCCC", true );
-  std::cout << aln.score << std::endl;
-  std::cout << aln.ops << std::endl;
+  Cigar cig;
+  int score = ba.Align( "ATGCCC", "GCCC", &cig );
+  std::cout << score << std::endl;
+  std::cout << cig << std::endl;
   return 0;
 
   if( args[ "search" ].asBool() ) {
