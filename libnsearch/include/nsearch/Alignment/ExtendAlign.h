@@ -24,6 +24,11 @@ private:
   struct Cell {
     int score = MININT;
     int scoreGap = MININT;
+
+    struct {
+      int score = MININT;
+      int scoreToExtend = 0;
+    } vGap;
   };
   using Cells = std::vector< Cell >;
 
@@ -82,12 +87,15 @@ public:
 
     int bestScore = 0;
     mRow[ 0 ].score = 0;
-    mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
+    /* mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore; */
+    mRow[ 0 ].vGap.score = mAP.gapOpenScore + mAP.gapExtendScore;
+    mRow[ 0 ].vGap.scoreToExtend = mAP.gapExtendScore;
 
     for( x = 1; x < width && x <= bandWidth; x++ ) {
       score = mAP.gapOpenScore + x * mAP.gapExtendScore;
       mRow[ x ].score = score;
-      mRow[ x ].scoreGap = MININT;
+      /* mRow[ x ].scoreGap = MININT; */
+      mRow[ x ].vGap.score = MININT;
     }
     Print( mRow );
     size_t rowSize = x;
@@ -97,6 +105,7 @@ public:
     for( y = 1; y < height; y++ ) {
 
       int rowGap = MININT;
+      int rowGapExtend = MININT;
       int score = MININT;
 
       size_t centerX = prevCenterX + 1;
@@ -116,7 +125,8 @@ public:
       }
 
       for( x = firstX; x <= lastX; x++ ) {
-        int colGap = mRow[ x ].scoreGap;
+        int colGap = mRow[ x ].vGap.score;
+        int colGapExtend = mRow[ x ].vGap.scoreToExtend;
 
         aIdx = 0;
         bIdx = 0;
@@ -142,8 +152,25 @@ public:
 
         // Record new score
         mRow[ x ].score = score;
-        mRow[ x ].scoreGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, colGap + mAP.gapExtendScore );
-        rowGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, rowGap + mAP.gapExtendScore );
+
+        int scoreNewVGap = score + mAP.gapOpenScore + mAP.gapExtendScore;
+        int scoreExtendVGap = colGap + colGapExtend;
+
+        if( scoreNewVGap > scoreExtendVGap ) {
+          mRow[ x ].vGap.score = scoreNewVGap;
+          mRow[ x ].vGap.scoreToExtend = mAP.gapExtendScore;
+        } else {
+          mRow[ x ].vGap.score = scoreExtendVGap;
+        }
+
+        int scoreNewHGap = score + mAP.gapOpenScore + mAP.gapExtendScore;
+        int scoreExtendHGap = rowGap + rowGapExtend;
+        if( scoreNewHGap > scoreExtendHGap ) {
+          rowGap = scoreNewHGap;
+          rowGapExtend = mAP.gapExtendScore;
+        } else {
+          rowGap = scoreExtendHGap;
+        }
       }
       Print( mRow );
 
