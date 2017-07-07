@@ -10,7 +10,6 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
-#include <nsearch/Alignment/DP.h>
 #include <nsearch/Alignment/ExtendAlign.h>
 
 #include "Stats.h"
