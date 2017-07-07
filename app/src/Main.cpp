@@ -167,21 +167,16 @@ int main( int argc, const char **argv ) {
         true, // help
         "nsearch");
 
-  /* AlignmentParams ap; */
-  /* ap.xDrop = 32; */
-  /* ExtendAlign ea( ap ); */
-  /* int score = ea.Extend( "TTATATAGGGG", "TTATCCCCGGGG" ); */
-  /* std::cout << score << std::endl; */
-  /* return 0; */
-
-  BandedAlignParams bap;
-  bap.bandwidth = 3;
-  BandedAlign ba( bap );
-  Cigar cig;
-  int score = ba.Align( "ATGCCC", "GCCC", &cig );
-  std::cout << score << std::endl;
-  std::cout << cig << std::endl;
-  return 0;
+/*   BandedAlignParams bap; */
+/*   bap.bandwidth = 3; */
+/*   BandedAlign ba( bap ); */
+/*   Cigar cig; */
+/*   Sequence A = "ATGCCC"; */
+/*   Sequence B = ""; */
+/*   int score = ba.Align( A, B, &cig ); */
+/*   std::cout << score << std::endl; */
+/*   std::cout << cig << std::endl; */
+/*   return 0; */
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

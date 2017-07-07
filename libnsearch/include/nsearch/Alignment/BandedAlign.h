@@ -1,19 +1,8 @@
 #pragma once
 
-#include "../Utils.h"
+#include "Common.h"
 
-#define MAXINT INT_MAX/2 //prevent overflow
-#define MININT -INT_MIN/2 //prevent underflow
-
-enum class AlignmentDirection {
-  forwards, backwards
-};
-
-using Cigar = std::string;
-
-class BandedAlignParams
-{
-public:
+typedef struct BandedAlignParams {
   size_t bandwidth = 16;
 
   int matchScore = 2;
@@ -24,7 +13,7 @@ public:
 
   int terminalGapOpenScore = -2;
   int terminalGapExtendScore = -1;
-};
+} BandedAlignParams;
 
 class BandedAlign {
 private:
@@ -141,13 +130,20 @@ public:
     mVerticalGaps[ 0 ].OpenOrExtend( mScores[ 0 ], fromBeginningB );
 
     Gap horizontalGap( mParams );
-    for( size_t x = 1; x < width && x <= bw; x++ ) {
-      horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
-      mScores[ x ] = horizontalGap.Score();
-      mVerticalGaps[ x ].Reset();
-      mOperations[ x ] = 'D';
+
+    for( size_t x = 1; x < width; x++ ) {
+      if( x <= bw || height == 1 ) { // fill the full row if B is empty
+        horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
+        mScores[ x ] = horizontalGap.Score();
+        mOperations[ x ] = 'D';
+      } else {
+        // Important that we reset everything
+        mVerticalGaps[ x ].Reset();
+        mScores[ x ] = MININT;
+      }
     }
-    PrintRow( width );
+
+    /* PrintRow( width ); */
 
     // Row by row...
     size_t center = 1;
@@ -218,7 +214,7 @@ public:
         horizontalGap.OpenOrExtend( score, isTerminalB );
         verticalGap.OpenOrExtend( score, isTerminalA );
       }
-      PrintRow( width );
+      /* PrintRow( width ); */
 
       // Move one cell over for the next row
       center++;
@@ -228,6 +224,7 @@ public:
     if( cigar ) {
       size_t x = width - 1;
       size_t y = height - 1;
+      cigar->reserve( std::max( x, y ) );
       while( x != 0 || y != 0 ) {
         char op = mOperations[ y * width + x ];
         cigar->push_back( op );
