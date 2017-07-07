@@ -10,7 +10,8 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
-#include <nsearch/Alignment/ExtendAlign.h>
+/* #include <nsearch/Alignment/ExtendAlign.h> */
+#include <nsearch/Alignment/BandedAlign.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -173,12 +174,10 @@ int main( int argc, const char **argv ) {
   /* std::cout << score << std::endl; */
   /* return 0; */
 
-  AlignmentParams ap;
-  BandedAlign ba;
-  ba.Align( "ATCGAAAGGG", "GGGG", 3, ap,
-      AlignmentDirection::forwards,
-      5, 0
-      );
+  BandedAlignParams bap;
+  bap.bandwidth = 3;
+  BandedAlign ba( bap );
+  ba.Align( "ATCGGGG", "ATCGGGG" );
   return 0;
 
   if( args[ "search" ].asBool() ) {

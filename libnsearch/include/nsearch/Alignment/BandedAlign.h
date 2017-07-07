@@ -1,5 +1,10 @@
 #pragma once
 
+#include "../Utils.h"
+
+#define MAXINT INT_MAX/2 //prevent overflow
+#define MININT -INT_MIN/2 //prevent underflow
+
 enum class AlignmentDirection {
   forwards, backwards
 };
@@ -17,60 +22,78 @@ public:
 
   int terminalGapOpenScore = -2;
   int terminalGapExtendScore = -1;
-
-  inline size_t Bandwidth() const {
-    return bandwidth;
-  }
-
-  inline int MatchScore( bool match ) const {
-    return match ? matchScore : mismatchScore;
-  };
-
-  inline int GapOpenScore( bool terminal ) const {
-    return terminal ? terminalGapOpenScore : interiorGapOpenScore;
-  }
-
-  inline int GapExtendScore( bool terminal ) const {
-    return terminal ? terminalGapExtendScore : interiorGapExtendScore;
-  }
-
-  inline int GapScore( bool terminal, size_t length ) const {
-    return GapOpenScore( terminal ) + length * GapExtendScore( terminal );
-  }
 };
 
 class BandedAlign {
 private:
-  struct Cell {
-    int score = MININT;
+  class Gap {
+  private:
+    int mScore;
+    bool mIsTerminal;
 
-    struct {
-      int score = MININT;
-      int scoreToExtend = 0;
-    } vGap;
+    int mTerminalGapScore, mInteriorGapScore;
+    int mTerminalGapExtendScore, mInteriorGapExtendScore;
+
+  public:
+    Gap( const BandedAlignParams &params )
+      :
+        mTerminalGapScore( params.terminalGapOpenScore + params.terminalGapExtendScore ),
+        mTerminalGapExtendScore( params.terminalGapExtendScore ),
+        mInteriorGapScore( params.interiorGapOpenScore + params.terminalGapExtendScore ),
+        mInteriorGapExtendScore( params.interiorGapExtendScore )
+    {
+      Reset();
+    }
+
+    void OpenOrExtend( int score, bool terminal ) {
+      int newGapScore = score + ( terminal ? mTerminalGapScore : mInteriorGapScore );
+      mScore += ( mIsTerminal ? mTerminalGapExtendScore : mInteriorGapExtendScore );
+
+      if( newGapScore > mScore ) {
+        mScore = newGapScore;
+        mIsTerminal = terminal;
+      }
+    }
+
+    int Score() {
+      return mScore;
+    }
+
+    void Reset() {
+      mScore = MININT;
+      mIsTerminal = false;
+    }
   };
-  using Cells = std::vector< Cell >;
+
+  using Scores = std::vector< int >;
+  using Gaps = std::vector< Gap >;
 
   void PrintRow( size_t width ) {
     for( int i = 0; i < width; i++ ) {
-      auto &c = mRow[ i ];
-      if( c.score <= MININT ) {
+      int score = mScores[ i ];
+      if( score <= MININT ) {
         printf( "%5c", 'X' );
       }  else {
-        printf( "%5d", c.score );
+        printf( "%5d", score );
       }
     }
     printf("\n");
   }
 
-  Cells mRow;
+  Scores mScores;
+  Gaps mVerticalGaps;
   BandedAlignParams mParams;
 
 public:
+  BandedAlign( const BandedAlignParams& params = BandedAlignParams() )
+    : mParams( params )
+  {
+
+  }
+
   int Align( const Sequence &A, const Sequence &B,
-      const BandedAlignParams& params = BandedAlignParams(),
       size_t startA = 0, size_t startB = 0,
-      AlignmentDirection dir = AlignmentDirection::forwards
+      AlignmentDirection dir = AlignmentDirection::forwards )
   {
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
@@ -90,33 +113,35 @@ public:
     }
 
     // Make sure we have enough cells
-    if( mRow.capacity() < width ) {
-      mRow = Cells( width * 1.5 );
+    if( mScores.capacity() < width ) {
+      mScores = Scores( width * 1.5, MININT );
+    }
+
+    if( mVerticalGaps.capacity() < width ) {
+      mVerticalGaps = Gaps( width * 1.5, mParams );
     }
 
     // Initialize first row
-    size_t bw = params.BandWidth();
+    size_t bw = mParams.bandwidth;
 
-    bool terminalX = startA == 0 || startA == lenA;
-    bool terminalY = startB == 0 || startB == lenB;
+    bool fromBeginningA = ( startA == 0 || startA == lenA );
+    bool fromBeginningB = ( startB == 0 || startB == lenB );
 
-    int bestScore = 0;
-    mRow[ 0 ].score = 0;
-    mRow[ 0 ].vGap.score = params.GapScore( terminalY, 1 );
-    mRow[ 0 ].vGap.scoreToExtend = params.GapExtendScore( terminalY );
+    mScores[ 0 ] = 0;
+    mVerticalGaps[ 0 ].OpenOrExtend( mScores[ 0 ], fromBeginningB );
 
+    Gap horizontalGap( mParams );
     for( size_t x = 1; x < width && x <= bw; x++ ) {
-      mRow[ x ].score = params.GapScore( terminalX, x );
-      mRow[ x ].vGap.score = MININT;
+      horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
+      mScores[ x ] = horizontalGap.Score();
+      mVerticalGaps[ x ].Reset();
     }
+    PrintRow( width );
 
     // Row by row...
     size_t center = 0;
-    for( y = 1; y < height; y++ ) {
+    for( size_t y = 1; y < height; y++ ) {
       int score = MININT;
-
-      int hGapScore = MININT;
-      int hGapExtend = MININT;
 
       // Calculate band bounds
       size_t leftBound = center > bw ? ( center - bw ) : 0;
@@ -124,85 +149,53 @@ public:
 
       // If we are in the last row, make sure we calculate up to the last cell (for traceback)
       if( y == height - 1 ) {
-        leftBound = width - 1;
+        rightBound = width - 1;
       }
 
       // Set diagonal score for first calculated cell in row
       int diagScore = MININT;
       if( leftBound ) {
-        diagScore = mRow[ leftBound - 1 ].score;
-        mRow[ leftBound - 1 ].score = MININT;
+        diagScore = mScores[ leftBound - 1 ];
+        mScores[ leftBound - 1 ] = MININT;
       }
 
       // Calculate row within the band bounds
-      aIdx = 0;
-      bIdx = 0;
-
-      for( x = leftBound; x <= rightBound; x++ ) {
-        int vGapScore = mRow[ x ].vGap.score;
-        int vGapExtend = mRow[ x ].vGap.scoreToExtend;
-
+      horizontalGap.Reset();
+      for( size_t x = leftBound; x <= rightBound; x++ ) {
         // Calculate diagonal score
+        size_t aIdx = 0, bIdx = 0;
         if( x > 0 ) {
           aIdx = ( dir == AlignmentDirection::forwards ) ? startA + x - 1 : startA - x;
           bIdx = ( dir == AlignmentDirection::forwards ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
           bool match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
-          score = diagScore + mParams.MatchScore( match );
+          score = diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
         }
 
-        // select highest score
+        // Select highest score
         //  - coming from diag (current),
         //  - coming from left (row)
         //  - coming from top (col)
-        if( score < rowGap )
-          score = rowGap;
-        if( score < colGap )
-          score = colGap;
+        if( score < horizontalGap.Score() )
+          score = horizontalGap.Score();
+
+        Gap &verticalGap = mVerticalGaps[ x ];
+        if( score < verticalGap.Score() )
+          score = verticalGap.Score();
 
         // Save the prev score at (x - 1) which
         // we will use to compute the diagonal score at (x)
-        diagScore = mRow[ x ].score;
+        diagScore = mScores[ x ];
 
         // Save new score
-        mRow[ x ].score = score;
+        mScores[ x ] = score;
 
         // Calculate potential gaps
-        {
-          // Horizontal gaps
+        bool isTerminalB = ( bIdx == 0 || bIdx == lenB - 1 );
+        horizontalGap.OpenOrExtend( score, isTerminalB );
 
-          // Score when extending the current (hypothetical) gap
-          int scoreExtendingGap = rowGap + rowGapExtend;
-
-          // Horizontal gaps
-          bool terminal = bIdx == 0 || bIdx == lenB - 1;
-          int scoreNewGap = score + mParams.GapCost( terminal, 1 );
-
-          if( scoreNewGap > scoreExtendingGap ) {
-            rowGap = scoreNewGap;
-            rowGapExtend = newGapExtend;
-          } else {
-            rowGap = scoreExtendingGap;
-          }
-        }
-
-        // TODO: Continue...
-
-        {
-          // Vertical gaps
-          bool terminal = aIdx == 0 || aIdx + 1 == width - 1;
-          int newGapOpen = terminalGap ? mAP.terminalGapOpenScore : mAP.gapOpenScore;
-          int newGapExtend = terminalGap ? mAP.terminalGapExtendScore : mAP.gapExtendScore;
-
-          int scoreNewGap = score + newGapOpen + newGapExtend;
-          int scoreExtendingGap = colGap + colGapExtend;
-          if( scoreNewGap > scoreExtendingGap ) {
-            mRow[ x ].vGap.score = scoreNewGap;
-            mRow[ x ].vGap.scoreToExtend = newGapExtend;
-          } else {
-            mRow[ x ].vGap.score = scoreExtendingGap;
-          }
-        }
+        bool isTerminalA = ( aIdx == 0 || aIdx == lenA - 1 );
+        verticalGap.OpenOrExtend( score, isTerminalA );
       }
       PrintRow( width );
 
@@ -210,6 +203,6 @@ public:
       center++;
     }
 
-    return bestScore;
+    return 0;
   }
 };
