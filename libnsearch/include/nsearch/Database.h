@@ -61,8 +61,6 @@ size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const
 
   size_t queryStart = 0;
   size_t targetStart = 0;
-  size_t queryEnd = query.Length();
-  size_t targetEnd = target.Length();
 
   Cigar cigar = cigar_;
 
@@ -82,10 +80,8 @@ size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const
   if( !cigar.empty() ) {
     const CigarEntry &bce = cigar.back();
     if( bce.op == CigarOp::DELETION ) {
-      targetEnd = target.Length() - bce.count;
       cigar.pop_back();
     } else if( bce.op == CigarOp::INSERTION ) {
-      queryEnd = query.Length() - bce.count;
       cigar.pop_back();
     }
   }
@@ -134,16 +130,21 @@ size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const
   }
 
   std::cout << std::endl;
-  std::cout << query.identifier << std::endl;
-  std::cout << target.identifier << std::endl;
+  std::cout << "QRY " << std::string( 11, ' ' ) << query.identifier << std::endl;
+  std::cout << std::endl;
+  std::cout << std::setw( 15 ) << queryStart + 1 << " " << q << " " << qcount << std::endl;
+  std::cout << std::string( 16, ' ' ) << a << std::endl;
+  std::cout << std::setw( 15 ) << targetStart + 1 << " " << t << " " << tcount << std::endl;
+  std::cout << std::endl;
+  std::cout << "REF " << std::string( 11, ' ' ) << target.identifier << std::endl;
 
-  std::cout << "QRY " << std::setw( 10 ) << ( queryStart + 1 ) << " " << q << " " << ( queryEnd ) << std::endl;
-  std::cout << std::string( 15, ' ' ) << a << std::endl;
-  std::cout << "REF " << std::setw( 10 ) << ( targetStart + 1 ) << " " << t << " " << ( targetEnd ) << std::endl;
   std::cout << std::endl;
   std::cout <<  numCols << " cols, " << numMatches << " ids (" <<
     std::fixed << std::setprecision( 1 ) << ( 100.0f * float( numMatches ) / float( numCols ) )
     << "%)" << std::endl;
+
+  std::cout << std::endl;
+  std::cout << std::string( 50, '=') << std::endl;
 
   return numCols;
 }
