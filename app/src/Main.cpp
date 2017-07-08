@@ -187,17 +187,16 @@ int main( int argc, const char **argv ) {
     /* std::cout << cig << std::endl; */
     /* std::cout << A.sequence << std::endl; */
 
-  BandedAlignParams bap;
-  bap.bandwidth = 3;
-  BandedAlign ba( bap );
-  Cigar cig;
-  Sequence A = "AAAAAAA";
-  Sequence B = "CCCCCCAAAAAAAAA";
-  int score = ba.Align( A, B, NULL, 0, 0, AlignmentDirection::forwards );
-  std::cout << score << std::endl;
-  std::cout << cig << std::endl;
-  std::cout << A.sequence << std::endl;
-  return 0;
+  /* BandedAlignParams bap; */
+  /* BandedAlign ba( bap ); */
+  /* Cigar cig; */
+  /* Sequence A = "AAAAAAAAAAAAAAACCCCCTTTTTTTTTTTTTTTTTAAAAAAAAAAAAAA"; */
+  /* Sequence B = "TTTTTTTTTTTTTTTTTGGGGGG"; */
+  /* int score = ba.Align( A, B, &cig, 0, 0, AlignmentDirection::forwards ); */
+  /* std::cout << score << std::endl; */
+  /* std::cout << cig << std::endl; */
+  /* std::cout << A.sequence << std::endl; */
+  /* return 0; */
 
   /* ExtendAlign ea; */
   /* Sequence A = "AAAAAAA"; */

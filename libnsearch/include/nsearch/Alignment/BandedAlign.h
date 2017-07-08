@@ -22,25 +22,23 @@ private:
     int mScore;
     bool mIsTerminal;
 
-    int mTerminalGapScore, mInteriorGapScore;
-    int mTerminalGapExtendScore, mInteriorGapExtendScore;
+    const BandedAlignParams &mParams;
 
   public:
-    Gap( const BandedAlignParams &params )
-      :
-        mTerminalGapScore( params.terminalGapOpenScore + params.terminalGapExtendScore ),
-        mTerminalGapExtendScore( params.terminalGapExtendScore ),
-
-        mInteriorGapScore( params.interiorGapOpenScore + params.interiorGapExtendScore ),
-        mInteriorGapExtendScore( params.interiorGapExtendScore )
+    Gap( const BandedAlignParams &params ) : mParams( params )
     {
       Reset();
     }
 
+    // Open new or extend existing
     void OpenOrExtend( int score, bool terminal, size_t length = 1 ) {
-      int newGapScore = score + length * ( terminal ? mTerminalGapScore : mInteriorGapScore );
+      int newGapScore = score;
+      if( length > 0 ) {
+        newGapScore += ( terminal ? mParams.terminalGapOpenScore : mParams.interiorGapOpenScore )
+          + length * ( terminal ? mParams.terminalGapExtendScore : mParams.interiorGapExtendScore );
+      }
 
-      Extend();
+      mScore += length * ( mIsTerminal ? mParams.terminalGapExtendScore : mParams.interiorGapExtendScore );
 
       if( newGapScore > mScore ) {
         mScore = newGapScore;
@@ -48,11 +46,11 @@ private:
       }
     }
 
-    void Extend( size_t length = 1 ) {
-      mScore += length * ( mIsTerminal ? mTerminalGapExtendScore : mInteriorGapExtendScore );
+    bool IsTerminal() const {
+      return mIsTerminal;
     }
 
-    int Score() {
+    int Score() const {
       return mScore;
     }
 
@@ -150,17 +148,18 @@ public:
 
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
       mScores[ x ] = horizontalGap.Score();
-      mOperations[ x ] = 'D';
+      mOperations[ x ] = 'I';
     }
     if( x < width ) {
       mScores[ x ] = MININT;
       mVerticalGaps[ x ].Reset();
     }
-    PrintRow( width );
+    /* PrintRow( width ); */
 
     // Row by row...
     size_t center = 1;
-    for( y = 1; y < height; y++ ) {
+    bool hitEnd = false;
+    for( y = 1; y < height && !hitEnd; y++ ) {
       int score = MININT;
 
       // Calculate band bounds
@@ -214,9 +213,9 @@ public:
 
         char op;
         if( score == horizontalGap.Score() ) {
-          op = 'D';
-        } else if( score == verticalGap.Score() ) {
           op = 'I';
+        } else if( score == verticalGap.Score() ) {
+          op = 'D';
         } else {
           op = match ? 'M' : 'X';
         }
@@ -235,45 +234,58 @@ public:
         mVerticalGaps[ rightBound + 1].Reset();
       }
 
-      PrintRow( width );
+      hitEnd = ( rightBound == leftBound );
 
-      if( rightBound == leftBound ) {
-        break;
-      }
+      /* PrintRow( width ); */
 
       // Move one cell over for the next row
       center++;
     }
 
-    int score = mScores[ x - 1 ];
-    std::cout << score << std::endl;
-
-    if( x == width ) {
-      // We reached the end of A, emulate going down on B (vertical gaps)
-      Gap &verticalGap = mVerticalGaps[ x - 1 ];
-      verticalGap.Extend( ( height - y ) );
-      score = verticalGap.Score();
-    }
-
     // Backtrack
     if( cigar ) {
-      size_t x = width - 1;
-      size_t y = height - 1;
-      cigar->reserve( std::max( x, y ) );
-      while( x != 0 || y != 0 ) {
-        char op = mOperations[ y * width + x ];
+      size_t bx = x - 1;
+      size_t by = y - 1;
+      cigar->reserve( std::max( bx, by ) );
+      while( bx != 0 || by != 0 ) {
+        char op = mOperations[ by * width + bx ];
         cigar->push_back( op );
         switch( op ) {
-          case 'D': x--; break;
-          case 'I': y--; break;
-          case 'M': x--; y--; break;
-          case 'X': x--; y--; break;
+          case 'I': bx--; break;
+          case 'D': by--; break;
+          case 'M': bx--; by--; break;
+          case 'X': bx--; by--; break;
         }
       }
+    }
 
-      if( dir == AlignmentDirection::forwards ) {
-        std::reverse( cigar->begin(), cigar->end() );
+    // Calculate score & cut corners
+    int score = mScores[ x - 1 ];
+    if( x == width ) {
+      // We reached the end of A, emulate going down on B (vertical gaps)
+      size_t remainingB = height - y;
+      Gap &verticalGap = mVerticalGaps[ x - 1 ];
+      verticalGap.OpenOrExtend( score, verticalGap.IsTerminal(), remainingB  );
+      score = verticalGap.Score();
+
+      // Add tails to backtrack info
+      if( cigar ) {
+        (*cigar) += Cigar( remainingB, 'D' );
       }
+    } else if( y == height ) {
+      // We reached the end of B, emulate going down on A (horizontal gaps)
+      size_t remainingA = width - x;
+      horizontalGap.OpenOrExtend( score, horizontalGap.IsTerminal(), remainingA );
+      score = horizontalGap.Score();
+      // Add tails to backtrack info
+      if( cigar ) {
+        (*cigar) += Cigar( remainingA, 'I' );
+      }
+    }
+
+    // Reverse cigar for forward alignment (we >back<tracked)
+    if( cigar && dir == AlignmentDirection::forwards ) {
+      std::reverse( cigar->begin(), cigar->end() );
     }
 
     return score;

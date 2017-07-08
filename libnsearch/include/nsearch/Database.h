@@ -168,11 +168,13 @@ public:
       }
 
       if( chain.size() > 0 ) {
+        Cigar alignment;
         Cigar cigar;
 
         // Align first HSP's start to whole sequences begin
         auto &first = *chain.cbegin();
         mBandedAlign.Align( query, candidateSeq, &cigar, first.s1, first.s2, AlignmentDirection::backwards );
+        alignment += cigar;
 
         // Align in between the HSP's
         for( auto it1 = chain.cbegin(), it2 = ++chain.cbegin();
@@ -186,11 +188,13 @@ public:
               prev.s1 + prev.length, prev.s2 + prev.length,
               AlignmentDirection::forwards,
               next.s1, next.s2 );
+          alignment += cigar;
         }
 
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
         mBandedAlign.Align( query, candidateSeq, &cigar, last.s1 + last.length, last.s2 + last.length, AlignmentDirection::forwards );
+        alignment += cigar;
       }
     }
     return SequenceList();

@@ -99,7 +99,7 @@ public:
     }
     size_t rowSize = x;
 
-    Print( mRow );
+    /* Print( mRow ); */
 
     size_t firstX = 0;
 
@@ -199,7 +199,7 @@ public:
         mRow[ rowSize ].scoreGap = MININT;
         rowSize++;
       }
-      Print( mRow );
+      /* Print( mRow ); */
     }
 
     return bestScore;
