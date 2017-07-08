@@ -37,14 +37,19 @@ private:
       Reset();
     }
 
-    void OpenOrExtend( int score, bool terminal ) {
-      int newGapScore = score + ( terminal ? mTerminalGapScore : mInteriorGapScore );
-      mScore += ( mIsTerminal ? mTerminalGapExtendScore : mInteriorGapExtendScore );
+    void OpenOrExtend( int score, bool terminal, size_t length = 1 ) {
+      int newGapScore = score + length * ( terminal ? mTerminalGapScore : mInteriorGapScore );
+
+      Extend();
 
       if( newGapScore > mScore ) {
         mScore = newGapScore;
         mIsTerminal = terminal;
       }
+    }
+
+    void Extend( size_t length = 1 ) {
+      mScore += length * ( mIsTerminal ? mTerminalGapExtendScore : mInteriorGapExtendScore );
     }
 
     int Score() {
@@ -88,7 +93,8 @@ public:
   int Align( const Sequence &A, const Sequence &B,
       Cigar *cigar = NULL,
       size_t startA = 0, size_t startB = 0,
-      AlignmentDirection dir = AlignmentDirection::forwards )
+      AlignmentDirection dir = AlignmentDirection::forwards,
+      size_t endA = -1, size_t endB = -1 )
   {
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
@@ -99,13 +105,16 @@ public:
     size_t lenA = A.Length();
     size_t lenB = B.Length();
 
-    if( dir == AlignmentDirection::forwards ) {
-      width = lenA - startA + 1;
-      height = lenB - startB + 1;
-    } else {
-      width = startA + 1;
-      height = startB + 1;
+    if( endA == ( size_t )-1 ) {
+      endA = ( dir == AlignmentDirection::forwards ? lenA : 0 );
     }
+
+    if( endB == ( size_t )-1 ) {
+      endB = ( dir == AlignmentDirection::forwards ? lenB : 0 );
+    }
+
+    width = ( endA > startA ? endA - startA : startA - endA ) + 1;
+    height = ( endB > startB ? endB - startB : startB - endB ) + 1;
 
     // Make sure we have enough cells
     if( mScores.capacity() < width ) {
@@ -126,49 +135,54 @@ public:
     bool fromBeginningA = ( startA == 0 || startA == lenA );
     bool fromBeginningB = ( startB == 0 || startB == lenB );
 
+    bool fromEndA = ( endA == 0 || endA == lenA );
+    bool fromEndB = ( endB == 0 || endB == lenB );
+
     mScores[ 0 ] = 0;
     mVerticalGaps[ 0 ].OpenOrExtend( mScores[ 0 ], fromBeginningB );
 
     Gap horizontalGap( mParams );
 
-    for( size_t x = 1; x < width; x++ ) {
-      if( x <= bw || height == 1 ) { // fill the full row if B is empty
-        horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
-        mScores[ x ] = horizontalGap.Score();
-        mOperations[ x ] = 'D';
-      } else {
-        // Important that we reset everything
-        mVerticalGaps[ x ].Reset();
-        mScores[ x ] = MININT;
-      }
-    }
+    size_t x, y;
+    for( x = 1; x < width; x++ ) {
+      if( x > bw && height > 1 ) // only break on BW bound if B is not empty
+        break;
 
-    /* PrintRow( width ); */
+      horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
+      mScores[ x ] = horizontalGap.Score();
+      mOperations[ x ] = 'D';
+    }
+    if( x < width ) {
+      mScores[ x ] = MININT;
+      mVerticalGaps[ x ].Reset();
+    }
+    PrintRow( width );
 
     // Row by row...
     size_t center = 1;
-    for( size_t y = 1; y < height; y++ ) {
+    for( y = 1; y < height; y++ ) {
       int score = MININT;
 
       // Calculate band bounds
       size_t leftBound = std::min( center > bw ? ( center - bw ) : 0, width - 1 );
       size_t rightBound = std::min( center + bw, width - 1 );
 
-      // If we are in the last row, make sure we calculate up to the last cell (for traceback)
-      if( y == height - 1 ) {
-        rightBound = width - 1;
-      }
+      /* // If we are in the last row, make sure we calculate up to the last cell (for traceback) */
+      /* if( y == height - 1 ) { */
+      /*   rightBound = width - 1; */
+      /* } */
 
       // Set diagonal score for first calculated cell in row
       int diagScore = MININT;
       if( leftBound > 0 ) {
         diagScore = mScores[ leftBound - 1 ];
         mScores[ leftBound - 1 ] = MININT;
+        mVerticalGaps[ leftBound - 1].Reset();
       }
 
       // Calculate row within the band bounds
       horizontalGap.Reset();
-      for( size_t x = leftBound; x <= rightBound; x++ ) {
+      for( x = leftBound; x <= rightBound; x++ ) {
         // Calculate diagonal score
         size_t aIdx = 0, bIdx = 0;
         bool match;
@@ -209,16 +223,36 @@ public:
         mOperations[ y * width + x ] = op;
 
         // Calculate potential gaps
-        bool isTerminalA = ( x == 0 || x == width - 1 );
-        bool isTerminalB = ( y == 0 || y == height - 1 );
+        bool isTerminalA = ( x == 0 || x == width - 1 ) && fromEndA;
+        bool isTerminalB = ( y == 0 || y == height - 1 ) && fromEndB;
 
         horizontalGap.OpenOrExtend( score, isTerminalB );
         verticalGap.OpenOrExtend( score, isTerminalA );
       }
-      /* PrintRow( width ); */
+
+      if( rightBound + 1 < width ) {
+        mScores[ rightBound + 1 ] = MININT;
+        mVerticalGaps[ rightBound + 1].Reset();
+      }
+
+      PrintRow( width );
+
+      if( rightBound == leftBound ) {
+        break;
+      }
 
       // Move one cell over for the next row
       center++;
+    }
+
+    int score = mScores[ x - 1 ];
+    std::cout << score << std::endl;
+
+    if( x == width ) {
+      // We reached the end of A, emulate going down on B (vertical gaps)
+      Gap &verticalGap = mVerticalGaps[ x - 1 ];
+      verticalGap.Extend( ( height - y ) );
+      score = verticalGap.Score();
     }
 
     // Backtrack
@@ -236,9 +270,12 @@ public:
           case 'X': x--; y--; break;
         }
       }
-      std::reverse( cigar->begin(), cigar->end() );
+
+      if( dir == AlignmentDirection::forwards ) {
+        std::reverse( cigar->begin(), cigar->end() );
+      }
     }
 
-    return mScores[ width - 1 ];
+    return score;
   }
 };

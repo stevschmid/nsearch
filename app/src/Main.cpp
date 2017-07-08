@@ -10,7 +10,7 @@
 #include <nsearch/Database.h>
 #include <nsearch/Aligner.h>
 
-/* #include <nsearch/Alignment/ExtendAlign.h> */
+#include <nsearch/Alignment/ExtendAlign.h>
 #include <nsearch/Alignment/BandedAlign.h>
 
 #include "Stats.h"
@@ -171,18 +171,40 @@ int main( int argc, const char **argv ) {
   // A>>>>B
   // B>>>>A
   // Empty A
-  // Empty B
+  // empty B
   // A breaking case when first row is not initialized properly (beyond bandwidth)
+  // THIS CASE:
+    /* Sequence A = "AAAAAAAAAAAAAAA"; */
+    /* Sequence B = "CCCCCCAAAAAAAAA"; */
+    /* int score = ba.Align( A, B, &cig, 0, 0, AlignmentDirection::forwards ); */
+    /* std::cout << score << std::endl; */
+    /* std::cout << cig << std::endl; */
+    /* std::cout << A.sequence << std::endl; */
+    /* A = "CCCCCCCCCCCCCCC"; */
+    /* B = "CCCCCCAAAAAAAAA"; */
+    /* score = ba.Align( A, B, &cig, 0, 0, AlignmentDirection::forwards ); */
+    /* std::cout << score << std::endl; */
+    /* std::cout << cig << std::endl; */
+    /* std::cout << A.sequence << std::endl; */
+
   BandedAlignParams bap;
   bap.bandwidth = 3;
   BandedAlign ba( bap );
   Cigar cig;
-  Sequence A = "ATGCCCGGGGGGGGGGGGG";
-  Sequence B = "ATTTCC";
-  int score = ba.Align( A, B, &cig );
+  Sequence A = "AAAAAAA";
+  Sequence B = "CCCCCCAAAAAAAAA";
+  int score = ba.Align( A, B, NULL, 0, 0, AlignmentDirection::forwards );
   std::cout << score << std::endl;
   std::cout << cig << std::endl;
+  std::cout << A.sequence << std::endl;
   return 0;
+
+  /* ExtendAlign ea; */
+  /* Sequence A = "AAAAAAA"; */
+  /* Sequence B = "AAACCCC"; */
+  /* int score = ea.Extend( A, B, 32 ); */
+  /* std::cout << score << std::endl; */
+  /* return 0; */
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

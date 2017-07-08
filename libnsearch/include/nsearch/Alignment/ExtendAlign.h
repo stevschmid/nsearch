@@ -86,6 +86,8 @@ public:
     int bestScore = 0;
     mRow[ 0 ].score = 0; mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
 
+    // TODO: Fix old row values
+
     for( x = 1; x < width; x++ ) {
       score = mAP.gapOpenScore + x * mAP.gapExtendScore;
 
@@ -97,7 +99,7 @@ public:
     }
     size_t rowSize = x;
 
-    /* Print( mRow ); */
+    Print( mRow );
 
     size_t firstX = 0;
 
@@ -191,7 +193,13 @@ public:
         }
       }
 
-      /* Print( mRow ); */
+      // Properly reset right bound
+      if( rowSize < width ) {
+        mRow[ rowSize ].score = MININT;
+        mRow[ rowSize ].scoreGap = MININT;
+        rowSize++;
+      }
+      Print( mRow );
     }
 
     return bestScore;

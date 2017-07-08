@@ -167,22 +167,30 @@ public:
         }
       }
 
-      if( chain.size() == 1 ) {
-        const Seed &lul = *chain.begin();
+      if( chain.size() > 0 ) {
         Cigar cigar;
-        /* bool debug = lul.s1 == 22 && lul.s2 == 5 && lul.length == 18; */
-        /* debug = debug || ( lul.s1 == 23 && lul.s2 == 5 && lul.length == 17 ); */
-        /* std::cout << "-" << std::endl; */
-        /* std::cout << debug << std::endl; */
-        /* std::cout << query.identifier << std::endl; */
-        /* std::cout << candidateSeq.identifier << std::endl; */
-        /* std::cout << lul.s1 << " " << lul.s2 << " " << lul.length << std::endl; */
-        /* std::cout << "lel" << std::endl; */
-        /* std::cout << "-" << std::endl; */
-        mBandedAlign.Align( query, candidateSeq, &cigar, lul.s1, lul.s2, AlignmentDirection::backwards );
-        mBandedAlign.Align( query, candidateSeq, &cigar, lul.s1 + lul.length, lul.s2 + lul.length, AlignmentDirection::forwards );
-        /* mBandedAlign.Align( candidateSeq, query, NULL, lul.s2, lul.s1, AlignmentDirection::backwards ); */
-        /* std::cout << "." << std::endl; */
+
+        // Align first HSP's start to whole sequences begin
+        auto &first = *chain.cbegin();
+        mBandedAlign.Align( query, candidateSeq, &cigar, first.s1, first.s2, AlignmentDirection::backwards );
+
+        // Align in between the HSP's
+        for( auto it1 = chain.cbegin(), it2 = ++chain.cbegin();
+            it1 != chain.cend() && it2 != chain.cend();
+            ++it1, ++it2 )
+        {
+          auto &prev = *it1;
+          auto &next = *it2;
+
+          mBandedAlign.Align( query, candidateSeq, &cigar,
+              prev.s1 + prev.length, prev.s2 + prev.length,
+              AlignmentDirection::forwards,
+              next.s1, next.s2 );
+        }
+
+        // Align last HSP's end to whole sequences end
+        auto &last = *chain.crbegin();
+        mBandedAlign.Align( query, candidateSeq, &cigar, last.s1 + last.length, last.s2 + last.length, AlignmentDirection::forwards );
       }
     }
     return SequenceList();
