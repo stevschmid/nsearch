@@ -8,12 +8,19 @@
 #include "Common.h"
 
 typedef struct {
+  int xDrop = 32;
+
   int matchScore = 2;
   int mismatchScore = -4;
 
   int gapOpenScore = -20;
   int gapExtendScore = -2;
 } ExtendAlignParams;
+
+typedef struct  {
+  int bestA, bestB;
+  Cigar cigar;
+} ExtendedAlignment;
 
 // Influenced by Blast's SemiGappedAlign function
 class ExtendAlign {
@@ -37,6 +44,7 @@ private:
 
   ExtendAlignParams mAP;
   Cells mRow;
+  CigarOps mOperations;
 
 public:
   ExtendAlign( const ExtendAlignParams &ap = ExtendAlignParams() )
@@ -50,14 +58,15 @@ public:
 
   // Heavily influenced by Blast's SemiGappedAlign function
   int Extend( const Sequence &A, const Sequence &B,
-      int xDrop,
+      size_t *bestA = NULL, size_t *bestB = NULL,
+      Cigar *cigar = NULL,
       AlignmentDirection dir = AlignmentDirection::forwards,
-      size_t startA = 0, size_t startB = 0,
-      size_t *bestA = NULL, size_t *bestB = NULL )
+      size_t startA = 0, size_t startB = 0 )
   {
     int score;
     size_t x, y;
     size_t aIdx, bIdx;
+    size_t bestX, bestY;
 
     size_t width, height;
 
@@ -71,17 +80,18 @@ public:
 
     if( mRow.capacity() < width ) {
       // Enlarge vector
-      std::cout << "Enlarge row from " << mRow.capacity()
-        << " to " << width << std::endl;
-      mRow = Cells( width * 2 );
+      mRow = Cells( width * 1.5 );
     }
 
-    if( bestA ) {
-      *bestA = startA;
+    if( mOperations.capacity() < width * height ) {
+      mOperations = CigarOps( width * height * 1.5 );
     }
-    if( bestB ) {
-      *bestB = startB;
-    }
+
+    bestX = 0;
+    bestY = 0;
+
+    if( bestA ) *bestA = startA;
+    if( bestB ) *bestB = startB;
 
     int bestScore = 0;
     mRow[ 0 ].score = 0; mRow[ 0 ].scoreGap = mAP.gapOpenScore + mAP.gapExtendScore;
@@ -89,9 +99,10 @@ public:
     for( x = 1; x < width; x++ ) {
       score = mAP.gapOpenScore + x * mAP.gapExtendScore;
 
-      if( score < -xDrop )
+      if( score < -mAP.xDrop )
         break;
 
+      mOperations[ x ] = CigarOp::INSERTION;
       mRow[ x ].score = score;
       mRow[ x ].scoreGap = MININT;
     }
@@ -113,6 +124,7 @@ public:
 
         aIdx = 0;
         bIdx = 0;
+        bool match;
         if( x > 0 ) {
           // diagScore: score at col-1, row-1
 
@@ -125,8 +137,8 @@ public:
           }
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
-
-          score = diagScore + ( DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] ) ? mAP.matchScore : mAP.mismatchScore );
+          match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
+          score = diagScore + ( match ? mAP.matchScore : mAP.mismatchScore );
         }
 
         // select highest score
@@ -142,7 +154,7 @@ public:
         // in the next iteration for the diagonal computation of (x, y )
         diagScore = mRow[ x ].score;
 
-        if( bestScore - score > xDrop ) {
+        if( bestScore - score > mAP.xDrop ) {
           // X-Drop test failed
           mRow[ x ].score = MININT;
 
@@ -156,15 +168,25 @@ public:
           // Check if we achieved new highscore
           if( score > bestScore ) {
             bestScore = score;
-            if( bestA ) {
-              *bestA = aIdx;
-            }
-            if( bestB ) {
-              *bestB = bIdx;
-            }
+
+            if( bestA ) *bestA = aIdx;
+            if( bestB ) *bestB = bIdx;
+
+            bestX = x;
+            bestY = y;
           }
 
           // Record new score
+          CigarOp op;
+          if( score == rowGap ) {
+            op = CigarOp::INSERTION;
+          } else if( score == colGap ) {
+            op = CigarOp::DELETION;
+          } else {
+            op = match ? CigarOp::MATCH : CigarOp::MISMATCH;
+          }
+          mOperations[ y * width + x ] = op;
+
           mRow[ x ].score = score;
           mRow[ x ].scoreGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, colGap + mAP.gapExtendScore );
           rowGap = std::max( score + mAP.gapOpenScore + mAP.gapExtendScore, rowGap + mAP.gapExtendScore );
@@ -182,9 +204,10 @@ public:
         rowSize = lastX + 1;
       } else {
         // Extend row, since last checked column didn't fail X-Drop test
-        while( rowGap >= ( bestScore - xDrop ) && rowSize < width ) {
+        while( rowGap >= ( bestScore - mAP.xDrop ) && rowSize < width ) {
           mRow[ rowSize ].score = rowGap;
           mRow[ rowSize ].scoreGap = rowGap + mAP.gapOpenScore + mAP.gapExtendScore;
+          mOperations[ y * width + rowSize ] = CigarOp::INSERTION;
           rowGap += mAP.gapExtendScore;
           rowSize++;
         }
@@ -197,6 +220,42 @@ public:
         rowSize++;
       }
       /* Print( mRow ); */
+    }
+
+    if( cigar ) {
+      size_t bx = bestX;
+      size_t by = bestY;
+
+      CigarEntry ce;
+      cigar->Clear();
+      while( bx != 0 || by != 0 ) {
+        CigarOp op = mOperations[ by * width + bx ];
+        cigar->Add( op );
+
+        switch( op ) {
+          case CigarOp::INSERTION:
+            bx--;
+            break;
+          case CigarOp::DELETION:
+            by--;
+            break;
+          case CigarOp::MATCH:
+            bx--;
+            by--;
+            break;
+          case CigarOp::MISMATCH:
+            bx--;
+            by--;
+            break;
+          default:
+            assert( true );
+            break;
+        }
+      }
+
+      if( dir == AlignmentDirection::forwards ) {
+        cigar->Reverse();
+      }
     }
 
     return bestScore;

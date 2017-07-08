@@ -198,12 +198,17 @@ int main( int argc, const char **argv ) {
   /* std::cout << A.sequence << std::endl; */
   /* return 0; */
 
-  /* ExtendAlign ea; */
-  /* Sequence A = "AAAAAAA"; */
-  /* Sequence B = "AAACCCC"; */
-  /* int score = ea.Extend( A, B, 32 ); */
-  /* std::cout << score << std::endl; */
-  /* return 0; */
+
+  ExtendAlign ea;
+  ExtendedAlignment aln;
+  Sequence A = "AATTT";
+  Sequence B = "GGGGT";
+  size_t bestA, bestB;
+  Cigar cigar;
+  int score = ea.Extend( A, B, &bestA, &bestB, &cigar, AlignmentDirection::backwards, A.Length(), B.Length() );
+  std::cout << score << std::endl;
+  std::cout << aln.cigar << std::endl;
+  std::cout << bestA << ", " << bestB << std::endl;
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

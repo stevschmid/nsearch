@@ -62,7 +62,6 @@ private:
 
   using Scores = std::vector< int >;
   using Gaps = std::vector< Gap >;
-  using Operations = std::vector< CigarOp >;
 
   void PrintRow( size_t width ) {
     for( int i = 0; i < width; i++ ) {
@@ -78,7 +77,7 @@ private:
 
   Scores mScores;
   Gaps mVerticalGaps;
-  Operations mOperations;
+  CigarOps mOperations;
   BandedAlignParams mParams;
 
 public:
@@ -90,8 +89,8 @@ public:
 
   int Align( const Sequence &A, const Sequence &B,
       Cigar *cigar = NULL,
-      size_t startA = 0, size_t startB = 0,
       AlignmentDirection dir = AlignmentDirection::forwards,
+      size_t startA = 0, size_t startB = 0,
       size_t endA = -1, size_t endB = -1 )
   {
     // Calculate matrix width, depending on alignment
@@ -124,7 +123,7 @@ public:
     }
 
     if( mOperations.capacity() < width * height ) {
-      mOperations = Operations( width * height * 1.5 );
+      mOperations = CigarOps( width * height * 1.5 );
     }
 
     // Initialize first row
@@ -248,14 +247,10 @@ public:
       size_t by = y - 1;
 
       CigarEntry ce;
-      cigar->clear();
+      cigar->Clear();
       while( bx != 0 || by != 0 ) {
         CigarOp op = mOperations[ by * width + bx ];
-        if( op != ce.op && ce.count > 0 ) {
-          cigar->push_back( ce );
-          ce.count = 0;
-          ce.op = op;
-        }
+        cigar->Add( op );
 
         switch( op ) {
           case CigarOp::INSERTION:
@@ -277,10 +272,6 @@ public:
             break;
         }
       }
-
-      if( ce.count > 0 ) {
-        cigar->push_back( ce );
-      }
     }
 
     // Calculate score & cut corners
@@ -294,7 +285,7 @@ public:
 
       // Add tails to backtrack info
       if( cigar && remainingB ) {
-        cigar->push_back( CigarEntry( remainingB, CigarOp::DELETION ) );
+        cigar->Add( CigarEntry( remainingB, CigarOp::DELETION ) );
       }
     } else if( y == height ) {
       // We reached the end of B, emulate going down on A (horizontal gaps)
@@ -304,13 +295,13 @@ public:
 
       // Add tails to backtrack info
       if( cigar && remainingA ) {
-        cigar->push_back( CigarEntry( remainingA, CigarOp::INSERTION ) );
+        cigar->Add( CigarEntry( remainingA, CigarOp::INSERTION ) );
       }
     }
 
     // Reverse cigar for forward alignment (we >back<tracked)
     if( cigar && dir == AlignmentDirection::forwards ) {
-      std::reverse( cigar->begin(), cigar->end() );
+      cigar->Reverse();
     }
 
     return score;

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
+#include <cassert>
 
 #include "Sequence.h"
 #include "Utils.h"
@@ -15,6 +16,41 @@
 #include "Alignment/ExtendAlign.h"
 #include "Alignment/BandedAlign.h"
 #include "Alignment/OptimalChainFinder.h"
+
+class HSP {
+public:
+  size_t a1, a2;
+  size_t b1, b2;
+  Cigar cigar;
+
+  HSP( size_t a1, size_t a2, size_t b1, size_t b2 )
+    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 )
+  {
+    assert( a2 >= a1 && b2 >= b1 );
+  }
+
+  size_t Length() const {
+    return std::max( a2 - a1, b2 - b1 );
+  }
+
+  bool IsOverlapping( const HSP &other ) const {
+    return
+      ( a1 <= other.a2 && other.a1 <= a2 ) // overlap in A direction
+      ||
+      ( b1 <= other.b2 && other.b1 <= b2 ); // overlap in B direction
+  }
+
+  size_t DistanceTo( const HSP &other ) const {
+    size_t x = ( a2 > other.a1 ? a2 - other.a1 : other.a2 - a1 );
+    size_t y = ( b2 > other.b1 ? b2 - other.b1 : other.b2 - b1 );
+
+    return sqrt( x*x + y*y );
+  }
+
+  bool operator<( const HSP &other ) const {
+    return Length() < other.Length();
+  }
+};
 
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
@@ -96,74 +132,53 @@ public:
       // Try to find best chain
       // Fill space between with banded align
 
-      std::multimap< size_t, Seed > hsps;
+      std::set< HSP > hsps;
 
       for( auto &seed : candidate.second.Seeds() ) {
+        Cigar leftCigar;
         size_t leftQuery, leftCandidate;
-        int leftScore = mExtendAlign.Extend( query, candidateSeq,
-            xDrop,
-            AlignmentDirection::backwards,
-            seed.s1, seed.s2,
-            &leftQuery, &leftCandidate );
 
+        int leftScore = mExtendAlign.Extend( query, candidateSeq,
+            &leftQuery, &leftCandidate,
+            &leftCigar,
+            AlignmentDirection::backwards,
+            seed.s1, seed.s2 );
+
+        Cigar rightCigar;
         size_t rightQuery, rightCandidate;
         int rightScore = mExtendAlign.Extend( query, candidateSeq,
-            xDrop,
+            &rightQuery, &rightCandidate,
+            &rightCigar,
             AlignmentDirection::forwards,
-            seed.s1 + seed.length, seed.s2 + seed.length,
-            &rightQuery, &rightCandidate );
+            seed.s1 + seed.length, seed.s2 + seed.length );
 
-        Seed hsp = seed;
-        hsp.s1 = leftQuery;
-        hsp.s2 = leftCandidate;
-        hsp.length = rightQuery - leftQuery;
+        HSP hsp( leftQuery, rightQuery, leftCandidate, rightCandidate );
+        if( hsp.Length() >= minHSPLength ) {
+          // Construct hsp cigar
+          // Middles matches 100% (exact seeds)
+          Cigar middleCigar;
+          middleCigar.push_front( CigarEntry( seed.length, CigarOp::MATCH ) );
+          hsp.cigar = leftCigar + middleCigar + rightCigar ;
 
-        if( hsp.length >= minHSPLength ) {
-          hsps.insert( std::make_pair( hsp.length, hsp ) );
+          // Save HSP
+          hsps.insert( hsp );
         }
       }
 
       // Greedy join HSPs if close
-      auto precede = []( const Seed &seed, const Seed &other ) {
-        return seed.s1 + seed.length <= other.s1 &&
-          seed.s2 + seed.length <= other.s2;
-      };
-
-      auto succeed = []( const Seed &seed, const Seed &other ) {
-        return seed.s1 >= other.s1 + other.length &&
-          seed.s2 >= other.s2 + other.length;
-      };
-
-      struct SeedCompare {
-        bool operator() ( const Seed &left, const Seed &right ) const {
-          return left.s1 < right.s1 && left.s2 < right.s2;
+      struct HSPChainOrdering {
+        bool operator() ( const HSP &left, const HSP &right ) const {
+          return left.a1 < right.a1 && left.b1 < right.b1;
         }
       };
 
-      std::set< Seed, SeedCompare > chain;
-      for( auto &p : hsps ) {
-        const Seed &hsp = p.second;
-        if( chain.empty() ) {
+      std::set< HSP, HSPChainOrdering > chain;
+      for( auto &hsp : hsps ) {
+        bool hasNoOverlaps = std::none_of( chain.begin(), chain.end(), [&]( const HSP &existing ) {
+          return hsp.IsOverlapping( existing );
+        });
+        if( hasNoOverlaps ) {
           chain.insert( hsp );
-        } else {
-          const Seed &left = *chain.begin();
-          const Seed &right = *chain.rbegin();
-
-          if( precede( hsp, left ) ) {
-            size_t dist = std::max( left.s1 - ( hsp.s1 + hsp.length ),
-                left.s2 - ( hsp.s2 + hsp.length ) );
-
-            if( dist <= maxHSPJoinDistance ) {
-              chain.insert( hsp );
-            }
-          } else if( succeed( hsp, right ) ) {
-            size_t dist = std::max( hsp.s1 - ( right.s1 + right.length ),
-                hsp.s2 - ( right.s2 + right.length ) );
-
-            if( dist <= maxHSPJoinDistance ) {
-              chain.insert( hsp );
-            }
-          }
         }
       }
 
@@ -173,25 +188,31 @@ public:
 
         // Align first HSP's start to whole sequences begin
         auto &first = *chain.cbegin();
-        mBandedAlign.Align( query, candidateSeq, &cigar, first.s1, first.s2, AlignmentDirection::backwards );
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::backwards, first.a1, first.b1 );
+        alignment += cigar;
 
         // Align in between the HSP's
         for( auto it1 = chain.cbegin(), it2 = ++chain.cbegin();
             it1 != chain.cend() && it2 != chain.cend();
             ++it1, ++it2 )
         {
-          auto &prev = *it1;
+          auto &current = *it1;
           auto &next = *it2;
 
+          alignment += current.cigar;
           mBandedAlign.Align( query, candidateSeq, &cigar,
-              prev.s1 + prev.length, prev.s2 + prev.length,
               AlignmentDirection::forwards,
-              next.s1, next.s2 );
+              current.a2, current.b2,
+              next.a1, next.b1 );
+          alignment += cigar;
         }
 
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
-        mBandedAlign.Align( query, candidateSeq, &cigar, last.s1 + last.length, last.s2 + last.length, AlignmentDirection::forwards );
+        alignment += last.cigar;
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2, last.b2 );
+        alignment += cigar;
+        std::cout << alignment << std::endl;
       }
     }
     return SequenceList();
