@@ -187,28 +187,29 @@ int main( int argc, const char **argv ) {
     /* std::cout << cig << std::endl; */
     /* std::cout << A.sequence << std::endl; */
 
-  /* BandedAlignParams bap; */
-  /* BandedAlign ba( bap ); */
-  /* Cigar cig; */
-  /* Sequence A = "AAAAAAAAAAAAAAACCCCCTTTTTTTTTTTTTTTTTAAAAAAAAAAAAAA"; */
-  /* Sequence B = "TTTTTTTTTTTTTTTTTGGGGGG"; */
-  /* int score = ba.Align( A, B, &cig, 0, 0, AlignmentDirection::forwards ); */
-  /* std::cout << score << std::endl; */
-  /* std::cout << cig << std::endl; */
-  /* std::cout << A.sequence << std::endl; */
+  // TEST CASE FOR WHEN STARTA>>>LENA
+    /* BandedAlignParams bap; */
+    /* BandedAlign ba( bap ); */
+    /* Cigar cig; */
+    /* Sequence A = "ATGCC"; */
+    /* Sequence B = "XXXATGCC"; */
+    /* int score = ba.Align( A, B, &cig, AlignmentDirection::forwards, 6, 3 ); */
+    /* std::cout << score << std::endl; */
+    /* std::cout << cig << std::endl; */
+    /* std::cout << A.sequence << std::endl; */
   /* return 0; */
 
 
-  ExtendAlign ea;
-  ExtendedAlignment aln;
-  Sequence A = "AATTT";
-  Sequence B = "GGGGT";
-  size_t bestA, bestB;
-  Cigar cigar;
-  int score = ea.Extend( A, B, &bestA, &bestB, &cigar, AlignmentDirection::backwards, A.Length(), B.Length() );
-  std::cout << score << std::endl;
-  std::cout << aln.cigar << std::endl;
-  std::cout << bestA << ", " << bestB << std::endl;
+  /* ExtendAlign ea; */
+  /* ExtendedAlignment aln; */
+  /* Sequence A = "AATTT"; */
+  /* Sequence B = "GGGGT"; */
+  /* size_t bestA, bestB; */
+  /* Cigar cigar; */
+  /* int score = ea.Extend( A, B, &bestA, &bestB, &cigar, AlignmentDirection::backwards, A.Length(), B.Length() ); */
+  /* std::cout << score << std::endl; */
+  /* std::cout << aln.cigar << std::endl; */
+  /* std::cout << bestA << ", " << bestB << std::endl; */
 
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

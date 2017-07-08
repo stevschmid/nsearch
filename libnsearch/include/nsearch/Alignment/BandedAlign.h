@@ -110,6 +110,11 @@ public:
       endB = ( dir == AlignmentDirection::forwards ? lenB : 0 );
     }
 
+    if( startA > lenA ) startA = lenA;
+    if( startB > lenB ) startB = lenB;
+    if( endA > lenA ) endA = lenA;
+    if( endB > lenB ) endB = lenB;
+
     width = ( endA > startA ? endA - startA : startA - endA ) + 1;
     height = ( endB > startB ? endB - startB : startB - endB ) + 1;
 
@@ -272,6 +277,8 @@ public:
             break;
         }
       }
+
+      cigar->Reverse();
     }
 
     // Calculate score & cut corners
@@ -299,8 +306,7 @@ public:
       }
     }
 
-    // Reverse cigar for forward alignment (we >back<tracked)
-    if( cigar && dir == AlignmentDirection::forwards ) {
+    if( cigar && dir == AlignmentDirection::backwards ) {
       cigar->Reverse();
     }
 

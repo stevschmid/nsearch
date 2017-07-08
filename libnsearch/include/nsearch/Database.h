@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <set>
 #include <cassert>
+#include <iostream>
+#include <iomanip>
 
 #include "Sequence.h"
 #include "Utils.h"
@@ -41,8 +43,8 @@ public:
   }
 
   size_t DistanceTo( const HSP &other ) const {
-    size_t x = ( a2 > other.a1 ? a2 - other.a1 : other.a2 - a1 );
-    size_t y = ( b2 > other.b1 ? b2 - other.b1 : other.b2 - b1 );
+    size_t x = ( a1 > other.a2 ? a1 - other.a2 : other.a1 - a2 );
+    size_t y = ( b1 > other.b2 ? b1 - other.b2 : other.b2 - b2 );
 
     return sqrt( x*x + y*y );
   }
@@ -51,6 +53,101 @@ public:
     return Length() < other.Length();
   }
 };
+
+size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const Cigar &cigar_ ) {
+  std::string q;
+  std::string t;
+  std::string a;
+
+  size_t queryStart = 0;
+  size_t targetStart = 0;
+  size_t queryEnd = query.Length();
+  size_t targetEnd = target.Length();
+
+  Cigar cigar = cigar_;
+
+  // Dont take left terminal gap into account
+  if( !cigar.empty() ) {
+    const CigarEntry &fce = cigar.front();
+    if( fce.op == CigarOp::DELETION ) {
+      targetStart = fce.count;
+      cigar.pop_front();
+    } else if( fce.op == CigarOp::INSERTION ) {
+      queryStart = fce.count;
+      cigar.pop_front();
+    }
+  }
+
+  // Don't take right terminal gap into account
+  if( !cigar.empty() ) {
+    const CigarEntry &bce = cigar.back();
+    if( bce.op == CigarOp::DELETION ) {
+      targetEnd = target.Length() - bce.count;
+      cigar.pop_back();
+    } else if( bce.op == CigarOp::INSERTION ) {
+      queryEnd = query.Length() - bce.count;
+      cigar.pop_back();
+    }
+  }
+
+  bool match;
+  size_t numMatches = 0;
+  size_t numCols = 0;
+
+  size_t qcount = queryStart;
+  size_t tcount = targetStart;
+
+  for( auto &c : cigar ) {
+    for( int i = 0; i < c.count; i++ ) {
+      switch( c.op ) {
+        case CigarOp::INSERTION:
+          t += '-';
+          q += query[ qcount++ ];
+          a += ' ';
+          break;
+
+        case CigarOp::DELETION:
+          q += '-';
+          t += target[ tcount++ ];
+          a += ' ';
+          break;
+
+        case CigarOp::MATCH:
+          numMatches++;
+          a += '|';
+          q += query[ qcount++ ];
+          t += target[ tcount++ ];
+          break;
+
+        case CigarOp::MISMATCH:
+          a += ' ';
+          q += query[ qcount++ ];
+          t += target[ tcount++ ];
+          break;
+
+        default:
+          break;
+      }
+
+      numCols++;
+    }
+  }
+
+  std::cout << std::endl;
+  std::cout << query.identifier << std::endl;
+  std::cout << target.identifier << std::endl;
+
+  std::cout << "QRY " << std::setw( 10 ) << ( queryStart + 1 ) << " " << q << " " << ( queryEnd ) << std::endl;
+  std::cout << std::string( 15, ' ' ) << a << std::endl;
+  std::cout << "REF " << std::setw( 10 ) << ( targetStart + 1 ) << " " << t << " " << ( targetEnd ) << std::endl;
+  std::cout << std::endl;
+  std::cout <<  numCols << " cols, " << numMatches << " ids (" <<
+    std::fixed << std::setprecision( 1 ) << ( 100.0f * float( numMatches ) / float( numCols ) )
+    << "%)" << std::endl;
+
+  return numCols;
+}
+
 
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
@@ -173,12 +270,19 @@ public:
       };
 
       std::set< HSP, HSPChainOrdering > chain;
-      for( auto &hsp : hsps ) {
+      for( auto it = hsps.rbegin(); it != hsps.rend(); ++it ) {
+        const HSP &hsp = *it;
         bool hasNoOverlaps = std::none_of( chain.begin(), chain.end(), [&]( const HSP &existing ) {
           return hsp.IsOverlapping( existing );
         });
         if( hasNoOverlaps ) {
-          chain.insert( hsp );
+          bool anyHSPJoinable = std::any_of( chain.begin(), chain.end(), [&]( const HSP &existing ) {
+            return hsp.DistanceTo( existing ) <= maxHSPJoinDistance;
+          });
+
+          if( chain.empty() || anyHSPJoinable ) {
+            chain.insert( hsp );
+          }
         }
       }
 
@@ -202,17 +306,17 @@ public:
           alignment += current.cigar;
           mBandedAlign.Align( query, candidateSeq, &cigar,
               AlignmentDirection::forwards,
-              current.a2, current.b2,
-              next.a1, next.b1 );
+              current.a2 + 1, current.b2 + 1,
+              next.a1 - 1, next.b1 - 1);
           alignment += cigar;
         }
 
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
         alignment += last.cigar;
-        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2, last.b2 );
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2 + 1, last.b2 + 1);
         alignment += cigar;
-        std::cout << alignment << std::endl;
+        PrintWholeAlignment( query, candidateSeq, alignment );
       }
     }
     return SequenceList();
