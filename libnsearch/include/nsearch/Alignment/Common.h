@@ -9,4 +9,22 @@ enum class AlignmentDirection {
   forwards, backwards
 };
 
-using Cigar = std::string;
+enum class CigarOp : char {
+  UNKNOWN   = ' ',
+  MATCH     = 'M',
+  MISMATCH  = 'X',
+  DELETION  = 'D',
+  INSERTION = 'I',
+};
+
+class CigarEntry {
+public:
+  int count = 0;
+  CigarOp op = CigarOp::UNKNOWN;
+
+  CigarEntry() { }
+  CigarEntry( int count, CigarOp op )
+    : count( count ), op( op ) { }
+};
+
+using Cigar = std::deque< CigarEntry >;

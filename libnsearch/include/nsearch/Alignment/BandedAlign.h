@@ -62,7 +62,7 @@ private:
 
   using Scores = std::vector< int >;
   using Gaps = std::vector< Gap >;
-  using Operations = std::vector< char >;
+  using Operations = std::vector< CigarOp >;
 
   void PrintRow( size_t width ) {
     for( int i = 0; i < width; i++ ) {
@@ -148,7 +148,7 @@ public:
 
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
       mScores[ x ] = horizontalGap.Score();
-      mOperations[ x ] = 'I';
+      mOperations[ x ] = CigarOp::INSERTION;
     }
     if( x < width ) {
       mScores[ x ] = MININT;
@@ -211,13 +211,13 @@ public:
         // Save new score
         mScores[ x ] = score;
 
-        char op;
+        CigarOp op;
         if( score == horizontalGap.Score() ) {
-          op = 'I';
+          op = CigarOp::INSERTION;
         } else if( score == verticalGap.Score() ) {
-          op = 'D';
+          op = CigarOp::DELETION;
         } else {
-          op = match ? 'M' : 'X';
+          op = match ? CigarOp::MATCH : CigarOp::MISMATCH;
         }
         mOperations[ y * width + x ] = op;
 
@@ -246,16 +246,40 @@ public:
     if( cigar ) {
       size_t bx = x - 1;
       size_t by = y - 1;
-      cigar->reserve( std::max( bx, by ) );
+
+      CigarEntry ce;
+      cigar->clear();
       while( bx != 0 || by != 0 ) {
-        char op = mOperations[ by * width + bx ];
-        cigar->push_back( op );
-        switch( op ) {
-          case 'I': bx--; break;
-          case 'D': by--; break;
-          case 'M': bx--; by--; break;
-          case 'X': bx--; by--; break;
+        CigarOp op = mOperations[ by * width + bx ];
+        if( op != ce.op && ce.count > 0 ) {
+          cigar->push_back( ce );
+          ce.count = 0;
+          ce.op = op;
         }
+
+        switch( op ) {
+          case CigarOp::INSERTION:
+            bx--;
+            break;
+          case CigarOp::DELETION:
+            by--;
+            break;
+          case CigarOp::MATCH:
+            bx--;
+            by--;
+            break;
+          case CigarOp::MISMATCH:
+            bx--;
+            by--;
+            break;
+          default:
+            assert( true );
+            break;
+        }
+      }
+
+      if( ce.count > 0 ) {
+        cigar->push_back( ce );
       }
     }
 
@@ -265,21 +289,22 @@ public:
       // We reached the end of A, emulate going down on B (vertical gaps)
       size_t remainingB = height - y;
       Gap &verticalGap = mVerticalGaps[ x - 1 ];
-      verticalGap.OpenOrExtend( score, verticalGap.IsTerminal(), remainingB  );
+      verticalGap.OpenOrExtend( score, verticalGap.IsTerminal(), remainingB );
       score = verticalGap.Score();
 
       // Add tails to backtrack info
-      if( cigar ) {
-        (*cigar) += Cigar( remainingB, 'D' );
+      if( cigar && remainingB ) {
+        cigar->push_back( CigarEntry( remainingB, CigarOp::DELETION ) );
       }
     } else if( y == height ) {
       // We reached the end of B, emulate going down on A (horizontal gaps)
       size_t remainingA = width - x;
       horizontalGap.OpenOrExtend( score, horizontalGap.IsTerminal(), remainingA );
       score = horizontalGap.Score();
+
       // Add tails to backtrack info
-      if( cigar ) {
-        (*cigar) += Cigar( remainingA, 'I' );
+      if( cigar && remainingA ) {
+        cigar->push_back( CigarEntry( remainingA, CigarOp::INSERTION ) );
       }
     }
 
