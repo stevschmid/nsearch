@@ -48,6 +48,10 @@ public:
     return seeds;
   };
 
+  bool operator<( const HitTracker &other ) const {
+    return Score() < other.Score();
+  }
+
 private:
   std::map< Pos, Ranges > mDiagonals;
 };

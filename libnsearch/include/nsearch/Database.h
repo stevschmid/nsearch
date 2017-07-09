@@ -54,7 +54,7 @@ public:
   }
 };
 
-size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const Cigar &cigar_ ) {
+float PrintWholeAlignment( const Sequence &query, const Sequence &target, const Cigar &cigar_ ) {
   std::string q;
   std::string t;
   std::string a;
@@ -139,14 +139,15 @@ size_t PrintWholeAlignment( const Sequence &query, const Sequence &target, const
   std::cout << "REF " << std::string( 11, ' ' ) << target.identifier << std::endl;
 
   std::cout << std::endl;
+  float identity = float( numMatches ) / float( numCols );
   std::cout <<  numCols << " cols, " << numMatches << " ids (" <<
-    std::fixed << std::setprecision( 1 ) << ( 100.0f * float( numMatches ) / float( numCols ) )
+    std::fixed << std::setprecision( 1 ) << ( 100.0f * identity )
     << "%)" << std::endl;
 
   std::cout << std::endl;
   std::cout << std::string( 50, '=') << std::endl;
 
-  return numCols;
+  return identity;
 }
 
 
@@ -195,16 +196,10 @@ public:
     });
 
     // Order candidates by number of shared words (hits)
-    using Candidate = std::pair< SequenceRef, HitTracker >;
-    struct CandidateCompare {
-      bool operator() ( const Candidate &left, const Candidate &right ) const {
-        return left.second.Score() < right.second.Score();
-      }
-    };
-    using Highscore = std::set< Candidate , CandidateCompare >;
+    using Highscore = std::multimap< HitTracker, SequenceRef >;
     Highscore highscore;
     for( auto &h : hits ) {
-      highscore.insert( std::make_pair( h.first, h.second ) );
+      highscore.insert( std::make_pair( h.second, h.first ) );
     }
 
     // For each candidate:
@@ -215,10 +210,9 @@ public:
     // - Check similarity
     /* std::cout << "=====NEWQUERY=====" << std::endl; */
     /* std::cout << "MinHSP Length " << minHSPLength << std::endl; */
-
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
-      const Candidate &candidate = *it;
-      const Sequence &candidateSeq = *candidate.first;
+      const HitTracker &hitTracker = it->first;
+      const Sequence &candidateSeq = *( it->second );
 
       // some yolo preliminary optimization
       /* if( candidate.second.Score() < 0.5 * query.Length() ) { */
@@ -232,7 +226,7 @@ public:
 
       std::set< HSP > hsps;
 
-      for( auto &seed : candidate.second.Seeds() ) {
+      for( auto &seed : hitTracker.Seeds() ) {
         Cigar leftCigar;
         size_t leftQuery, leftCandidate;
 
@@ -320,6 +314,7 @@ public:
         PrintWholeAlignment( query, candidateSeq, alignment );
       }
     }
+
     return SequenceList();
   }
 

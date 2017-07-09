@@ -136,7 +136,6 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  // TODO: Different word sizes for indexing & alignment!
   Database db( 8 );
 
   FASTA::Reader dbReader( databasePath );
