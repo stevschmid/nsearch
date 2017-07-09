@@ -140,9 +140,7 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
 
   std::cout << std::endl;
   float identity = float( numMatches ) / float( numCols );
-  std::cout <<  numCols << " cols, " << numMatches << " ids (" <<
-    std::fixed << std::setprecision( 1 ) << ( 100.0f * identity )
-    << "%)" << std::endl;
+  std::cout <<  numCols << " cols, " << numMatches << " ids (" << ( 100.0f * identity ) << "%)" << std::endl;
 
   std::cout << std::endl;
   std::cout << std::string( 50, '=') << std::endl;
@@ -155,6 +153,25 @@ class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
   using SequenceInfo = std::pair< size_t, SequenceRef >;
   using SequenceMappingDatabase = std::unordered_map< Sequence, std::deque< SequenceInfo > >;
+
+  float CalculateIdentity( const Cigar &cigar ) const {
+    size_t cols = 0;
+    size_t matches = 0;
+
+    for( const CigarEntry &c : cigar ) {
+      // Don't count terminal gaps towards identity calculation
+      if( &c == &(*cigar.cbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+        continue;
+      if( &c == &(*cigar.crbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+        continue;
+
+      cols += c.count;
+      if( c.op == CigarOp::MATCH )
+        matches += c.count;
+    }
+
+    return cols > 0 ? float( matches ) / float( cols ) : 0.0f;
+  }
 
 public:
   Database( size_t wordSize )
@@ -176,8 +193,7 @@ public:
     });
   }
 
-  SequenceList Query( const Sequence &query, int maxHits = 10 ) {
-    const int xDrop = 32;
+  SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1 ) {
     const size_t defaultMinHSPLength = 16;
     const size_t maxHSPJoinDistance = 16;
 
@@ -210,6 +226,7 @@ public:
     // - Check similarity
     /* std::cout << "=====NEWQUERY=====" << std::endl; */
     /* std::cout << "MinHSP Length " << minHSPLength << std::endl; */
+    size_t numHits = 0;
     for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
       const HitTracker &hitTracker = it->first;
       const Sequence &candidateSeq = *( it->second );
@@ -311,7 +328,15 @@ public:
         alignment += last.cigar;
         mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2 + 1, last.b2 + 1);
         alignment += cigar;
-        PrintWholeAlignment( query, candidateSeq, alignment );
+
+        float identity = CalculateIdentity( alignment );
+        if( identity >= minIdentity ) {
+          PrintWholeAlignment( query, candidateSeq, alignment );
+
+          numHits++;
+          if( numHits >= maxHits )
+            break;
+        }
       }
     }
 
