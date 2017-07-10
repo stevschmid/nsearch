@@ -216,13 +216,22 @@ public:
     // Fast counter reset
     memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
 
-    struct HighscoreOrdering {
-      bool operator() ( const std::pair< size_t, size_t > &left, const std::pair< size_t, size_t > &right ) const {
-        return left.first < right.first;
+    class Candidate {
+    public:
+      size_t seqIdx;
+      size_t counter;
+
+      Candidate(  size_t seqIdx, size_t counter )
+        : seqIdx( seqIdx ), counter( counter )
+      {
+      }
+
+      bool operator<( const Candidate &other ) const {
+        return counter < other.counter;
       }
     };
 
-    std::multiset< std::pair< size_t, size_t > , HighscoreOrdering > highscores;
+    std::multiset< Candidate > highscores;
     HashWords kmers( query, mWordSize );
     kmers.ForEach( [&]( size_t pos, size_t word ) {
       for( auto &seqInfo : mWordDB[ word ] ) {
@@ -230,8 +239,16 @@ public:
         size_t candidatePos = seqInfo.second;
 
         size_t counter = (mHits[ candidateIdx ]++);
-        if( highscores.empty() || counter > (*highscores.begin()).first ) {
-          highscores.insert( std::make_pair( counter, candidateIdx ) );
+        if( highscores.empty() || counter > highscores.begin()->counter ) {
+          auto it = std::find_if( highscores.begin(), highscores.end(), [candidateIdx]( const Candidate &c ) {
+            return c.seqIdx == candidateIdx;
+          });
+
+          if( it != highscores.end() ) {
+            highscores.erase( it );
+          }
+
+          highscores.insert( Candidate( candidateIdx, counter ) );
           if( highscores.size() > maxHits + maxRejects ) {
             highscores.erase( highscores.begin() );
           }
@@ -248,9 +265,10 @@ public:
     int numHits = 0;
     int numRejects = 0;
     for( auto it = highscores.rbegin(); it != highscores.rend(); ++it ) {
-      const size_t seqIdx = it->second;
+      const size_t seqIdx = (*it).seqIdx;
       assert( seqIdx < mSequences.count() );
       const Sequence &candidateSeq = mSequences[ seqIdx ];
+      std::cout << "Highscore Entry " << seqIdx << " " << mHits[ seqIdx ] << std::endl;
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
@@ -361,7 +379,7 @@ public:
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
-        std::cout << "Hits " << mHits[ seqIdx ] << "(" << hitTracker.Score() << ")" << std::endl;
+        std::cout << "Hits " << mHits[ seqIdx ] << " (Seq: " << seqIdx << ") (Score: " << hitTracker.Score() << ")" << std::endl;
         std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           PrintWholeAlignment( query, candidateSeq, alignment );
