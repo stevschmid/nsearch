@@ -149,7 +149,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
   FASTA::Reader qryReader( queryPath );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
-    SequenceList candidates = db.Query( seq, 0.8, 10 );
+    SequenceList candidates = db.Query( seq, 0.75, 1, 8 );
     /* std::cout << seq.identifier << std::endl; */
     /* for( auto &candidate : candidates ) { */
     /*   std::cout << " " << candidate.identifier << std::endl; */

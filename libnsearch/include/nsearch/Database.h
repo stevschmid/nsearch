@@ -204,6 +204,8 @@ public:
     const size_t defaultMinHSPLength = 16;
     const size_t maxHSPJoinDistance = 16;
 
+    std::cout << "===> SEARCH " << query.identifier << std::endl;
+
     size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
     // Go through each kmer, find hits
@@ -359,8 +361,7 @@ public:
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
-        std::cout << "HT Score " << hitTracker.Score() << std::endl;
-        std::cout << "Hits Score " << mHits[ seqIdx ] << std::endl;
+        std::cout << "Hits " << mHits[ seqIdx ] << "(" << hitTracker.Score() << ")" << std::endl;
         std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           PrintWholeAlignment( query, candidateSeq, alignment );
@@ -375,8 +376,6 @@ public:
         }
       }
     }
-
-    std::cout << "==" << std::endl;
 
     return SequenceList();
   }
