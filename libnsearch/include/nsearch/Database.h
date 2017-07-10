@@ -194,13 +194,13 @@ public:
     });
   }
 
-  void Stats() const {
+  void Purge()  {
     /* for( auto &it : mWordDB ) { */
     /*   std::cout << it.first << "," << it.second.size() << std::endl; */
     /* } */
   }
 
-  SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1 ) {
+  SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
     const size_t defaultMinHSPLength = 16;
     const size_t maxHSPJoinDistance = 16;
 
@@ -214,21 +214,27 @@ public:
     // Fast counter reset
     memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
 
+    struct HighscoreOrdering {
+      bool operator() ( const std::pair< size_t, size_t > &left, const std::pair< size_t, size_t > &right ) const {
+        return left.first < right.first;
+      }
+    };
+
+    std::multiset< std::pair< size_t, size_t > , HighscoreOrdering > highscores;
     HashWords kmers( query, mWordSize );
     kmers.ForEach( [&]( size_t pos, size_t word ) {
       for( auto &seqInfo : mWordDB[ word ] ) {
         size_t candidateIdx = seqInfo.first;
         size_t candidatePos = seqInfo.second;
-        mHits[ candidateIdx ] += 1;
+
+        size_t counter = (mHits[ candidateIdx ]++);
+        if( highscores.empty() || counter > (*highscores.begin()).first ) {
+          highscores.insert( std::make_pair( counter, candidateIdx ) );
+          if( highscores.size() > maxHits + maxRejects ) {
+            highscores.erase( highscores.begin() );
+          }
+        }
       }
-    });
-
-    // Order candidates by number of shared words (hits)
-    std::vector< size_t > indices( mHits.size() );
-    std::iota( indices.begin(), indices.end(), 0 );
-
-    std::sort( indices.begin(), indices.end(), [&]( size_t i1, size_t i2 ) {
-      return mHits[ i1 ] < mHits[ i2 ];
     });
 
     // For each candidate:
@@ -237,9 +243,10 @@ public:
     // - Join HSP together
     // - Align
     // - Check similarity
-    size_t numHits = 0;
-    for( auto it = indices.rbegin(); it != indices.rend(); ++it ) {
-      const size_t seqIdx = *it;
+    int numHits = 0;
+    int numRejects = 0;
+    for( auto it = highscores.rbegin(); it != highscores.rend(); ++it ) {
+      const size_t seqIdx = it->second;
       assert( seqIdx < mSequences.count() );
       const Sequence &candidateSeq = mSequences[ seqIdx ];
 
@@ -352,6 +359,8 @@ public:
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
+        std::cout << "HT Score " << hitTracker.Score() << std::endl;
+        std::cout << "Hits Score " << mHits[ seqIdx ] << std::endl;
         std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           PrintWholeAlignment( query, candidateSeq, alignment );
@@ -359,9 +368,15 @@ public:
           numHits++;
           if( numHits >= maxHits )
             break;
+        } else {
+          numRejects++;
+          if( numRejects >= maxRejects )
+            break;
         }
       }
     }
+
+    std::cout << "==" << std::endl;
 
     return SequenceList();
   }
