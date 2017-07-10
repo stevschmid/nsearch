@@ -11,7 +11,7 @@ static bool IsBlank( const std::string &str ) {
 
 static void UpcaseString( std::string &str ) {
   for( auto &ch : str )
-    if( ch >= 97 && ch <= 122 )
+    if( ch >= 97 && ch <= 122 ) // upcase
       ch &= ~0x20;
 }
 

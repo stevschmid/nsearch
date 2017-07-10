@@ -6,11 +6,12 @@
 #include <cassert>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
 #include "Sequence.h"
 #include "Utils.h"
 #include "Aligner.h"
-#include "Kmer.h"
+#include "HashWords.h"
 
 #include "Alignment/Seed.h"
 #include "Alignment/Ranges.h"
@@ -152,7 +153,7 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
 class Database {
   using SequenceRef = std::shared_ptr< Sequence >;
   using SequenceInfo = std::pair< size_t, SequenceRef >;
-  using SequenceMappingDatabase = std::unordered_map< Sequence, std::deque< SequenceInfo > >;
+  using SequenceMappingDatabase = std::unordered_map< size_t, std::deque< SequenceInfo > >;
 
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
@@ -177,19 +178,18 @@ public:
   Database( size_t wordSize )
     : mWordSize( wordSize )
   {
-    // Sequences have to fit in the calculated hash
-    assert( mWordSize * 2 <= sizeof( size_t ) * 8 );
   }
 
   void AddSequence( const Sequence &seq ) {
     // Save
-    mSequences.push_back( std::make_shared< Sequence >( seq ) );
-    SequenceRef ref = mSequences.back();
+    SequenceRef ref = std::make_shared< Sequence >( seq );
+    mSequences.push_back( ref );
 
     // Kmers for Indexing
-    Kmers kmers( *ref, mWordSize );
-    kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      this->mWordDB[ kmer ].push_back( SequenceInfo( pos, ref ) );
+    HashWords kmers( *ref, mWordSize );
+    kmers.ForEach( [&]( size_t pos, size_t word ) {
+      /* std::cout << pos << " " << word << std::endl; */
+      this->mWordDB[ word ].push_back( SequenceInfo( pos, ref ) );
     });
   }
 
@@ -202,9 +202,9 @@ public:
     std::unordered_map< SequenceRef, HitTracker > hits;
 
     // Go through each kmer, find hits
-    Kmers kmers( query, mWordSize );
-    kmers.ForEach( [&]( const Sequence &kmer, size_t pos ) {
-      for( auto &seqInfo : mWordDB[ kmer ] ) {
+    HashWords kmers( query, mWordSize );
+    kmers.ForEach( [&]( size_t pos, size_t word ) {
+      for( auto &seqInfo : mWordDB[ word ] ) {
         size_t candidatePos = seqInfo.first;
         SequenceRef candidateRef = seqInfo.second;
         hits[ candidateRef ].AddHit( pos, candidatePos, mWordSize );
