@@ -149,11 +149,12 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
   return identity;
 }
 
+#include <sparsepp/spp.h>
 
 class Database {
-  using SequenceRef = std::shared_ptr< Sequence >;
-  using SequenceInfo = std::pair< size_t, SequenceRef >;
-  using SequenceMappingDatabase = std::unordered_map< size_t, std::deque< SequenceInfo > >;
+  using SequenceInfo = std::pair< size_t, size_t >;
+  /* using SequenceMappingDatabase = std::unordered_map< size_t, std::deque< SequenceInfo > >; */
+  using SequenceMappingDatabase = spp::sparse_hash_map< size_t, std::vector< SequenceInfo > >;
 
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
@@ -182,15 +183,21 @@ public:
 
   void AddSequence( const Sequence &seq ) {
     // Save
-    SequenceRef ref = std::make_shared< Sequence >( seq );
-    mSequences.push_back( ref );
+    size_t seqIdx = mSequences.size();
+    mSequences.push_back( seq );
 
     // Kmers for Indexing
-    HashWords kmers( *ref, mWordSize );
+    HashWords kmers( seq, mWordSize );
     kmers.ForEach( [&]( size_t pos, size_t word ) {
-      /* std::cout << pos << " " << word << std::endl; */
-      this->mWordDB[ word ].push_back( SequenceInfo( pos, ref ) );
+      /* mWordsByCandidate[ seqIdx ][ word ].push_back( pos ); */
+      this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos ) );
     });
+  }
+
+  void Stats() const {
+    /* for( auto &it : mWordDB ) { */
+    /*   std::cout << it.first << "," << it.second.size() << std::endl; */
+    /* } */
   }
 
   SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1 ) {
@@ -199,24 +206,30 @@ public:
 
     size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
-    std::unordered_map< SequenceRef, HitTracker > hits;
-
     // Go through each kmer, find hits
+    if( mHits.size() < mSequences.size() ) {
+      mHits.resize( mSequences.size() );
+    }
+
+    // Fast counter reset
+    memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
+
     HashWords kmers( query, mWordSize );
     kmers.ForEach( [&]( size_t pos, size_t word ) {
       for( auto &seqInfo : mWordDB[ word ] ) {
-        size_t candidatePos = seqInfo.first;
-        SequenceRef candidateRef = seqInfo.second;
-        hits[ candidateRef ].AddHit( pos, candidatePos, mWordSize );
+        size_t candidateIdx = seqInfo.first;
+        size_t candidatePos = seqInfo.second;
+        mHits[ candidateIdx ] += 1;
       }
     });
 
     // Order candidates by number of shared words (hits)
-    using Highscore = std::multimap< HitTracker, SequenceRef >;
-    Highscore highscore;
-    for( auto &h : hits ) {
-      highscore.insert( std::make_pair( h.second, h.first ) );
-    }
+    std::vector< size_t > indices( mHits.size() );
+    std::iota( indices.begin(), indices.end(), 0 );
+
+    std::sort( indices.begin(), indices.end(), [&]( size_t i1, size_t i2 ) {
+      return mHits[ i1 ] < mHits[ i2 ];
+    });
 
     // For each candidate:
     // - Get HSPs,
@@ -224,17 +237,27 @@ public:
     // - Join HSP together
     // - Align
     // - Check similarity
-    /* std::cout << "=====NEWQUERY=====" << std::endl; */
-    /* std::cout << "MinHSP Length " << minHSPLength << std::endl; */
     size_t numHits = 0;
-    for( auto it = highscore.rbegin(); it != highscore.rend(); ++it ) {
-      const HitTracker &hitTracker = it->first;
-      const Sequence &candidateSeq = *( it->second );
+    for( auto it = indices.rbegin(); it != indices.rend(); ++it ) {
+      const size_t seqIdx = *it;
+      assert( seqIdx < mSequences.count() );
+      const Sequence &candidateSeq = mSequences[ seqIdx ];
 
-      // some yolo preliminary optimization
-      /* if( candidate.second.Score() < 0.5 * query.Length() ) { */
-      /*   continue; */
-      /* } */
+      // Go through each kmer, find hits
+      HitTracker hitTracker;
+      kmers.ForEach( [&]( size_t pos, size_t word ) {
+        for( auto &seqInfo : mWordDB[ word ] ) {
+          size_t candidateIdx = seqInfo.first;
+          size_t candidatePos = seqInfo.second;
+
+          if( candidateIdx != seqIdx )
+            continue;
+
+          hitTracker.AddHit( pos, candidatePos, mWordSize );
+        }
+      });
+
+      /* break; */
 
       // Find all HSP
       // Sort by length
@@ -242,7 +265,6 @@ public:
       // Fill space between with banded align
 
       std::set< HSP > hsps;
-
       for( auto &seed : hitTracker.Seeds() ) {
         Cigar leftCigar;
         size_t leftQuery, leftCandidate;
@@ -330,6 +352,7 @@ public:
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
+        std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           PrintWholeAlignment( query, candidateSeq, alignment );
 
@@ -348,7 +371,8 @@ private:
   BandedAlign mBandedAlign;
 
   size_t mWordSize;
-  std::deque< SequenceRef > mSequences;
+  std::vector< Sequence > mSequences;
 
+  std::vector< size_t > mHits;
   SequenceMappingDatabase mWordDB;
 };
