@@ -62,6 +62,7 @@ namespace std
         switch( seq.sequence[ k ] ) {
           case 'A': val = 0b00; break;
           case 'C': val = 0b01; break;
+          case 'U':
           case 'T': val = 0b10; break;
           case 'G': val = 0b11; break;
           default: assert( false ); break;

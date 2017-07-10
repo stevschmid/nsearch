@@ -34,7 +34,7 @@ private:
   void ForEveryKmerVariation( const std::function< void( size_t, Sequence& ) > &block,
       Sequence &kmer, size_t global, size_t start = 0 ) const
   {
-    static const char BASES[] = "ATCG";
+    static const char BASES[] = "ATCGU";
 
     // Find first ambiguous nucleotide
     size_t pos = kmer.sequence.find_first_not_of( BASES, start );
