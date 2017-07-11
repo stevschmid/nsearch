@@ -152,7 +152,19 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
 #include <sparsepp/spp.h>
 
 class Database {
-  using SequenceInfo = std::pair< size_t, size_t >;
+
+  class SequenceInfo {
+  public:
+    size_t seqIdx;
+    size_t pos;
+    int8_t prevNuc;
+
+    SequenceInfo( size_t seqIdx, size_t pos, int8_t prevNuc )
+      : seqIdx( seqIdx ), pos( pos ), prevNuc( prevNuc )
+    {
+    }
+  };
+
   /* using SequenceMappingDatabase = std::unordered_map< size_t, std::deque< SequenceInfo > >; */
   using SequenceMappingDatabase = spp::sparse_hash_map< size_t, std::vector< SequenceInfo > >;
 
@@ -188,16 +200,9 @@ public:
 
     // Kmers for Indexing
     HashWords kmers( seq, mWordSize );
-    kmers.ForEach( [&]( size_t pos, size_t word ) {
-      /* mWordsByCandidate[ seqIdx ][ word ].push_back( pos ); */
-      this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos ) );
+    kmers.ForEach( [&]( size_t pos, size_t word, int8_t prevNuc ) {
+      this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos, prevNuc ) );
     });
-  }
-
-  void Purge()  {
-    /* for( auto &it : mWordDB ) { */
-    /*   std::cout << it.first << "," << it.second.size() << std::endl; */
-    /* } */
   }
 
   SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
@@ -221,7 +226,7 @@ public:
       size_t seqIdx;
       size_t counter;
 
-      Candidate(  size_t seqIdx, size_t counter )
+      Candidate( size_t seqIdx, size_t counter )
         : seqIdx( seqIdx ), counter( counter )
       {
       }
@@ -233,26 +238,36 @@ public:
 
     std::multiset< Candidate > highscores;
     HashWords kmers( query, mWordSize );
-    kmers.ForEach( [&]( size_t pos, size_t word ) {
+    kmers.ForEach( [&]( size_t pos, size_t word, int8_t prevNuc ) {
       for( auto &seqInfo : mWordDB[ word ] ) {
-        size_t candidateIdx = seqInfo.first;
-        size_t candidatePos = seqInfo.second;
+        size_t candidateIdx = seqInfo.seqIdx;
+        size_t candidatePos = seqInfo.pos;
+        const Sequence &candidateSeq = mSequences[ candidateIdx ];
 
-        size_t counter = (mHits[ candidateIdx ]++);
-        if( highscores.empty() || counter > highscores.begin()->counter ) {
-          auto it = std::find_if( highscores.begin(), highscores.end(), [candidateIdx]( const Candidate &c ) {
-            return c.seqIdx == candidateIdx;
-          });
+        bool diagStart = prevNuc == -1 || seqInfo.prevNuc == -1 || prevNuc != seqInfo.prevNuc;
 
-          if( it != highscores.end() ) {
-            highscores.erase( it );
+        if( diagStart ) {
+          size_t counter = mWordSize;
+          const char *qs = query.sequence.data() + pos,
+            *qe = query.sequence.data() + query.sequence.length();
+          const char *cs = candidateSeq.sequence.data() + candidatePos,
+            *ce = candidateSeq.sequence.data() + candidateSeq.sequence.length();
+
+          for( ; qs < qe && cs < ce; qs++, cs++ ) {
+            if( !DoNucleotidesMatch( *qs, *cs ) )
+              break;
+
+            counter++;
           }
 
-          highscores.insert( Candidate( candidateIdx, counter ) );
-          if( highscores.size() > maxHits + maxRejects ) {
-            highscores.erase( highscores.begin() );
+          if( highscores.empty() || counter > highscores.begin()->counter ) {
+            highscores.insert( Candidate( candidateIdx, counter ) );
+            if( highscores.size() > maxHits + maxRejects ) {
+              highscores.erase( highscores.begin() );
+            }
           }
         }
+
       }
     });
 
@@ -268,14 +283,14 @@ public:
       const size_t seqIdx = (*it).seqIdx;
       assert( seqIdx < mSequences.count() );
       const Sequence &candidateSeq = mSequences[ seqIdx ];
-      std::cout << "Highscore Entry " << seqIdx << " " << mHits[ seqIdx ] << std::endl;
+      std::cout << "Highscore Entry " << seqIdx << " " << (*it).counter << std::endl;
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
-      kmers.ForEach( [&]( size_t pos, size_t word ) {
+      kmers.ForEach( [&]( size_t pos, size_t word, int8_t _prevNuc ) {
         for( auto &seqInfo : mWordDB[ word ] ) {
-          size_t candidateIdx = seqInfo.first;
-          size_t candidatePos = seqInfo.second;
+          size_t candidateIdx = seqInfo.seqIdx;
+          size_t candidatePos = seqInfo.pos;
 
           if( candidateIdx != seqIdx )
             continue;
@@ -347,6 +362,7 @@ public:
         }
       }
 
+      bool accept = false;
       if( chain.size() > 0 ) {
         Cigar alignment;
         Cigar cigar;
@@ -382,16 +398,19 @@ public:
         std::cout << "Hits " << mHits[ seqIdx ] << " (Seq: " << seqIdx << ") (Score: " << hitTracker.Score() << ")" << std::endl;
         std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
+          accept = true;
           PrintWholeAlignment( query, candidateSeq, alignment );
-
-          numHits++;
-          if( numHits >= maxHits )
-            break;
-        } else {
-          numRejects++;
-          if( numRejects >= maxRejects )
-            break;
         }
+      }
+
+      if( accept ) {
+        numHits++;
+        if( numHits >= maxHits )
+          break;
+      } else {
+        numRejects++;
+        if( numRejects >= maxRejects )
+          break;
       }
     }
 

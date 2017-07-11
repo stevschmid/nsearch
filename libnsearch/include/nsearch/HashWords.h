@@ -16,39 +16,7 @@
 
 class HashWords {
 public:
-  using Callback = const std::function< void( size_t, size_t ) >;
-
-private:
-  /* void ForEachVariation( const Callback &block, size_t pos, size_t word, size_t idx = 0 ) const { */
-  /*   static const std::string BASIC_BASES = "ACTGU"; */
-
-  /*   const char *ptr = mRef.sequence.data() + pos + idx; */
-  /*   const char *cur = ptr; */
-  /*   const char *end = mRef.sequence.data() + pos + mWordSize; */
-
-  /*   while( cur < end ) { */
-  /*     char ch = *cur; */
-  /*     if( ch >= 97 && ch <= 122 ) // upcase */
-  /*       ch &= ~0x20; */
-  /*     if( ch != 'A' && ch != 'T' && ch != 'C' && ch != 'G' && ch != 'U' ) */
-  /*       break; */
-  /*     cur++; */
-  /*   } */
-
-  /*   if( cur < end ) { */
-  /*     size_t newIdx = idx + ( cur - ptr ); */
-  /*     for( auto &base : BASIC_BASES ) { */
-  /*       /1* std::cout << *cur << std::endl; *1/ */
-  /*       if( DoNucleotidesMatch( *cur, base ) ) { */
-  /*         word &= ~( 0b11 << BIT_INDEX( newIdx ) ); // clear */
-  /*         word |= ( BASE_VALUE( base ) << BIT_INDEX( newIdx ) ); */
-  /*         ForEachVariation( block, pos, word, newIdx + 1 ); */
-  /*       } */
-  /*     } */
-  /*   } else { */
-  /*     block( pos, word ); */
-  /*   } */
-  /* } */
+  using Callback = const std::function< void( size_t, size_t, int8_t ) >;
 
 public:
   HashWords( const Sequence &ref, size_t wordSize )
@@ -75,11 +43,13 @@ public:
     }
 
     if( lastAmbigIndex == ( size_t )-1 )
-      block( 0, word );
+      block( 0, word, -1 );
 
     // For each, shift window by one
+    int8_t prevNuc = -1;
     size_t cols = mRef.Length() - mWordSize;
     for( size_t i = 1; i <= cols; i++ ) {
+      prevNuc = word & 0b11;
       word >>= 2;
       int8_t val = BASE_VALUE( *ptr );
       if( val < 0 ) {
@@ -89,7 +59,10 @@ public:
       }
 
       if( lastAmbigIndex == (size_t)-1 || i - lastAmbigIndex >= mWordSize ) {
-        block( i, word );
+        if( i - lastAmbigIndex == mWordSize ) {
+          prevNuc = -1;
+        }
+        block( i, word, prevNuc );
       }
 
       ptr++;
