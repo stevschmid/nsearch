@@ -16,6 +16,8 @@
 #include "Stats.h"
 #include "WorkerQueue.h"
 
+#include <nsearch/SpacedSeeds.h>
+
 Stats gStats;
 
 static const char USAGE[] =
@@ -136,7 +138,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  Database db( 8 );
+  Database db( 11 );
 
   FASTA::Reader dbReader( databasePath );
   std::cout << "Indexing DB" << std::endl;
@@ -199,6 +201,22 @@ int main( int argc, const char **argv ) {
     /* std::cout << A.sequence << std::endl; */
   /* return 0; */
 
+/*   SpacedSeeds seeds( "ATGGC", "1011" ); */
+/*   seeds.ForEach( []( size_t pos, size_t word ) { */
+/*     for( int i = 0; i < sizeof( size_t ) * 8 / 2 ; i++ ) { */
+/*       uint8_t val = ( word >> i * 2 ) & 0b11; */
+/*       char base; */
+/*       switch( val ) { */
+/*       case 0: base = 'A'; break; */
+/*       case 1: base = 'C'; break; */
+/*       case 2: base = 'T'; break; */
+/*       case 3: base = 'G'; break; */
+/*       } */
+/*       std::cout << base << " "; */
+/*     } */
+/*     std::cout << std::endl; */
+/*   }); */
+/*   return 0; */
 
   /* ExtendAlign ea; */
   /* ExtendedAlignment aln; */
