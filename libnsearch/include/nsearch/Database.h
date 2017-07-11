@@ -378,7 +378,7 @@ public:
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
         alignment += last.cigar;
-        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2 + 1, last.b2 + 1);
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2, last.b2 );
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
