@@ -22,8 +22,6 @@ public:
   SpacedSeeds( const Sequence &ref, size_t wordSize )
     : mRef( ref )
   {
-    for( int i = 0; i < wordSize; i++ )
-      mPattern += ( i % 3 == 2 ) ? '0' : '1';
     mWordSize = std::min( wordSize, mRef.Length() );
   }
 
@@ -37,7 +35,7 @@ public:
       size_t word = 0;
       size_t counter = 0;
       for( j = 0; j < mWordSize; j++ ) {
-        if( mPattern[ j ] == '0' )
+        if( j % 3 == 2 )
           continue;
 
         int8_t val = BASE_VALUE( ptr[ j ] );
