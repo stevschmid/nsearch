@@ -13,10 +13,7 @@ target_include_directories(libnsearch PUBLIC
   $<INSTALL_INTERFACE:include>
   PRIVATE src)
 
-target_include_directories(libnsearch INTERFACE ${CMAKE_SOURCE_DIR}/vendor)
-
-target_link_libraries(libnsearch
-  ksw)
+target_link_libraries(libnsearch)
 
 # Tests
 add_subdirectory(test)

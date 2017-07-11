@@ -11,7 +11,6 @@
 #include "Sequence.h"
 #include "Utils.h"
 #include "Aligner.h"
-#include "HashWords.h"
 #include "SpacedSeeds.h"
 
 #include "Alignment/Seed.h"
@@ -19,7 +18,6 @@
 #include "Alignment/HitTracker.h"
 #include "Alignment/ExtendAlign.h"
 #include "Alignment/BandedAlign.h"
-#include "Alignment/OptimalChainFinder.h"
 
 class HSP {
 public:
@@ -150,8 +148,6 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
   return identity;
 }
 
-#include <sparsepp/spp.h>
-
 class Database {
 
   class SequenceInfo {
@@ -165,8 +161,7 @@ class Database {
     }
   };
 
-  /* using SequenceMappingDatabase = std::unordered_map< size_t, std::deque< SequenceInfo > >; */
-  using SequenceMappingDatabase = spp::sparse_hash_map< size_t, std::vector< SequenceInfo > >;
+  using SequenceMappingDatabase = std::unordered_map< size_t, std::vector< SequenceInfo > >;
 
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
@@ -198,8 +193,8 @@ public:
     size_t seqIdx = mSequences.size();
     mSequences.push_back( seq );
 
-    SpacedSeeds kmers( seq, mWordSize );
-    kmers.ForEach( [&]( size_t pos, size_t word ) {
+    SpacedSeeds spacedSeeds( seq, mWordSize );
+    spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
       this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos ) );
     });
   }
@@ -236,8 +231,8 @@ public:
     };
 
     std::multiset< Candidate > highscores;
-    SpacedSeeds kmers( query, mWordSize );
-    kmers.ForEach( [&]( size_t pos, size_t word ) {
+    SpacedSeeds spacedSeeds( query, mWordSize );
+    spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
       for( auto &seqInfo : mWordDB[ word ] ) {
         size_t candidateIdx = seqInfo.seqIdx;
         size_t candidatePos = seqInfo.pos;
@@ -279,7 +274,7 @@ public:
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
-      kmers.ForEach( [&]( size_t pos, size_t word ) {
+      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
         for( auto &seqInfo : mWordDB[ word ] ) {
           size_t candidateIdx = seqInfo.seqIdx;
           size_t candidatePos = seqInfo.pos;

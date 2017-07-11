@@ -15,7 +15,6 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   PairedEndTest.cpp
   AlignerTest.cpp
   UtilsTest.cpp
-  Alignment/OptimalChainFinderTest.cpp
   Alignment/RangesTest.cpp
   Alignment/HitTrackerTest.cpp
   )
