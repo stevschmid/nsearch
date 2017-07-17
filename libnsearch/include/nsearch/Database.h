@@ -308,11 +308,6 @@ public:
         Cigar leftCigar;
         size_t leftQuery, leftCandidate;
 
-        std::cout << "Seed (" << seed.s1 << ", " << seed.s2 << ") - " <<
-          " (" << seed.s1 + seed.length  << ", " << seed.s2 + seed.length << ") " << std::endl;
-        std::cout << " Q " << query.Subsequence( seed.s1, seed.length ) << std::endl;
-        std::cout << " R " << candidateSeq.Subsequence( seed.s2, seed.length ) << std::endl;
-
         size_t a1 = seed.s1, a2 = seed.s1 + seed.length - 1,
                b1 = seed.s2, b2 = seed.s2 + seed.length - 1;
 
@@ -339,12 +334,6 @@ public:
         }
 
         HSP hsp( a1, a2, b1, b2 );
-        std::cout << "HSP leftQuery: " << a1 << " rightQuery: " << a2 << std::endl;
-        std::cout << query.Subsequence( a1, hsp.Length() ) << std::endl;
-
-        std::cout << "HSP leftCandidate: " << b1 << " rightCandidate: " << b2 << std::endl;
-        std::cout << candidateSeq.Subsequence( b1, hsp.Length() ) << std::endl;
-
         if( hsp.Length() >= minHSPLength ) {
           // Construct hsp cigar (spaced seeds so we cannot assume full match)
           Cigar middleCigar;
@@ -391,14 +380,6 @@ public:
         Cigar alignment;
         Cigar cigar;
 
-        std::cout << "Chain " << std::endl;
-        for( auto &s : chain ) {
-          std::cout << "HIT " << std::endl <<
-            " qry: " << s.a1 << " [" << query[s.a1] << "] - " << s.a2 << " [" << query[s.a2] << "] " << std::endl <<
-            " ref: " << s.b1 << " [" << candidateSeq[s.b1] << "] - " << s.b2 << " [" << candidateSeq[s.b2] << "]";
-        }
-        std::cout << std::endl;
-
         // Align first HSP's start to whole sequences begin
         auto &first = *chain.cbegin();
         mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::backwards, first.a1, first.b1 );
@@ -427,13 +408,11 @@ public:
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
-        std::cout << "Hits " << mHits[ seqIdx ] << " (Seq: " << seqIdx << ") (Score: " << hitTracker.Score() << ")" << std::endl;
-        std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           accept = true;
           bool correct = PrintWholeAlignment( query, candidateSeq, alignment );
           if( !correct ) {
-            std::cout << "NOPE Not correct" << std::endl;
+            std::cout << "INVALID ALIGNMENT" << std::endl;
           }
         }
       }
