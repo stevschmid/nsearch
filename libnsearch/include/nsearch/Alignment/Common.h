@@ -1,6 +1,9 @@
 #pragma once
 
+#include "../Sequence.h"
 #include "../Utils.h"
+
+#include <sstream>
 
 #define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
@@ -74,11 +77,16 @@ public:
       }
     }
   }
+
+  std::string ToString() const {
+    std::stringstream ss;
+    for( auto &c : *this )  {
+      ss << c.count << ( char )c.op;
+    }
+    return ss.str();
+  }
 };
 
 static std::ostream &operator<<( std::ostream &os, const Cigar &cigar ) {
-  for( auto &c : cigar )  {
-    os << c.count << ( char )c.op;
-  }
-  return os;
+  return ( os << cigar.ToString() );
 }

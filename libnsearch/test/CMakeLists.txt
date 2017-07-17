@@ -13,10 +13,10 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   FASTQTest.cpp
   FASTATest.cpp
   PairedEndTest.cpp
-  AlignerTest.cpp
   UtilsTest.cpp
   Alignment/RangesTest.cpp
   Alignment/HitTrackerTest.cpp
+  Alignment/ExtendAlignTest.cpp
   )
 
 add_dependencies(check testnsearch)

@@ -19,6 +19,7 @@
 #include "Alignment/ExtendAlign.h"
 #include "Alignment/BandedAlign.h"
 
+// HSP: first and last character in sequence (i.e. seq[a1] - seq[a2])
 class HSP {
 public:
   size_t a1, a2;
@@ -32,7 +33,7 @@ public:
   }
 
   size_t Length() const {
-    return std::max( a2 - a1, b2 - b1 );
+    return std::max( a2 - a1, b2 - b1 ) + 1;
   }
 
   bool IsOverlapping( const HSP &other ) const {
@@ -54,10 +55,11 @@ public:
   }
 };
 
-float PrintWholeAlignment( const Sequence &query, const Sequence &target, const Cigar &cigar_ ) {
+bool PrintWholeAlignment( const Sequence &query, const Sequence &target, const Cigar &cigar_ ) {
   std::string q;
   std::string t;
   std::string a;
+  bool correct = true;
 
   size_t queryStart = 0;
   size_t targetStart = 0;
@@ -110,9 +112,17 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
 
         case CigarOp::MATCH:
           numMatches++;
-          a += '|';
           q += query[ qcount++ ];
           t += target[ tcount++ ];
+          {
+            bool match = DoNucleotidesMatch( q.back(), t.back() );
+            if( !match ) {
+              correct = false;
+              a += 'X';
+            } else {
+              a += '|';
+            }
+          }
           break;
 
         case CigarOp::MISMATCH:
@@ -145,7 +155,7 @@ float PrintWholeAlignment( const Sequence &query, const Sequence &target, const 
   std::cout << std::endl;
   std::cout << std::string( 50, '=') << std::endl;
 
-  return identity;
+  return correct;
 }
 
 class Database {
@@ -298,11 +308,23 @@ public:
         Cigar leftCigar;
         size_t leftQuery, leftCandidate;
 
+        std::cout << "Seed (" << seed.s1 << ", " << seed.s2 << ") - " <<
+          " (" << seed.s1 + seed.length  << ", " << seed.s2 + seed.length << ") " << std::endl;
+        std::cout << " Q " << query.Subsequence( seed.s1, seed.length ) << std::endl;
+        std::cout << " R " << candidateSeq.Subsequence( seed.s2, seed.length ) << std::endl;
+
+        size_t a1 = seed.s1, a2 = seed.s1 + seed.length - 1,
+               b1 = seed.s2, b2 = seed.s2 + seed.length - 1;
+
         int leftScore = mExtendAlign.Extend( query, candidateSeq,
             &leftQuery, &leftCandidate,
             &leftCigar,
             AlignmentDirection::backwards,
-            seed.s1, seed.s2 );
+            a1, b1 );
+        if( !leftCigar.empty() ) {
+          a1 = leftQuery;
+          b1 = leftCandidate;
+        }
 
         Cigar rightCigar;
         size_t rightQuery, rightCandidate;
@@ -310,14 +332,29 @@ public:
             &rightQuery, &rightCandidate,
             &rightCigar,
             AlignmentDirection::forwards,
-            seed.s1 + seed.length, seed.s2 + seed.length );
+            a2 + 1, b2 + 1 );
+        if( !rightCigar.empty() ) {
+          a2 = rightQuery;
+          b2 = rightCandidate;
+        }
 
-        HSP hsp( leftQuery, rightQuery, leftCandidate, rightCandidate );
+        HSP hsp( a1, a2, b1, b2 );
+        std::cout << "HSP leftQuery: " << a1 << " rightQuery: " << a2 << std::endl;
+        std::cout << query.Subsequence( a1, hsp.Length() ) << std::endl;
+
+        std::cout << "HSP leftCandidate: " << b1 << " rightCandidate: " << b2 << std::endl;
+        std::cout << candidateSeq.Subsequence( b1, hsp.Length() ) << std::endl;
+
         if( hsp.Length() >= minHSPLength ) {
-          // Construct hsp cigar
-          // Middles matches 100% (exact seeds)
+          // Construct hsp cigar (spaced seeds so we cannot assume full match)
           Cigar middleCigar;
-          middleCigar.push_front( CigarEntry( seed.length, CigarOp::MATCH ) );
+          for( size_t s1 = seed.s1, s2 = seed.s2;
+               s1 < seed.s1 + seed.length && s2 < seed.s2 + seed.length;
+               s1++, s2++ )
+          {
+            bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] );
+            middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
+          }
           hsp.cigar = leftCigar + middleCigar + rightCigar ;
 
           // Save HSP
@@ -354,6 +391,14 @@ public:
         Cigar alignment;
         Cigar cigar;
 
+        std::cout << "Chain " << std::endl;
+        for( auto &s : chain ) {
+          std::cout << "HIT " << std::endl <<
+            " qry: " << s.a1 << " [" << query[s.a1] << "] - " << s.a2 << " [" << query[s.a2] << "] " << std::endl <<
+            " ref: " << s.b1 << " [" << candidateSeq[s.b1] << "] - " << s.b2 << " [" << candidateSeq[s.b2] << "]";
+        }
+        std::cout << std::endl;
+
         // Align first HSP's start to whole sequences begin
         auto &first = *chain.cbegin();
         mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::backwards, first.a1, first.b1 );
@@ -371,14 +416,14 @@ public:
           mBandedAlign.Align( query, candidateSeq, &cigar,
               AlignmentDirection::forwards,
               current.a2 + 1, current.b2 + 1,
-              next.a1 - 1, next.b1 - 1);
+              next.a1, next.b1 );
           alignment += cigar;
         }
 
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
         alignment += last.cigar;
-        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2, last.b2 );
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2 + 1, last.b2 + 1 );
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
@@ -386,7 +431,10 @@ public:
         std::cout << identity << std::endl;
         if( identity >= minIdentity ) {
           accept = true;
-          PrintWholeAlignment( query, candidateSeq, alignment );
+          bool correct = PrintWholeAlignment( query, candidateSeq, alignment );
+          if( !correct ) {
+            std::cout << "NOPE Not correct" << std::endl;
+          }
         }
       }
 
