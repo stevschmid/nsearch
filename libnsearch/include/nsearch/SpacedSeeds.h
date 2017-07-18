@@ -22,31 +22,33 @@ public:
   SpacedSeeds( const Sequence &ref, size_t wordSize )
     : mRef( ref )
   {
-    static const std::string defaultPattern = "111010010100110111";
+    static const std::string defaultPattern = "11101001010011011100";
+    wordSize = std::min( wordSize, mRef.Length() );
 
-    mWordSize = std::min( wordSize, mRef.Length() );
-
-    // 111010010100110111
     mPattern = "";
-    for( int i = 0, count = 0; count < wordSize; i++ ) {
+    size_t i = 0, numOnes = 0;
+    while( numOnes < wordSize ) {
       char ch = defaultPattern[ i % defaultPattern.size() ];
       mPattern += ch;
       if( ch == '1' ) {
-        count++;
+        numOnes++;
       }
+      i++;
     }
+    mMaxWordLength = i;
   }
 
   void ForEach( const Callback &block ) const {
     const char *ptr = mRef.sequence.data();
 
-    size_t j;
-    size_t cols = mRef.Length() - mWordSize + 1;
-    for( size_t i = 0; i < cols; i++ ) {
+    size_t wordLength = std::min( mMaxWordLength, mRef.Length() );
+    size_t cols = mRef.Length() - wordLength + 1;
 
+    size_t j;
+    for( int i = 0; i < cols; i++ ) {
       size_t word = 0;
       size_t counter = 0;
-      for( j = 0; j < mWordSize; j++ ) {
+      for( j = 0; j < wordLength; j++ ) {
         if( mPattern[ j ] == '0' )
           continue;
 
@@ -59,7 +61,7 @@ public:
       }
 
       // check if word is unambiguous
-      if( j == mWordSize )
+      if( j == wordLength )
         block( i, word );
 
       ptr++;
@@ -67,7 +69,7 @@ public:
   }
 
 private:
-  size_t mWordSize;
+  size_t mMaxWordLength;
   const Sequence &mRef;
   std::string mPattern;
 };

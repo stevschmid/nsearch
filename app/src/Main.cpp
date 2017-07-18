@@ -138,7 +138,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  Database db( 20 );
+  Database db( 8 );
 
   FASTA::Reader dbReader( databasePath );
   std::cout << "Indexing DB" << std::endl;
