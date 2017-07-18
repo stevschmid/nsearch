@@ -30,10 +30,10 @@ public:
     mPattern = "";
     for( int i = 0, count = 0; count < wordSize; i++ ) {
       char ch = defaultPattern[ i % defaultPattern.size() ];
+      mPattern += ch;
       if( ch == '1' ) {
         count++;
       }
-      mPattern += ch;
     }
   }
 
