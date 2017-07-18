@@ -22,7 +22,19 @@ public:
   SpacedSeeds( const Sequence &ref, size_t wordSize )
     : mRef( ref )
   {
+    static const std::string defaultPattern = "111010010100110111";
+
     mWordSize = std::min( wordSize, mRef.Length() );
+
+    // 111010010100110111
+    mPattern = "";
+    for( int i = 0, count = 0; count < wordSize; i++ ) {
+      char ch = defaultPattern[ i % defaultPattern.size() ];
+      if( ch == '1' ) {
+        count++;
+      }
+      mPattern += ch;
+    }
   }
 
   void ForEach( const Callback &block ) const {
@@ -35,7 +47,7 @@ public:
       size_t word = 0;
       size_t counter = 0;
       for( j = 0; j < mWordSize; j++ ) {
-        if( j % 3 == 2 )
+        if( !mPattern[ j ] )
           continue;
 
         int8_t val = BASE_VALUE( ptr[ j ] );
