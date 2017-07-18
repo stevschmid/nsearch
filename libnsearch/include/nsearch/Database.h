@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sparsepp/spp.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
@@ -171,7 +172,7 @@ class Database {
     }
   };
 
-  using SequenceMappingDatabase = std::unordered_map< size_t, std::vector< SequenceInfo > >;
+  using SequenceMappingDatabase = spp::sparse_hash_map< size_t, std::vector< SequenceInfo > >;
 
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
@@ -206,6 +207,7 @@ public:
     SpacedSeeds spacedSeeds( seq, mWordSize );
     spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
       this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos ) );
+      this->mCounter++;
     });
   }
 
@@ -274,6 +276,7 @@ public:
     // - Join HSP together
     // - Align
     // - Check similarity
+    return SequenceList();
     int numHits = 0;
     int numRejects = 0;
     std::cout << "Highscores " << highscores.size() << std::endl;
@@ -430,6 +433,8 @@ public:
 
     return SequenceList();
   }
+
+  size_t mCounter = 0;
 
 private:
   ExtendAlign mExtendAlign;
