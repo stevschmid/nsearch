@@ -153,6 +153,7 @@ public:
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
       mScores[ x ] = horizontalGap.Score();
       mOperations[ x ] = CigarOp::INSERTION;
+      mVerticalGaps[ x ].Reset();
     }
     if( x < width ) {
       mScores[ x ] = MININT;
