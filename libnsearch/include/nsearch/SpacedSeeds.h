@@ -47,7 +47,7 @@ public:
       size_t word = 0;
       size_t counter = 0;
       for( j = 0; j < mWordSize; j++ ) {
-        if( !mPattern[ j ] )
+        if( mPattern[ j ] == '0' )
           continue;
 
         int8_t val = BASE_VALUE( ptr[ j ] );
