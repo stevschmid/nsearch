@@ -17,7 +17,6 @@
 #include "WorkerQueue.h"
 
 #include <nsearch/SpacedSeeds.h>
-#include <nsearch/SpacedSeedsSIMD.h>
 
 Stats gStats;
 
@@ -148,29 +147,21 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
     db.AddSequence( seq );
   }
 
-  /* std::cout << "Querying DB" << std::endl; */
-  /* FASTA::Reader qryReader( queryPath ); */
-  /* while( !qryReader.EndOfFile() )  { */
-  /*   qryReader >> seq; */
-  /*   SequenceList candidates = db.Query( seq, 0.75, 1, 8 ); */
-  /*   /1* std::cout << seq.identifier << std::endl; *1/ */
-  /*   /1* for( auto &candidate : candidates ) { *1/ */
-  /*   /1*   std::cout << " " << candidate.identifier << std::endl; *1/ */
-  /*   /1* } *1/ */
-  /*   /1* std::cout << "===" << std::endl; *1/ */
-  /* } */
+  /* db.Stats(); */
+
+  std::cout << "Querying DB" << std::endl;
+  FASTA::Reader qryReader( queryPath );
+  while( !qryReader.EndOfFile() )  {
+    qryReader >> seq;
+    SequenceList candidates = db.Query( seq, 0.75, 1, 8 );
+    /* std::cout << seq.identifier << std::endl; */
+    /* for( auto &candidate : candidates ) { */
+    /*   std::cout << " " << candidate.identifier << std::endl; */
+    /* } */
+    /* std::cout << "===" << std::endl; */
+  }
 
   return true;
-}
-
-template<typename T>
-void printBin(const T& a)
-{
-    const char* beg = reinterpret_cast<const char*>(&a);
-    const char* end = beg + sizeof(a);
-    while(beg != end)
-        std::cout << std::bitset<CHAR_BIT>(*beg++) << ' ';
-    std::cout << '\n';
 }
 
 int main( int argc, const char **argv ) {

@@ -161,18 +161,12 @@ bool PrintWholeAlignment( const Sequence &query, const Sequence &target, const C
 
 class Database {
 
-  class SequenceInfo {
-  public:
+  using SequenceInfo =  struct {
     size_t seqIdx;
     size_t pos;
-
-    SequenceInfo( size_t seqIdx, size_t pos )
-      : seqIdx( seqIdx ), pos( pos )
-    {
-    }
   };
 
-  using SequenceMappingDatabase = spp::sparse_hash_map< size_t, std::vector< SequenceInfo > >;
+  using SequenceMappingDatabase = std::unordered_map< size_t, std::vector< SequenceInfo > >;
 
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
@@ -199,6 +193,12 @@ public:
   {
   }
 
+  void Stats() const {
+    for( auto &it : mWordDB ) {
+      std::cout << it.first << " " << it.second.size() <<  std::endl;
+    }
+  }
+
   void AddSequence( const Sequence &seq ) {
     // Save
     size_t seqIdx = mSequences.size();
@@ -206,8 +206,8 @@ public:
 
     SpacedSeeds spacedSeeds( seq, mWordSize );
     spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
-      this->mWordDB[ word ].push_back( SequenceInfo( seqIdx, pos ) );
-      this->mCounter++;
+      mWordDB[ word ].push_back( { seqIdx, pos } );
+      mCounter++;
     });
   }
 
@@ -276,7 +276,6 @@ public:
     // - Join HSP together
     // - Align
     // - Check similarity
-    return SequenceList();
     int numHits = 0;
     int numRejects = 0;
     std::cout << "Highscores " << highscores.size() << std::endl;
