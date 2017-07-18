@@ -140,13 +140,13 @@ bool PrintWholeAlignment( const Sequence &query, const Sequence &target, const C
   }
 
   std::cout << std::endl;
-  std::cout << "QRY " << std::string( 11, ' ' ) << query.identifier << std::endl;
+  std::cout << "Query " << std::string( 11, ' ' ) << ">" << query.identifier << std::endl;
   std::cout << std::endl;
   std::cout << std::setw( 15 ) << queryStart + 1 << " " << q << " " << qcount << std::endl;
   std::cout << std::string( 16, ' ' ) << a << std::endl;
   std::cout << std::setw( 15 ) << targetStart + 1 << " " << t << " " << tcount << std::endl;
   std::cout << std::endl;
-  std::cout << "REF " << std::string( 11, ' ' ) << target.identifier << std::endl;
+  std::cout << "Target " << std::string( 11, ' ' ) << ">" << target.identifier << std::endl;
 
   std::cout << std::endl;
   float identity = float( numMatches ) / float( numCols );
@@ -276,6 +276,7 @@ public:
     // - Check similarity
     int numHits = 0;
     int numRejects = 0;
+    std::cout << "Highscores " << highscores.size() << std::endl;
     for( auto it = highscores.rbegin(); it != highscores.rend(); ++it ) {
       const size_t seqIdx = (*it).seqIdx;
       assert( seqIdx < mSequences.count() );
@@ -296,8 +297,6 @@ public:
         }
       });
 
-      /* break; */
-
       // Find all HSP
       // Sort by length
       // Try to find best chain
@@ -305,32 +304,33 @@ public:
 
       std::set< HSP > hsps;
       for( auto &seed : hitTracker.Seeds() ) {
-        Cigar leftCigar;
-        size_t leftQuery, leftCandidate;
+        size_t queryPos, candidatePos;
+
 
         size_t a1 = seed.s1, a2 = seed.s1 + seed.length - 1,
                b1 = seed.s2, b2 = seed.s2 + seed.length - 1;
 
+        Cigar leftCigar;
         int leftScore = mExtendAlign.Extend( query, candidateSeq,
-            &leftQuery, &leftCandidate,
+            &queryPos, &candidatePos,
             &leftCigar,
             AlignmentDirection::backwards,
             a1, b1 );
         if( !leftCigar.empty() ) {
-          a1 = leftQuery;
-          b1 = leftCandidate;
+          a1 = queryPos;
+          b1 = candidatePos;
         }
 
         Cigar rightCigar;
         size_t rightQuery, rightCandidate;
         int rightScore = mExtendAlign.Extend( query, candidateSeq,
-            &rightQuery, &rightCandidate,
+            &queryPos, &candidatePos,
             &rightCigar,
             AlignmentDirection::forwards,
             a2 + 1, b2 + 1 );
         if( !rightCigar.empty() ) {
-          a2 = rightQuery;
-          b2 = rightCandidate;
+          a2 = queryPos;
+          b2 = candidatePos;
         }
 
         HSP hsp( a1, a2, b1, b2 );
