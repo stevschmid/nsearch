@@ -194,9 +194,25 @@ public:
   }
 
   void Stats() const {
-    for( auto &it : mWordDB ) {
-      std::cout << it.first << " " << it.second.size() <<  std::endl;
+    std::cout << "Database Stats" << std::endl;
+    std::cout << "==============" << std::endl;
+
+    int numEntries, minEntriesPerWord, maxEntriesPerWord;
+
+    numEntries = 0;
+    maxEntriesPerWord = INT_MIN;
+    minEntriesPerWord = INT_MAX;
+
+    for( auto &s : mWordDB ) {
+      numEntries += s.second.size();
+      minEntriesPerWord = std::min< int >( minEntriesPerWord, s.second.size() );
+      maxEntriesPerWord = std::max< int >( maxEntriesPerWord, s.second.size() );
     }
+
+    std::cout << "Words: " << mWordDB.size() << std::endl;
+    std::cout << "Entries: " << numEntries << std::endl;
+    std::cout << "MinEntriesPerWord: " << minEntriesPerWord << std::endl;
+    std::cout << "MaxEntriesPerWord: " << maxEntriesPerWord << std::endl;
   }
 
   void AddSequence( const Sequence &seq ) {
@@ -207,7 +223,6 @@ public:
     SpacedSeeds spacedSeeds( seq, mWordSize );
     spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
       mWordDB[ word ].push_back( { seqIdx, pos } );
-      mCounter++;
     });
   }
 
@@ -432,8 +447,6 @@ public:
 
     return SequenceList();
   }
-
-  size_t mCounter = 0;
 
 private:
   ExtendAlign mExtendAlign;

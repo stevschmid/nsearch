@@ -147,7 +147,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
     db.AddSequence( seq );
   }
 
-  /* db.Stats(); */
+  db.Stats();
 
   std::cout << "Querying DB" << std::endl;
   FASTA::Reader qryReader( queryPath );
