@@ -12,7 +12,7 @@
 #include "Sequence.h"
 #include "Utils.h"
 #include "Aligner.h"
-#include "SpacedSeeds.h"
+#include "SpacedSeedsSIMD.h"
 
 #include "Alignment/Seed.h"
 #include "Alignment/Ranges.h"
@@ -217,7 +217,7 @@ public:
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
 
-      SpacedSeeds spacedSeeds( seq, mWordSize );
+      SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
       spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
         mTotalWords++;
         mWordCounts[ word ]++;
@@ -235,18 +235,15 @@ public:
     mWordCounts = std::vector< uint32_t >( mNumUniqueWords );
 
     mWordInfoDB.reserve( mTotalWords );
-    for( size_t idx = 0; idx < mSequences.size(); idx++ ) {
+    for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
 
-      SpacedSeeds spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
+      SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( uint32_t pos, uint32_t word ) {
         auto wordIndex = mWordIndices[ word ];
         auto wordCount = mWordCounts[ word ]++;
 
-        auto &wordInfo = mWordInfoDB[ wordIndex + wordCount ];
-
-        wordInfo.index = idx;
-        wordInfo.pos = pos;
+        mWordInfoDB[ wordIndex + wordCount ] = WordInfo { idx, pos };
       });
     }
   }
@@ -283,7 +280,7 @@ public:
     };
 
     std::multiset< Candidate > highscores;
-    SpacedSeeds spacedSeeds( query, mWordSize );
+    SpacedSeedsSIMD spacedSeeds( query, mWordSize );
     spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
       for( uint32_t i = 0; i < mWordCounts[ word ]; i++ ) {
         auto &wordInfo = mWordInfoDB[ mWordIndices[ word ] + i ];
