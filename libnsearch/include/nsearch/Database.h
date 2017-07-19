@@ -168,6 +168,12 @@ class Database {
 
   using SequenceMappingDatabase = std::unordered_map< size_t, std::vector< SequenceInfo > >;
 
+  using WordInfo = struct {
+    uint32_t index;
+    uint32_t pos;
+  };
+  using WordInfoDatabase = std::vector< WordInfo >;
+
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
     size_t matches = 0;
@@ -188,42 +194,61 @@ class Database {
   }
 
 public:
-  Database( size_t wordSize )
-    : mWordSize( wordSize )
-  {
-  }
 
   void Stats() const {
-    std::cout << "Database Stats" << std::endl;
-    std::cout << "==============" << std::endl;
-
-    int numEntries, minEntriesPerWord, maxEntriesPerWord;
-
-    numEntries = 0;
-    maxEntriesPerWord = INT_MIN;
-    minEntriesPerWord = INT_MAX;
-
-    for( auto &s : mWordDB ) {
-      numEntries += s.second.size();
-      minEntriesPerWord = std::min< int >( minEntriesPerWord, s.second.size() );
-      maxEntriesPerWord = std::max< int >( maxEntriesPerWord, s.second.size() );
+    for( int i = 0; i < mNumUniqueWords; i++ ) {
+      std::cout << i << "," << mWordCounts[ i ] << std::endl;
     }
-
-    std::cout << "Words: " << mWordDB.size() << std::endl;
-    std::cout << "Entries: " << numEntries << std::endl;
-    std::cout << "MinEntriesPerWord: " << minEntriesPerWord << std::endl;
-    std::cout << "MaxEntriesPerWord: " << maxEntriesPerWord << std::endl;
   }
 
-  void AddSequence( const Sequence &seq ) {
-    // Save
-    size_t seqIdx = mSequences.size();
-    mSequences.push_back( seq );
+  Database( const SequenceList &sequences, size_t wordSize )
+    : mSequences( sequences ), mWordSize( wordSize )
+  {
+    mNumUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
 
-    SpacedSeeds spacedSeeds( seq, mWordSize );
-    spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
-      mWordDB[ word ].push_back( { seqIdx, pos } );
-    });
+    std::vector< std::vector< uint32_t > > candidatesByWord( mNumUniqueWords );
+
+    mTotalNucleotides = 0;
+    mTotalWords = 0;
+
+    // Calculate counts
+    mWordCounts.reserve( mNumUniqueWords );
+    for( size_t idx = 0; idx < mSequences.size(); idx++ ) {
+      const Sequence &seq = mSequences[ idx ];
+      mTotalNucleotides += seq.Length();
+
+      SpacedSeeds spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
+        mTotalWords++;
+        mWordCounts[ word ]++;
+      });
+    }
+
+    // Calculate indices
+    mWordIndices.reserve( mNumUniqueWords );
+    for( size_t i = 0; i < mNumUniqueWords; i++ ) {
+      mWordIndices[ i ] = i > 0 ? mWordIndices[ i - 1 ] + mWordCounts[ i - 1 ] : 0;
+    }
+
+    // Now populate the word info db
+    // Reset word counts, we count again from 0
+    mWordCounts = std::vector< uint32_t >( mNumUniqueWords );
+
+    mWordInfoDB.reserve( mTotalWords );
+    for( size_t idx = 0; idx < mSequences.size(); idx++ ) {
+      const Sequence &seq = mSequences[ idx ];
+
+      SpacedSeeds spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
+        auto wordIndex = mWordIndices[ word ];
+        auto wordCount = mWordCounts[ word ]++;
+
+        auto &wordInfo = mWordInfoDB[ wordIndex + wordCount ];
+
+        wordInfo.index = idx;
+        wordInfo.pos = pos;
+      });
+    }
   }
 
   SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
@@ -259,10 +284,13 @@ public:
 
     std::multiset< Candidate > highscores;
     SpacedSeeds spacedSeeds( query, mWordSize );
-    spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
-      for( auto &seqInfo : mWordDB[ word ] ) {
-        size_t candidateIdx = seqInfo.seqIdx;
-        size_t candidatePos = seqInfo.pos;
+    spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+      for( uint32_t i = 0; i < mWordCounts[ word ]; i++ ) {
+        auto &wordInfo = mWordInfoDB[ mWordIndices[ word ] + i ];
+
+        size_t candidateIdx = wordInfo.index;
+        size_t candidatePos = wordInfo.pos;
+
         const Sequence &candidateSeq = mSequences[ candidateIdx ];
 
         size_t &counter = mHits[ candidateIdx ];
@@ -302,10 +330,12 @@ public:
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
-      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
-        for( auto &seqInfo : mWordDB[ word ] ) {
-          size_t candidateIdx = seqInfo.seqIdx;
-          size_t candidatePos = seqInfo.pos;
+      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+        for( uint32_t i = 0; i < mWordCounts[ word ]; i++ ) {
+          auto &wordInfo = mWordInfoDB[ mWordIndices[ word ] + i ];
+
+          size_t candidateIdx = wordInfo.index;
+          size_t candidatePos = wordInfo.pos;
 
           if( candidateIdx != seqIdx )
             continue;
@@ -453,8 +483,16 @@ private:
   BandedAlign mBandedAlign;
 
   size_t mWordSize;
-  std::vector< Sequence > mSequences;
 
   std::vector< size_t > mHits;
   SequenceMappingDatabase mWordDB;
+
+  SequenceList mSequences;
+  size_t mTotalNucleotides;
+  size_t mTotalWords;
+  size_t mNumUniqueWords;
+
+  std::vector< uint32_t > mWordIndices;
+  std::vector< uint32_t > mWordCounts;
+  WordInfoDatabase mWordInfoDB;
 };

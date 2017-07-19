@@ -138,16 +138,18 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
   Sequence seq;
-  Database db( 8 );
+  SequenceList sequences;
 
   FASTA::Reader dbReader( databasePath );
   std::cout << "Indexing DB" << std::endl;
   while( !dbReader.EndOfFile() ) {
     dbReader >> seq;
-    db.AddSequence( seq );
+    sequences.push_back( std::move( seq ) );
   }
 
-  db.Stats();
+  Database db( sequences, 8 );
+  /* db.Stats(); */
+  /* return false; */
 
   std::cout << "Querying DB" << std::endl;
   FASTA::Reader qryReader( queryPath );
@@ -163,6 +165,16 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   return true;
 }
+
+/* template<typename T> */
+/* void printBin(const T& a) */
+/* { */
+/*   const char* beg = reinterpret_cast<const char*>(&a); */
+/*   const char* end = beg + sizeof(a); */
+/*   while(beg != end) */
+/*     std::cout << std::bitset<CHAR_BIT>(*beg++) << ' '; */
+/*   std::cout << '\n'; */
+/* } */
 
 int main( int argc, const char **argv ) {
   std::map<std::string, docopt::value> args
@@ -203,11 +215,25 @@ int main( int argc, const char **argv ) {
     /* std::cout << A.sequence << std::endl; */
   /* return 0; */
 
-  /* SpacedSeedsSIMD seeds( "ATGG", 3 ); */
-  /* seeds.ForEach( []( size_t pos, uint32_t word ) { */
+  /* SpacedSeeds seedsC( "TUTGT", 4 ); */
+  /* size_t c1 = 0; */
+  /* seedsC.ForEach( [&]( size_t pos, uint32_t word ) { */
   /*   printBin( word ); */
   /*   std::cout << std::endl; */
+  /*   c1++; */
   /* }); */
+
+  /* std::cout << c1 << std::endl; */
+  /* std::cout << "====" << std::endl; */
+
+  /* SpacedSeedsSIMD seeds( "TUTGT", 4 ); */
+  /* size_t c2 = 0; */
+  /* seeds.ForEach( [&]( size_t pos, uint32_t word ) { */
+  /*   printBin( word ); */
+  /*   std::cout << std::endl; */
+  /*   c2++; */
+  /* }); */
+  /* std::cout << c2 << std::endl; */
   /* return 0; */
 
   /* ExtendAlign ea; */
