@@ -194,20 +194,38 @@ public:
     mNumUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
 
     mTotalNucleotides = 0;
-    mTotalWords = 0;
 
-    // Calculate counts
+    mTotalWords = 0;
+    for( auto &seq : mSequences ) {
+      mTotalWords += seq.Length() - mWordSize + 1;
+    }
+
+    using Entry = struct Entry_s {
+      uint32_t word;
+      uint32_t index;
+      size_t pos;
+
+      Entry_s(uint32_t word, uint32_t index, size_t pos )
+        : word( word ), index( index ), pos( pos )
+      {
+      }
+    };
+
+    std::vector< Entry > entries;
+    entries.reserve( mTotalWords );
+
     mWordCounts.reserve( mNumUniqueWords );
-    for( size_t idx = 0; idx < mSequences.size(); idx++ ) {
+    for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
 
       SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( size_t pos, size_t word ) {
-        mTotalWords++;
+      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+        entries.emplace_back( word, idx, pos );
         mWordCounts[ word ]++;
       });
     }
+    mTotalWords = entries.size();
 
     // Calculate indices
     mWordIndices.reserve( mNumUniqueWords );
@@ -220,16 +238,10 @@ public:
     mWordCounts = std::vector< uint32_t >( mNumUniqueWords );
 
     mWordInfoDB.reserve( mTotalWords );
-    for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
-      const Sequence &seq = mSequences[ idx ];
-
-      SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( uint32_t pos, uint32_t word ) {
-        auto wordIndex = mWordIndices[ word ];
-        auto wordCount = mWordCounts[ word ]++;
-
-        mWordInfoDB[ wordIndex + wordCount ] = WordInfo { idx, pos };
-      });
+    for( auto &s : entries ) {
+      auto wordIndex = mWordIndices[ s.word ];
+      auto wordCount = mWordCounts[ s.word ]++;
+      mWordInfoDB[ wordIndex + wordCount ] = { s.index, (uint32_t)s.pos };
     }
   }
 
