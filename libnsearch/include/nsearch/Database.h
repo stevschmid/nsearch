@@ -11,7 +11,7 @@
 
 #include "Sequence.h"
 #include "Utils.h"
-#include "HashWords.h"
+#include "Kmers.h"
 
 #include "Alignment/Seed.h"
 #include "Alignment/Ranges.h"
@@ -220,8 +220,8 @@ public:
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
 
-      HashWords spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+      Kmers spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
         totalEntries++;
 
         if( uniqueIndex[ word ] != idx ) {
@@ -249,8 +249,8 @@ public:
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
 
-      HashWords spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+      Kmers spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
         if( mNumEntriesByWord[ word ] == 0 ) {
           // Create new entry
           WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
@@ -317,10 +317,10 @@ public:
     // TODO: Cache SPACED SEEDS! similar to db()
 
     std::multiset< Candidate > highscores;
-    HashWords spacedSeeds( query, mWordSize );
+    Kmers spacedSeeds( query, mWordSize );
     std::vector< bool > uniqueCheck( mNumUniqueWords );
 
-    spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+    spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
       if( !uniqueCheck[ word ] ) {
         uniqueCheck[ word ] = 1;
 
@@ -367,7 +367,7 @@ public:
       // Go through each kmer, find hits
       HitTracker hitTracker;
 
-      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
         WordEntry *ptr = &mFirstEntries[ mIndexByWord[ word ] ];
         for( uint32_t i = 0; i < mNumEntriesByWord[ word ]; i++, ptr++ ) {
           if( ptr->sequence != seqIdx )
