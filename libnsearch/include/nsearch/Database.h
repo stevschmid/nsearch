@@ -25,16 +25,21 @@ class HSP {
 public:
   size_t a1, a2;
   size_t b1, b2;
+  int score;
   Cigar cigar;
 
   HSP( size_t a1, size_t a2, size_t b1, size_t b2 )
-    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 )
+    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 ), score( 0 )
   {
     assert( a2 >= a1 && b2 >= b1 );
   }
 
   size_t Length() const {
     return std::max( a2 - a1, b2 - b1 ) + 1;
+  }
+
+  int Score() const {
+    return score;
   }
 
   bool IsOverlapping( const HSP &other ) const {
@@ -52,7 +57,7 @@ public:
   }
 
   bool operator<( const HSP &other ) const {
-    return Length() < other.Length();
+    return Score() < other.Score();
   }
 };
 
@@ -432,14 +437,17 @@ public:
         if( hsp.Length() >= minHSPLength ) {
           // Construct hsp cigar (spaced seeds so we cannot assume full match)
           Cigar middleCigar;
+          int middleScore = 0;
           for( size_t s1 = seed.s1, s2 = seed.s2;
                s1 < seed.s1 + seed.length && s2 < seed.s2 + seed.length;
                s1++, s2++ )
           {
             bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] );
             middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
+            middleScore += match ? mExtendAlign.AP().matchScore : mExtendAlign.AP().mismatchScore;
           }
-          hsp.cigar = leftCigar + middleCigar + rightCigar ;
+          hsp.score = leftScore + middleScore + rightScore;
+          hsp.cigar = leftCigar + middleCigar + rightCigar;
 
           // Save HSP
           hsps.insert( hsp );
