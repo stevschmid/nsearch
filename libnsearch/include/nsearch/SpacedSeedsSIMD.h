@@ -53,7 +53,7 @@ public:
   SpacedSeedsSIMD( const Sequence &ref, size_t numOnes )
     : mRef( ref )
   {
-    static const char BASE_PATTERN[] = "1110110010100110";
+    static const char BASE_PATTERN[] = "1110110010100101";
 
     // 111010010100110111
     //   __m128i indexMask = _mm_setr_epi8(
@@ -105,7 +105,7 @@ public:
 
     // Disregard ambiguous nucs which represent spaces in mask (ie 0)
     if( _mm_movemask_epi8( maskATCG ) != 0xFFFF ) {
-      // Check if the ambiguous nuc is not space (shuffle is slow)
+      // Check if the ambiguous nuc is not spaced (shuffle is slow)
       __m128i check = _mm_or_si128(
           _mm_shuffle_epi8( maskATCG, maskIndex ),
           _mm_cmpeq_epi8( maskIndex, _mm_set1_epi8( 0x80 ) )

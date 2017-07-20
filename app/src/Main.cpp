@@ -8,15 +8,12 @@
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
 #include <nsearch/Database.h>
-#include <nsearch/Aligner.h>
 
 #include <nsearch/Alignment/ExtendAlign.h>
 #include <nsearch/Alignment/BandedAlign.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
-
-#include <nsearch/SpacedSeeds.h>
 
 Stats gStats;
 
@@ -155,7 +152,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
   FASTA::Reader qryReader( queryPath );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
-    SequenceList candidates = db.Query( seq, 0.75, 1, 20 );
+    SequenceList candidates = db.Query( seq, 0.75, 1, 8 );
     /* std::cout << seq.identifier << std::endl; */
     /* for( auto &candidate : candidates ) { */
     /*   std::cout << " " << candidate.identifier << std::endl; */

@@ -11,7 +11,6 @@
 
 #include "Sequence.h"
 #include "Utils.h"
-#include "Aligner.h"
 #include "SpacedSeedsSIMD.h"
 
 #include "Alignment/Seed.h"
