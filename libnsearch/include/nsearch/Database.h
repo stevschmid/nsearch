@@ -183,9 +183,6 @@ class Database {
 public:
 
   void Stats() const {
-    for( int i = 0; i < mNumUniqueWords; i++ ) {
-      std::cout << i << "," << mWordCounts[ i ] << std::endl;
-    }
   }
 
   Database( const SequenceList &sequences, size_t wordSize )
@@ -203,9 +200,9 @@ public:
     using Entry = struct Entry_s {
       uint32_t word;
       uint32_t index;
-      size_t pos;
+      uint32_t pos;
 
-      Entry_s(uint32_t word, uint32_t index, size_t pos )
+      Entry_s(uint32_t word, uint32_t index, uint32_t pos )
         : word( word ), index( index ), pos( pos )
       {
       }
@@ -214,7 +211,10 @@ public:
     std::vector< Entry > entries;
     entries.reserve( mTotalWords );
 
-    mWordCounts.reserve( mNumUniqueWords );
+    size_t totalEntries = 0;
+    size_t totalFirstEntries = 0;
+    std::vector< uint32_t > uniqueCount( mNumUniqueWords );
+    std::vector< uint32_t > uniqueCheck( mNumUniqueWords );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
@@ -222,26 +222,43 @@ public:
       SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
       spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
         entries.emplace_back( word, idx, pos );
-        mWordCounts[ word ]++;
+        totalEntries++;
+
+        if( uniqueCheck[ word ] != idx ) {
+          uniqueCheck[ word ] = idx;
+          uniqueCount[ word ]++;
+          totalFirstEntries++;
+        }
       });
     }
     mTotalWords = entries.size();
 
     // Calculate indices
-    mWordIndices.reserve( mNumUniqueWords );
+    /* mWordIndices.reserve( mNumUniqueWords ); */
+    mIndexByWord.reserve( mNumUniqueWords );
     for( size_t i = 0; i < mNumUniqueWords; i++ ) {
-      mWordIndices[ i ] = i > 0 ? mWordIndices[ i - 1 ] + mWordCounts[ i - 1 ] : 0;
+      mIndexByWord[ i ] = i > 0 ? mIndexByWord[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
     }
 
-    // Now populate the word info db
-    // Reset word counts, we count again from 0
-    mWordCounts = std::vector< uint32_t >( mNumUniqueWords );
+    // Populate DB
+    mFirstEntries.resize( totalFirstEntries );
+    mFurtherEntries.resize( totalEntries - totalFirstEntries );
 
-    mWordInfoDB.reserve( mTotalWords );
+    // Entries is sorted by sequence
+    mNumEntriesByWord = std::vector< uint32_t >( mNumUniqueWords );
     for( auto &s : entries ) {
-      auto wordIndex = mWordIndices[ s.word ];
-      auto wordCount = mWordCounts[ s.word ]++;
-      mWordInfoDB[ wordIndex + wordCount ] = { s.index, (uint32_t)s.pos };
+      uint32_t word = s.word;
+
+      auto &entry = mFirstEntries[ mIndexByWord[ word ] + mNumEntriesByWord[ word ] ];
+      if( entry.sequence == (uint32_t)-1 ) {
+        mNumEntriesByWord[ word ]++;
+        entry.sequence = s.index;
+        entry.pos = s.pos;
+        entry.nextEntry = NULL;
+      } else {
+        mFurtherEntries.emplace_back( s.index, s.pos );
+        entry.nextEntry = &mFurtherEntries.back();
+      }
     }
   }
 
@@ -276,32 +293,52 @@ public:
       }
     };
 
+    // TODO: Fix mWorDSize in AddHIT!
+    // TODO: Cache SPACED SEEDS! similar to db()
+
     std::multiset< Candidate > highscores;
     SpacedSeedsSIMD spacedSeeds( query, mWordSize );
+    std::vector< bool > uniqueCheck( mNumUniqueWords );
+
+
+    using Kmer = struct Kmer_s {
+      size_t pos;
+      uint32_t word;
+
+      Kmer_s( size_t p, uint32_t w )
+        : pos( p ), word( w )
+      {
+      }
+    };
+    std::vector< Kmer > kmers;
+    kmers.reserve( query.Length() );
+
     spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
-      for( uint32_t i = 0; i < mWordCounts[ word ]; i++ ) {
-        auto &wordInfo = mWordInfoDB[ mWordIndices[ word ] + i ];
+      kmers.emplace_back( pos, word );
 
-        size_t candidateIdx = wordInfo.index;
-        size_t candidatePos = wordInfo.pos;
+      if( !uniqueCheck[ word ] ) {
+        uniqueCheck[ word ] = 1;
 
-        const Sequence &candidateSeq = mSequences[ candidateIdx ];
+        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ word ] ];
+        for( uint32_t i = 0; i < mNumEntriesByWord[ word ]; i++, ptr++ ) {
+          uint32_t candidateIdx = ptr->sequence;
 
-        size_t &counter = mHits[ candidateIdx ];
-        counter++;
+          size_t &counter = mHits[ candidateIdx ];
+          counter++;
 
-        if( highscores.empty() || counter > highscores.begin()->counter ) {
-          auto it = std::find_if( highscores.begin(), highscores.end(), [candidateIdx]( const Candidate &c ) {
-            return c.seqIdx == candidateIdx;
-          });
+          if( highscores.empty() || counter > highscores.begin()->counter ) {
+            auto it = std::find_if( highscores.begin(), highscores.end(), [candidateIdx]( const Candidate &c ) {
+              return c.seqIdx == candidateIdx;
+            });
 
-          if( it != highscores.end() ) {
-            highscores.erase( it );
-          }
+            if( it != highscores.end() ) {
+              highscores.erase( it );
+            }
 
-          highscores.insert( Candidate( candidateIdx, counter ) );
-          if( highscores.size() > maxHits + maxRejects ) {
-            highscores.erase( highscores.begin() );
+            highscores.insert( Candidate( candidateIdx, counter ) );
+            if( highscores.size() > maxHits + maxRejects ) {
+              highscores.erase( highscores.begin() );
+            }
           }
         }
       }
@@ -324,19 +361,20 @@ public:
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
-      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
-        for( uint32_t i = 0; i < mWordCounts[ word ]; i++ ) {
-          auto &wordInfo = mWordInfoDB[ mWordIndices[ word ] + i ];
 
-          size_t candidateIdx = wordInfo.index;
-          size_t candidatePos = wordInfo.pos;
-
-          if( candidateIdx != seqIdx )
+      for( auto &k : kmers ) {
+        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ k.word ] ];
+        for( uint32_t i = 0; i < mNumEntriesByWord[ k.word ]; i++, ptr++ ) {
+          if( ptr->sequence != seqIdx )
             continue;
 
-          hitTracker.AddHit( pos, candidatePos, mWordSize );
+          while( ptr ) {
+            hitTracker.AddHit( k.pos, ptr->pos, mWordSize );
+            ptr = ptr->nextEntry;
+          }
+          break;
         }
-      });
+      }
 
       // Find all HSP
       // Sort by length
@@ -485,17 +523,35 @@ private:
   size_t mTotalWords;
   size_t mNumUniqueWords;
 
-  using WordInfo = struct {
-    uint32_t index;
+  /* using WordInfo = struct { */
+  /*   uint32_t index; */
+  /*   uint32_t pos; */
+  /* }; */
+  /* using WordInfoDatabase = std::vector< WordInfo >; */
+
+  /* std::vector< uint32_t > mWordIndices; */
+  /* std::vector< uint32_t > mWordCounts; */
+  /* WordInfoDatabase mWordInfoDB; */
+
+  using WordEntry = struct WordEntry_s {
+    uint32_t sequence;
     uint32_t pos;
+    WordEntry_s *nextEntry;
+
+    WordEntry_s()
+    : sequence( -1 )
+    {
+    }
+
+    WordEntry_s( uint32_t s, uint32_t p, WordEntry_s *ne = NULL )
+      : sequence( s ), pos( p ), nextEntry( ne )
+    {
+
+    }
   };
-  using WordInfoDatabase = std::vector< WordInfo >;
 
-  std::vector< uint32_t > mWordIndices;
-  std::vector< uint32_t > mWordCounts;
-
-  std::vector< uint32_t > mWordCandidates;
-  std::vector< uint32_t > mWordCandidatesCounts;
-
-  WordInfoDatabase mWordInfoDB;
+  std::vector< uint32_t > mIndexByWord;
+  std::vector< uint32_t > mNumEntriesByWord;
+  std::vector< WordEntry > mFirstEntries; // first word (kmer) hit for each candidate
+  std::vector< WordEntry > mFurtherEntries;
 };
