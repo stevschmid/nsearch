@@ -161,19 +161,6 @@ bool PrintWholeAlignment( const Sequence &query, const Sequence &target, const C
 
 class Database {
 
-  using SequenceInfo =  struct {
-    size_t seqIdx;
-    size_t pos;
-  };
-
-  using SequenceMappingDatabase = std::unordered_map< size_t, std::vector< SequenceInfo > >;
-
-  using WordInfo = struct {
-    uint32_t index;
-    uint32_t pos;
-  };
-  using WordInfoDatabase = std::vector< WordInfo >;
-
   float CalculateIdentity( const Cigar &cigar ) const {
     size_t cols = 0;
     size_t matches = 0;
@@ -205,8 +192,6 @@ public:
     : mSequences( sequences ), mWordSize( wordSize )
   {
     mNumUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
-
-    std::vector< std::vector< uint32_t > > candidatesByWord( mNumUniqueWords );
 
     mTotalNucleotides = 0;
     mTotalWords = 0;
@@ -482,14 +467,23 @@ private:
   size_t mWordSize;
 
   std::vector< size_t > mHits;
-  SequenceMappingDatabase mWordDB;
 
   SequenceList mSequences;
   size_t mTotalNucleotides;
   size_t mTotalWords;
   size_t mNumUniqueWords;
 
+  using WordInfo = struct {
+    uint32_t index;
+    uint32_t pos;
+  };
+  using WordInfoDatabase = std::vector< WordInfo >;
+
   std::vector< uint32_t > mWordIndices;
   std::vector< uint32_t > mWordCounts;
+
+  std::vector< uint32_t > mWordCandidates;
+  std::vector< uint32_t > mWordCandidatesCounts;
+
   WordInfoDatabase mWordInfoDB;
 };
