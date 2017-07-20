@@ -50,8 +50,8 @@ public:
   static const int PATTERN_SIZE = 16;
 
 public:
-  SpacedSeedsSIMD( const Sequence &ref, size_t wordSize )
-    : mRef( ref ), mWordSize( wordSize )
+  SpacedSeedsSIMD( const Sequence &ref, size_t numOnes )
+    : mRef( ref )
   {
     static const char BASE_PATTERN[] = "111010010100110111";
 
@@ -66,14 +66,16 @@ public:
     alignas(16) uint8_t indices[ PATTERN_SIZE ];
     memset( indices, 0x80, PATTERN_SIZE );
 
-    for( int i = 0, count = 0;
-        i < PATTERN_SIZE && count < mWordSize;
+    int i, countOnes;
+    for( i = 0, countOnes = 0;
+        i < PATTERN_SIZE && countOnes < numOnes;
         i++ )
     {
       if( BASE_PATTERN[ i % sizeof( BASE_PATTERN ) ] == '1' ) {
-        indices[ count++ ] = i;
+        indices[ countOnes++ ] = i;
       }
     }
+    mWordSize = i;
     mIndexMask = _mm_load_si128( (__m128i*)indices );
   }
 
