@@ -242,22 +242,38 @@ public:
 
     // Populate DB
     mFirstEntries.resize( totalFirstEntries );
-    mFurtherEntries.resize( totalEntries - totalFirstEntries );
+    mFurtherEntries.reserve( totalEntries - totalFirstEntries );
 
     // Entries is sorted by sequence
     mNumEntriesByWord = std::vector< uint32_t >( mNumUniqueWords );
     for( auto &s : entries ) {
       uint32_t word = s.word;
 
-      auto &entry = mFirstEntries[ mIndexByWord[ word ] + mNumEntriesByWord[ word ] ];
-      if( entry.sequence == (uint32_t)-1 ) {
+      if( mNumEntriesByWord[ word ] == 0 ) {
+        // Create new entry
+        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
+        entry->sequence = s.index;
+        entry->pos = s.pos;
+        entry->nextEntry = NULL;
         mNumEntriesByWord[ word ]++;
-        entry.sequence = s.index;
-        entry.pos = s.pos;
-        entry.nextEntry = NULL;
       } else {
-        mFurtherEntries.emplace_back( s.index, s.pos );
-        entry.nextEntry = &mFurtherEntries.back();
+        // Check if last entry == index
+        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] + ( mNumEntriesByWord[ word ] - 1 ) ];
+
+        if( entry->sequence == s.index ) {
+          mFurtherEntries.emplace_back( s.index, s.pos );
+          WordEntry *s = entry;
+          while( s->nextEntry ) {
+            s = s->nextEntry;
+          }
+          s->nextEntry = &mFurtherEntries.back();
+        } else {
+          entry++;
+          entry->sequence = s.index;
+          entry->pos = s.pos;
+          entry->nextEntry = NULL;
+          mNumEntriesByWord[ word ]++;
+        }
       }
     }
   }
@@ -364,6 +380,7 @@ public:
 
       for( auto &k : kmers ) {
         WordEntry *ptr = &mFirstEntries[ mIndexByWord[ k.word ] ];
+
         for( uint32_t i = 0; i < mNumEntriesByWord[ k.word ]; i++, ptr++ ) {
           if( ptr->sequence != seqIdx )
             continue;

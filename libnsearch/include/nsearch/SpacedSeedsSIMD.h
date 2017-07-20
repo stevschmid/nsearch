@@ -53,7 +53,7 @@ public:
   SpacedSeedsSIMD( const Sequence &ref, size_t numOnes )
     : mRef( ref )
   {
-    static const char BASE_PATTERN[] = "111010010100110111";
+    static const char BASE_PATTERN[] = "1110110010100110";
 
     // 111010010100110111
     //   __m128i indexMask = _mm_setr_epi8(
