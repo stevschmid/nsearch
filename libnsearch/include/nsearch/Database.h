@@ -386,7 +386,7 @@ public:
             continue;
 
           while( ptr ) {
-            hitTracker.AddHit( k.pos, ptr->pos, mWordSize );
+            hitTracker.AddHit( k.pos, ptr->pos, spacedSeeds.Length() );
             ptr = ptr->nextEntry;
           }
           break;

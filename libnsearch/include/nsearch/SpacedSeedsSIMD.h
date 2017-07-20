@@ -75,7 +75,7 @@ public:
         indices[ countOnes++ ] = i;
       }
     }
-    mWordSize = i;
+    mLength = i;
     mIndexMask = _mm_load_si128( (__m128i*)indices );
   }
 
@@ -148,7 +148,7 @@ public:
     const char *end = mRef.sequence.data() + mRef.sequence.length();
     const char *ptr = mRef.sequence.data();
 
-    signed int cols = mRef.Length() - mWordSize + 1;
+    signed int cols = mRef.Length() - mLength + 1;
     for( signed int i = 0; i < cols; i++ ) {
       // check if word is unambiguous
       uint32_t word;
@@ -159,8 +159,13 @@ public:
     }
   }
 
+  // Length required for a word (with spaces)
+  size_t Length() const {
+    return mLength;
+  }
+
 private:
   const Sequence &mRef;
-  size_t mWordSize;
+  size_t mLength;
   __m128i mIndexMask;
 };
