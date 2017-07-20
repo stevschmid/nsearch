@@ -11,7 +11,7 @@
 
 #include "Sequence.h"
 #include "Utils.h"
-#include "SpacedSeedsSIMD.h"
+#include "HashWords.h"
 
 #include "Alignment/Seed.h"
 #include "Alignment/Ranges.h"
@@ -212,9 +212,6 @@ public:
       }
     };
 
-    std::vector< Entry > entries;
-    entries.reserve( mTotalWords );
-
     size_t totalEntries = 0;
     size_t totalFirstEntries = 0;
     std::vector< uint32_t > uniqueCount( mNumUniqueWords );
@@ -223,9 +220,8 @@ public:
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
 
-      SpacedSeedsSIMD spacedSeeds( seq, mWordSize );
+      HashWords spacedSeeds( seq, mWordSize );
       spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
-        entries.emplace_back( word, idx, pos );
         totalEntries++;
 
         if( uniqueIndex[ word ] != idx ) {
@@ -235,7 +231,6 @@ public:
         }
       });
     }
-    mTotalWords = entries.size();
 
     // Calculate indices
     /* mWordIndices.reserve( mNumUniqueWords ); */
@@ -250,35 +245,40 @@ public:
 
     // Entries is sorted by sequence
     mNumEntriesByWord = std::vector< uint32_t >( mNumUniqueWords );
-    for( auto &s : entries ) {
-      uint32_t word = s.word;
+    for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
+      const Sequence &seq = mSequences[ idx ];
+      mTotalNucleotides += seq.Length();
 
-      if( mNumEntriesByWord[ word ] == 0 ) {
-        // Create new entry
-        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
-        entry->sequence = s.index;
-        entry->pos = s.pos;
-        entry->nextEntry = NULL;
-        mNumEntriesByWord[ word ]++;
-      } else {
-        // Check if last entry == index
-        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] + ( mNumEntriesByWord[ word ] - 1 ) ];
-
-        if( entry->sequence == s.index ) {
-          mFurtherEntries.emplace_back( s.index, s.pos );
-          WordEntry *s = entry;
-          while( s->nextEntry ) {
-            s = s->nextEntry;
-          }
-          s->nextEntry = &mFurtherEntries.back();
-        } else {
-          entry++;
-          entry->sequence = s.index;
-          entry->pos = s.pos;
+      HashWords spacedSeeds( seq, mWordSize );
+      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+        if( mNumEntriesByWord[ word ] == 0 ) {
+          // Create new entry
+          WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
+          entry->sequence = idx;
+          entry->pos = pos;
           entry->nextEntry = NULL;
           mNumEntriesByWord[ word ]++;
+        } else {
+          // Check if last entry == index
+          WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] + ( mNumEntriesByWord[ word ] - 1 ) ];
+
+          if( entry->sequence == idx ) {
+            mFurtherEntries.emplace_back( idx, pos );
+            WordEntry *s = entry;
+            while( s->nextEntry ) {
+              s = s->nextEntry;
+            }
+            s->nextEntry = &mFurtherEntries.back();
+          } else {
+            entry++;
+            entry->sequence = idx;
+            entry->pos = pos;
+            entry->nextEntry = NULL;
+            mNumEntriesByWord[ word ]++;
+          }
         }
-      }
+      });
+
     }
   }
 
@@ -317,24 +317,10 @@ public:
     // TODO: Cache SPACED SEEDS! similar to db()
 
     std::multiset< Candidate > highscores;
-    SpacedSeedsSIMD spacedSeeds( query, mWordSize );
+    HashWords spacedSeeds( query, mWordSize );
     std::vector< bool > uniqueCheck( mNumUniqueWords );
 
-    using Kmer = struct Kmer_s {
-      size_t pos;
-      uint32_t word;
-
-      Kmer_s( size_t p, uint32_t w )
-        : pos( p ), word( w )
-      {
-      }
-    };
-    std::vector< Kmer > kmers;
-    kmers.reserve( query.Length() );
-
     spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
-      kmers.emplace_back( pos, word );
-
       if( !uniqueCheck[ word ] ) {
         uniqueCheck[ word ] = 1;
 
@@ -381,20 +367,19 @@ public:
       // Go through each kmer, find hits
       HitTracker hitTracker;
 
-      for( auto &k : kmers ) {
-        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ k.word ] ];
-
-        for( uint32_t i = 0; i < mNumEntriesByWord[ k.word ]; i++, ptr++ ) {
+      spacedSeeds.ForEach( [&]( size_t pos, uint32_t word ) {
+        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ word ] ];
+        for( uint32_t i = 0; i < mNumEntriesByWord[ word ]; i++, ptr++ ) {
           if( ptr->sequence != seqIdx )
             continue;
 
           while( ptr ) {
-            hitTracker.AddHit( k.pos, ptr->pos, spacedSeeds.Length() );
+            hitTracker.AddHit( pos, ptr->pos, spacedSeeds.Length() );
             ptr = ptr->nextEntry;
           }
           break;
         }
-      }
+      });
 
       // Find all HSP
       // Sort by length
