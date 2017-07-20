@@ -214,7 +214,7 @@ public:
     size_t totalEntries = 0;
     size_t totalFirstEntries = 0;
     std::vector< uint32_t > uniqueCount( mNumUniqueWords );
-    std::vector< uint32_t > uniqueCheck( mNumUniqueWords );
+    std::vector< uint32_t > uniqueIndex( mNumUniqueWords, -1 );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
       mTotalNucleotides += seq.Length();
@@ -224,8 +224,8 @@ public:
         entries.emplace_back( word, idx, pos );
         totalEntries++;
 
-        if( uniqueCheck[ word ] != idx ) {
-          uniqueCheck[ word ] = idx;
+        if( uniqueIndex[ word ] != idx ) {
+          uniqueIndex[ word ] = idx;
           uniqueCount[ word ]++;
           totalFirstEntries++;
         }
@@ -315,7 +315,6 @@ public:
     std::multiset< Candidate > highscores;
     SpacedSeedsSIMD spacedSeeds( query, mWordSize );
     std::vector< bool > uniqueCheck( mNumUniqueWords );
-
 
     using Kmer = struct Kmer_s {
       size_t pos;
