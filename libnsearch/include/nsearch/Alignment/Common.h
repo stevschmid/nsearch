@@ -9,9 +9,7 @@
 #define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
 
-enum class AlignmentDirection {
-  forwards, backwards
-};
+enum class AlignmentDirection { fwd, rev };
 
 enum class CigarOp : char {
   UNKNOWN   = ' ',

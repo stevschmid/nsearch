@@ -17,6 +17,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   Alignment/RangesTest.cpp
   Alignment/HitTrackerTest.cpp
   Alignment/ExtendAlignTest.cpp
+  Alignment/BandedAlignTest.cpp
   Database/KmersTest.cpp
   )
 

@@ -89,7 +89,7 @@ public:
 
   int Align( const Sequence &A, const Sequence &B,
       Cigar *cigar = NULL,
-      AlignmentDirection dir = AlignmentDirection::forwards,
+      AlignmentDirection dir = AlignmentDirection::fwd,
       size_t startA = 0, size_t startB = 0,
       size_t endA = -1, size_t endB = -1 )
   {
@@ -103,11 +103,11 @@ public:
     size_t lenB = B.Length();
 
     if( endA == ( size_t )-1 ) {
-      endA = ( dir == AlignmentDirection::forwards ? lenA : 0 );
+      endA = ( dir == AlignmentDirection::fwd ? lenA : 0 );
     }
 
     if( endB == ( size_t )-1 ) {
-      endB = ( dir == AlignmentDirection::forwards ? lenB : 0 );
+      endB = ( dir == AlignmentDirection::fwd ? lenB : 0 );
     }
 
     if( startA > lenA ) startA = lenA;
@@ -191,8 +191,8 @@ public:
         size_t aIdx = 0, bIdx = 0;
         bool match;
         if( x > 0 ) {
-          aIdx = ( dir == AlignmentDirection::forwards ) ? startA + x - 1 : startA - x;
-          bIdx = ( dir == AlignmentDirection::forwards ) ? startB + y - 1 : startB - y;
+          aIdx = ( dir == AlignmentDirection::fwd ) ? startA + x - 1 : startA - x;
+          bIdx = ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
           match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
@@ -307,7 +307,7 @@ public:
       }
     }
 
-    if( cigar && dir == AlignmentDirection::backwards ) {
+    if( cigar && dir == AlignmentDirection::rev ) {
       cigar->Reverse();
     }
 

@@ -14,7 +14,7 @@ TEST_CASE( "ExtendAlign" )  {
     Sequence b = "GAGCGGT";
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::forwards,
+        AlignmentDirection::fwd,
         0, 0 );
     REQUIRE( cigar.ToString() == "2M" );
 
@@ -22,7 +22,7 @@ TEST_CASE( "ExtendAlign" )  {
     eap.gapOpenScore = eap.gapExtendScore -1;
     ea = ExtendAlign( eap );
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::forwards,
+        AlignmentDirection::fwd,
         0, 0 );
     REQUIRE( cigar.ToString() == "2M2I4M" );
   }
@@ -32,21 +32,21 @@ TEST_CASE( "ExtendAlign" )  {
     Sequence b = "ATCGT";
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::forwards,
+        AlignmentDirection::fwd,
         0, 0 );
     REQUIRE( bestA == 3 );
     REQUIRE( bestB == 3 );
     REQUIRE( cigar.ToString() == "4M" );
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::forwards,
+        AlignmentDirection::fwd,
         3, 3 );
     REQUIRE( bestA == 3 );
     REQUIRE( bestB == 3 );
     REQUIRE( cigar.ToString() == "1M" );
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::forwards,
+        AlignmentDirection::fwd,
         4, 4 );
     REQUIRE( bestA == 4 );
     REQUIRE( bestB == 4 );
@@ -58,13 +58,13 @@ TEST_CASE( "ExtendAlign" )  {
     Sequence b = "TCGGTAT";
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::backwards,
+        AlignmentDirection::rev,
         3, 2 );
     REQUIRE( bestA == 1 );
     REQUIRE( bestB == 0 );
 
     score = ea.Extend( a, b, &bestA, &bestB, &cigar,
-        AlignmentDirection::backwards,
+        AlignmentDirection::rev,
         1, 0 );
     REQUIRE( bestA == 1 );
     REQUIRE( bestB == 0 );

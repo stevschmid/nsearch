@@ -60,7 +60,7 @@ public:
   int Extend( const Sequence &A, const Sequence &B,
       size_t *bestA = NULL, size_t *bestB = NULL,
       Cigar *cigar = NULL,
-      AlignmentDirection dir = AlignmentDirection::forwards,
+      AlignmentDirection dir = AlignmentDirection::fwd,
       size_t startA = 0, size_t startB = 0 )
   {
     int score;
@@ -70,7 +70,7 @@ public:
 
     size_t width, height;
 
-    if( dir == AlignmentDirection::forwards ) {
+    if( dir == AlignmentDirection::fwd ) {
       width = A.Length() - startA + 1;
       height = B.Length() - startB + 1;
     } else {
@@ -128,7 +128,7 @@ public:
         if( x > 0 ) {
           // diagScore: score at col-1, row-1
 
-          if( dir == AlignmentDirection::forwards ) {
+          if( dir == AlignmentDirection::fwd ) {
             aIdx = startA + x - 1;
             bIdx = startB + y - 1;
           } else {
@@ -253,7 +253,7 @@ public:
         }
       }
 
-      if( dir == AlignmentDirection::forwards ) {
+      if( dir == AlignmentDirection::fwd ) {
         cigar->Reverse();
       }
     }

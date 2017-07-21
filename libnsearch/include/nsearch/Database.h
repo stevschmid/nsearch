@@ -398,7 +398,7 @@ public:
         int leftScore = mExtendAlign.Extend( query, candidateSeq,
             &queryPos, &candidatePos,
             &leftCigar,
-            AlignmentDirection::backwards,
+            AlignmentDirection::rev,
             a1, b1 );
         if( !leftCigar.empty() ) {
           a1 = queryPos;
@@ -410,7 +410,7 @@ public:
         int rightScore = mExtendAlign.Extend( query, candidateSeq,
             &queryPos, &candidatePos,
             &rightCigar,
-            AlignmentDirection::forwards,
+            AlignmentDirection::fwd,
             a2 + 1, b2 + 1 );
         if( !rightCigar.empty() ) {
           a2 = queryPos;
@@ -469,7 +469,7 @@ public:
 
         // Align first HSP's start to whole sequences begin
         auto &first = *chain.cbegin();
-        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::backwards, first.a1, first.b1 );
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::rev, first.a1, first.b1 );
         alignment += cigar;
 
         // Align in between the HSP's
@@ -482,7 +482,7 @@ public:
 
           alignment += current.cigar;
           mBandedAlign.Align( query, candidateSeq, &cigar,
-              AlignmentDirection::forwards,
+              AlignmentDirection::fwd,
               current.a2 + 1, current.b2 + 1,
               next.a1, next.b1 );
           alignment += cigar;
@@ -491,7 +491,7 @@ public:
         // Align last HSP's end to whole sequences end
         auto &last = *chain.crbegin();
         alignment += last.cigar;
-        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::forwards, last.a2 + 1, last.b2 + 1 );
+        mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::fwd, last.a2 + 1, last.b2 + 1 );
         alignment += cigar;
 
         float identity = CalculateIdentity( alignment );
