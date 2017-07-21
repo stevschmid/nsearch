@@ -120,28 +120,6 @@ private:
   std::map< int, Stage > mStages;
 };
 
-void PrintProgressLine( const std::string label, size_t value, size_t max, UnitType unit = UnitType::COUNTS )
-{
-  static std::string lastLabel;
-  static int PROGRESS_BAR_WIDTH = 50;
-
-  std::ios::fmtflags f( std::cout.flags() );
-
-  float done = float( value ) / float( max );
-  int pos = done * PROGRESS_BAR_WIDTH;
-
-  if( label != lastLabel ) {
-    std::cout << std::endl;
-    lastLabel = label;
-  }
-
-  std::cout << label << ": ";
-  std::cout << done * 100.0 << '%';
-  std::cout << " (" << ValueWithUnit( value, unit ) << ")";
-  std::cout << std::string( 20, ' ' ) << "\r" << std::flush;
-  std::cout.flags( f );
-}
-
 void PrintSummaryHeader()
 {
   std::cout << std::endl << std::endl;
@@ -239,64 +217,79 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
   SequenceList fwdReads, revReads;
 
-  enum ProgressType { ReadingFile, MergingReads, WritingReads };
+  enum ProgressType { ReadFile, MergeReads, WriteReads };
 
   ProgressOutput progress;
-  progress.Add( ProgressType::ReadingFile, "Reading Files", UnitType::BYTES );
-  progress.Add( ProgressType::MergingReads, "Merging Reads" );
-  progress.Add( ProgressType::WritingReads, "Writing Reads" );
+  progress.Add( ReadFile, "Reading files", UnitType::BYTES );
+  progress.Add( ProgressType::MergeReads, "Merging reads" );
+  progress.Add( ProgressType::WriteReads, "Writing reads" );
 
   merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::MergingReads, numProcessed, numEnqueued );
+    progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
   });
 
   writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::WritingReads, numProcessed, numEnqueued );
+    progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
   });
 
-  progress.Activate( ProgressType::ReadingFile );
+  progress.Activate( ProgressType::ReadFile );
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, numReadsPerWorkItem );
     auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    progress.Set( ProgressType::ReadingFile, reader.NumBytesRead(), reader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadFile, reader.NumBytesRead(), reader.NumBytesTotal() );
   }
 
-  progress.Activate( ProgressType::MergingReads );
+  progress.Activate( ProgressType::MergeReads );
   merger.WaitTillDone();
 
-  progress.Activate( ProgressType::WritingReads );
+  progress.Activate( ProgressType::WriteReads );
   writer.WaitTillDone();
 
   return true;
 }
 
 bool Search( const std::string &queryPath, const std::string &databasePath ) {
+  ProgressOutput progress;
+
   Sequence seq;
   SequenceList sequences;
 
   FASTA::Reader dbReader( databasePath );
-  std::cout << "Indexing DB" << std::endl;
+
+  enum ProgressType { ReadDBFile, IndexDB, ReadQueryFile, SearchDB };
+
+  progress.Add( ProgressType::ReadDBFile, "Reading DB file", UnitType::BYTES );
+  progress.Add( ProgressType::IndexDB, "Indexing database");
+  progress.Add( ProgressType::ReadQueryFile, "Reading query file", UnitType::BYTES );
+  progress.Add( ProgressType::SearchDB, "Searching database" );
+
+  progress.Activate( ProgressType::ReadDBFile );
   while( !dbReader.EndOfFile() ) {
     dbReader >> seq;
     sequences.push_back( std::move( seq ) );
+    progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(), dbReader.NumBytesTotal() );
   }
 
+  progress.Activate( ProgressType::IndexDB );
   Database db( sequences, 8 );
   /* db.Stats(); */
   /* return false; */
 
-  std::cout << "Querying DB" << std::endl;
+  progress.Activate( ProgressType::ReadQueryFile );
   FASTA::Reader qryReader( queryPath );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
-    SequenceList candidates = db.Query( seq, 0.75, 1, 8 );
+    progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), qryReader.NumBytesTotal() );
+    /* SequenceList candidates = db.Query( seq, 0.75, 1, 8 ); */
     /* std::cout << seq.identifier << std::endl; */
     /* for( auto &candidate : candidates ) { */
     /*   std::cout << " " << candidate.identifier << std::endl; */
     /* } */
     /* std::cout << "===" << std::endl; */
   }
+
+  progress.Activate( ProgressType::SearchDB );
 
   return true;
 }
