@@ -30,7 +30,7 @@ R"(
 
 enum class UnitType { COUNTS, BYTES };
 
-std::string ValueWithUnit( double value, UnitType unit ) {
+std::string ValueWithUnit( float value, UnitType unit ) {
   static const std::map< UnitType, std::map< size_t, std::string > > CONVERSION = {
     {
       UnitType::COUNTS,
@@ -73,6 +73,56 @@ std::string ValueWithUnit( double value, UnitType unit ) {
   return ss.str();
 }
 
+class ProgressOutput {
+  using Stage = struct {
+    std::string label;
+    UnitType unit;
+    int value;
+    int max;
+  };
+
+public:
+  ProgressOutput()
+    : mActiveId( -1 )
+  {
+
+  }
+
+  void Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
+    mStages.insert( { id, Stage { label, unit, 0, 100 } } );
+  }
+
+  void Set( int id, float value, float max ) {
+    mStages[ id ].value = value;
+    mStages[ id ].max = max;
+
+    if( mActiveId == id ) {
+      Print( mStages[ id ] );
+    }
+  }
+
+  void Activate( int id ) {
+    if( mActiveId != id )
+      std::cout << std::endl;
+
+    mActiveId = id;
+    Print( mStages[ id ] );
+  }
+
+private:
+  void Print( const Stage &stage ) {
+    std::ios::fmtflags f( std::cout.flags() );
+    std::cout << stage.label << ": ";
+    std::cout << float( stage.value ) / stage.max * 100.0 << '%';
+    std::cout << " (" << ValueWithUnit( stage.value, stage.unit ) << ")";
+    std::cout << std::string( 20, ' ' ) << "\r" << std::flush;
+    std::cout.flags( f );
+  }
+
+  int mActiveId;
+  std::map< int, Stage > mStages;
+};
+
 void PrintProgressLine( const std::string label, size_t value, size_t max, UnitType unit = UnitType::COUNTS )
 {
   static std::string lastLabel;
@@ -80,7 +130,7 @@ void PrintProgressLine( const std::string label, size_t value, size_t max, UnitT
 
   std::ios::fmtflags f( std::cout.flags() );
 
-  double done = double( value ) / double( max );
+  float done = float( value ) / float( max );
   int pos = done * PROGRESS_BAR_WIDTH;
 
   if( label != lastLabel ) {
@@ -101,7 +151,7 @@ void PrintSummaryHeader()
   std::cout << "Summary:" << std::endl;
 }
 
-void PrintSummaryLine( double value, const std::string &line, double total = 0.0, UnitType unit = UnitType::COUNTS )
+void PrintSummaryLine( float value, const std::string &line, float total = 0.0, UnitType unit = UnitType::COUNTS )
 {
   std::ios::fmtflags f( std::cout.flags() );
   std::cout << std::setw( 10 ) << ValueWithUnit( value, unit );
@@ -192,22 +242,33 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
   SequenceList fwdReads, revReads;
 
+  enum ProgressType { ReadingFile, MergingReads, WritingReads };
+
+  ProgressOutput progress;
+  progress.Add( ProgressType::ReadingFile, "Reading File", UnitType::BYTES );
+  progress.Add( ProgressType::MergingReads, "Merging Reads" );
+  progress.Add( ProgressType::WritingReads, "Writing Reads" );
+
+  merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+    progress.Set( ProgressType::MergingReads, numProcessed, numEnqueued );
+  });
+
+  writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+    progress.Set( ProgressType::WritingReads, numProcessed, numEnqueued );
+  });
+
+  progress.Activate( ProgressType::ReadingFile );
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, numReadsPerWorkItem );
     auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    PrintProgressLine( "Reading File", reader.NumBytesRead(), reader.NumBytesTotal(), UnitType::BYTES );
+    progress.Set( ProgressType::ReadingFile, reader.NumBytesRead(), reader.NumBytesTotal() );
   }
 
-  merger.OnProcessed( []( size_t numProcessed, size_t numEnqueued ) {
-    PrintProgressLine( "Merging Reads", numProcessed, numEnqueued );
-  });
-
-  writer.OnProcessed( []( size_t numProcessed, size_t numEnqueued ) {
-    PrintProgressLine( "Writing Reads", numProcessed, numEnqueued );
-  });
-
+  progress.Activate( ProgressType::MergingReads );
   merger.WaitTillDone();
+
+  progress.Activate( ProgressType::WritingReads );
   writer.WaitTillDone();
   return true;
 }
