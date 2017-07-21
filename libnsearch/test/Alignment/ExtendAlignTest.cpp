@@ -9,6 +9,24 @@ TEST_CASE( "ExtendAlign" )  {
 
   ExtendAlign ea;
 
+  SECTION( "Gaps" ) {
+    Sequence a = "GATTGCGGGG";
+    Sequence b = "GAGCGGT";
+
+    score = ea.Extend( a, b, &bestA, &bestB, &cigar,
+        AlignmentDirection::forwards,
+        0, 0 );
+    REQUIRE( cigar.ToString() == "2M" );
+
+    ExtendAlignParams eap;
+    eap.gapOpenScore = eap.gapExtendScore -1;
+    ea = ExtendAlign( eap );
+    score = ea.Extend( a, b, &bestA, &bestB, &cigar,
+        AlignmentDirection::forwards,
+        0, 0 );
+    REQUIRE( cigar.ToString() == "2M2I4M" );
+  }
+
   SECTION( "Forwards extend" ) {
     Sequence a = "ATCGG";
     Sequence b = "ATCGT";
