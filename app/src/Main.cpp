@@ -95,6 +95,12 @@ void PrintProgressLine( const std::string label, size_t value, size_t max, UnitT
   std::cout.flags( f );
 }
 
+void PrintSummaryHeader()
+{
+  std::cout << std::endl << std::endl;
+  std::cout << "Summary:" << std::endl;
+}
+
 void PrintSummaryLine( double value, const std::string &line, double total = 0.0, UnitType unit = UnitType::COUNTS )
 {
   std::ios::fmtflags f( std::cout.flags() );
@@ -182,11 +188,11 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
     reader.Read( fwdReads, revReads, numReadsPerWorkItem );
     auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    PrintProgressLine( "Read File", reader.NumBytesRead(), reader.NumBytesTotal(), UnitType::BYTES );
+    PrintProgressLine( "Reading File", reader.NumBytesRead(), reader.NumBytesTotal(), UnitType::BYTES );
   }
 
   merger.OnProcessed( []( size_t totalReadsProcessed, size_t totalReadsEnqueued ) {
-    PrintProgressLine( "Merge Reads", totalReadsProcessed * numReadsPerWorkItem, totalReadsEnqueued * numReadsPerWorkItem );
+    PrintProgressLine( "Merging Reads", totalReadsProcessed * numReadsPerWorkItem, totalReadsEnqueued * numReadsPerWorkItem );
   });
 
   merger.WaitTillDone();
@@ -226,11 +232,12 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
 int main( int argc, const char **argv ) {
   std::map<std::string, docopt::value> args
-    = docopt::docopt(USAGE,
+    = docopt::docopt( USAGE,
         { argv + 1, argv + argc },
         true, // help
         APP_NAME );
 
+  // Print header
   std::cout << APP_NAME << " " << APP_VERSION << " (built on " << BUILD_TIMESTAMP << ")" << std::endl;
 
   // Show one decimal point
@@ -244,8 +251,7 @@ int main( int argc, const char **argv ) {
 
     gStats.StopTimer();
 
-    std::cout << std::endl;
-    std::cout << "Summary:" << std::endl;
+    PrintSummaryHeader();
     PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
   }
 
@@ -259,8 +265,7 @@ int main( int argc, const char **argv ) {
 
     gStats.StopTimer();
 
-    std::cout << std::endl << std::endl;
-    std::cout << "Summary:" << std::endl;
+    PrintSummaryHeader();
     PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
     PrintSummaryLine( gStats.numProcessed / gStats.ElapsedMillis(), "Processed/ms" );
     PrintSummaryLine( gStats.numProcessed, "Pairs" );
