@@ -27,8 +27,8 @@ public:
   int score;
   Cigar cigar;
 
-  HSP( size_t a1, size_t a2, size_t b1, size_t b2 )
-    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 ), score( 0 )
+  HSP( size_t a1, size_t a2, size_t b1, size_t b2, int score = 0 )
+    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 ), score( score )
   {
     assert( a2 >= a1 && b2 >= b1 );
   }
