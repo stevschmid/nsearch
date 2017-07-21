@@ -91,7 +91,7 @@ void PrintProgressLine( const std::string label, size_t value, size_t max, UnitT
   std::cout << label << ": ";
   std::cout << done * 100.0 << '%';
   std::cout << " (" << ValueWithUnit( value, unit ) << ")";
-  std::cout << "\r" << std::flush;
+  std::cout << std::string( 20, ' ' ) << "\r" << std::flush;
   std::cout.flags( f );
 }
 
@@ -229,7 +229,9 @@ int main( int argc, const char **argv ) {
     = docopt::docopt(USAGE,
         { argv + 1, argv + argc },
         true, // help
-        "nsearch");
+        APP_NAME );
+
+  std::cout << APP_NAME << " " << APP_VERSION << " (built on " << BUILD_TIMESTAMP << ")" << std::endl;
 
   // Show one decimal point
   std::cout << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
