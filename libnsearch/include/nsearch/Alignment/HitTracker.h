@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Ranges.h"
 
-#include <map>
+#include <unordered_map>
 
 class HitTracker
 {

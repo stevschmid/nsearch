@@ -48,12 +48,14 @@ TextFileReader::TextFileReader( const std::string &fileName, size_t totalBufferS
   : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ), mBuffer( NULL )
 {
   mFd = open( fileName.c_str(), O_RDONLY ); // orly?
-  mBuffer = new char[ totalBufferSize ];
+  if( mFd != -1 ) {
+    mBuffer = new char[ totalBufferSize ];
 
-  mTotalBytes = lseek( mFd, 0, SEEK_END );
-  lseek( mFd, 0, SEEK_SET );
+    mTotalBytes = lseek( mFd, 0, SEEK_END );
+    lseek( mFd, 0, SEEK_SET );
 
-  NextBuffer();
+    NextBuffer();
+  }
 }
 
 TextFileReader::~TextFileReader() {
@@ -83,12 +85,12 @@ ReadLine:
     }
   }
 
-  if( IsBlank( str ) )
+  if( IsBlank( str ) && !EndOfFile() )
     goto ReadLine;
 }
 
 bool TextFileReader::EndOfFile() const {
-  return mBufferSize <= 0;
+  return mFd == -1 || mBufferSize <= 0;
 }
 
 size_t TextFileReader::NumBytesRead() const {

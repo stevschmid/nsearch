@@ -11,9 +11,10 @@ TEST_CASE( "HitTracker" )  {
     ht.AddHit( 0, 11, 3 ); // diag2
     ht.AddHit( 1, 11, 6 ); // diag1
 
-    REQUIRE( ht.Seeds().size() == 2 );
-    REQUIRE( ht.Seeds()[ 0 ] == Seed( 0, 10, 7 ) );
-    REQUIRE( ht.Seeds()[ 1 ] == Seed( 0, 11, 3 ) );
+    SegmentPairList sps = ht.List();
+    REQUIRE( sps.size() == 2 );
+    REQUIRE( std::find( sps.begin(), sps.end(), SegmentPair( 0, 10, 7 ) ) != sps.end() );
+    REQUIRE( std::find( sps.begin(), sps.end(), SegmentPair( 0, 11, 3 ) ) != sps.end() );
   }
 
   SECTION( "Same diagonal yet disjoint" ) {
@@ -25,15 +26,15 @@ TEST_CASE( "HitTracker" )  {
     ht.AddHit( 3, 18, 1 );
     ht.AddHit( 55, 2, 10 );
 
-    SeedList seeds = ht.Seeds();
-    std::sort( seeds.begin(), seeds.end(), []( const Seed &l, const Seed &r ) {
+    SegmentPairList sps = ht.List();
+    std::sort( sps.begin(), sps.end(), []( const SegmentPair &l, const SegmentPair &r ) {
       return l.s1 < r.s1;
     });
 
-    REQUIRE( seeds.size() == 4 );
-    REQUIRE( seeds[ 0 ] == Seed( 3, 18, 1 ) );
-    REQUIRE( seeds[ 1 ] == Seed( 10, 5, 6 ) );
-    REQUIRE( seeds[ 2 ] == Seed( 20, 15, 2 ) );
-    REQUIRE( seeds[ 3 ] == Seed( 55, 2, 10 ) );
+    REQUIRE( sps.size() == 4 );
+    REQUIRE( sps[ 0 ] == SegmentPair( 3, 18, 1 ) );
+    REQUIRE( sps[ 1 ] == SegmentPair( 10, 5, 6 ) );
+    REQUIRE( sps[ 2 ] == SegmentPair( 20, 15, 2 ) );
+    REQUIRE( sps[ 3 ] == SegmentPair( 55, 2, 10 ) );
   }
 }

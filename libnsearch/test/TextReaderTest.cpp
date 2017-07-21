@@ -26,7 +26,14 @@ TEST_CASE( "TextReader" )  {
     REQUIRE( reader.EndOfFile() == true );
 
     std::remove( filename );
+
+    SECTION( "Non-existing file" ) {
+      TextFileReader reader( "garbagepath" );
+      reader >> line;
+      REQUIRE( reader.EndOfFile() == true );
+    }
   }
+
 #endif
 
   SECTION( "Stream" ) {

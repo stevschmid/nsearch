@@ -360,7 +360,7 @@ public:
     std::cout << "Highscores " << highscores.size() << std::endl;
     for( auto it = highscores.rbegin(); it != highscores.rend(); ++it ) {
       const size_t seqIdx = (*it).seqIdx;
-      assert( seqIdx < mSequences.count() );
+      assert( seqIdx < mSequences.size() );
       const Sequence &candidateSeq = mSequences[ seqIdx ];
       std::cout << "Highscore Entry " << seqIdx << " " << (*it).counter << std::endl;
 
