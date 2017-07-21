@@ -2,6 +2,7 @@
 #include <iostream>
 #include <utility>
 #include <functional>
+#include <sstream>
 
 #include <nsearch/Sequence.h>
 #include <nsearch/FASTQ/Writer.h>
@@ -27,12 +28,59 @@ R"(
     nsearch search <query.fasta> <database.fasta>
 )";
 
-void PrintProgressLine( const std::string label, size_t numProcessedReads, size_t numTotalReads )
+enum class UnitType { COUNTS, BYTES };
+
+std::string ValueWithUnit( double value, UnitType unit ) {
+  static const std::map< UnitType, std::map< size_t, std::string > > CONVERSION = {
+    {
+      UnitType::COUNTS,
+      {
+        { 1, "" },
+        { 1000, "k" },
+        { 1000 * 1000, "M" },
+        { 1000 * 1000 * 1000, "G" }
+      },
+    },
+    {
+      UnitType::BYTES,
+      {
+        { 1, " Bytes" },
+        { 1024, " kB" },
+        { 1024 * 1024, " MB" },
+        { 1024 * 1024 * 1024, " GB" }
+      }
+    }
+  };
+
+  auto list = CONVERSION.find( unit  )->second;
+  auto it = list.begin();
+  while( it != list.end() && value > it->first * 10 ) {
+    it++;
+  }
+
+  std::stringstream ss;
+  if( it != list.begin() ) {
+    it--;
+    value = floor( value / it->first );
+  }
+
+  if( it->first == 1 ) {
+    ss << std::setprecision(1) << std::setiosflags( std::ios::fixed );
+  }
+
+  ss << value;
+  ss << it->second;
+  return ss.str();
+}
+
+void PrintProgressLine( const std::string label, size_t value, size_t max, UnitType unit = UnitType::COUNTS )
 {
   static std::string lastLabel;
   static int PROGRESS_BAR_WIDTH = 50;
 
-  double done = double( numProcessedReads ) / double( numTotalReads );
+  std::ios::fmtflags f( std::cout.flags() );
+
+  double done = double( value ) / double( max );
   int pos = done * PROGRESS_BAR_WIDTH;
 
   if( label != lastLabel ) {
@@ -40,18 +88,23 @@ void PrintProgressLine( const std::string label, size_t numProcessedReads, size_
     lastLabel = label;
   }
 
-  std::cout << "\r" << label << ": ";
-  printf( "%.1f%%", done * 100.0 );
-  std::cout << std::flush;
+  std::cout << label << ": ";
+  std::cout << done * 100.0 << '%';
+  std::cout << " (" << ValueWithUnit( value, unit ) << ")";
+  std::cout << "\r" << std::flush;
+  std::cout.flags( f );
 }
 
-void PrintSummaryLine( double value, const char *line, double total = 0.0 )
+void PrintSummaryLine( double value, const std::string &line, double total = 0.0, UnitType unit = UnitType::COUNTS )
 {
-  printf( "%15.1f  %s", value, line );
+  std::ios::fmtflags f( std::cout.flags() );
+  std::cout << std::setw( 10 ) << ValueWithUnit( value, unit );
+  std::cout << ' ' << line;
   if( total > 0.0 ) {
-    printf( " (%.1f%%)", value / total * 100.0 );
+    std::cout << " (" << value / total * 100.0 << "%)";
   }
-  printf( "\n" );
+  std::cout << std::endl;
+  std::cout.flags( f );
 }
 
 class QueuedWriter : public WorkerQueue< SequenceList > {
@@ -76,21 +129,9 @@ using PairedReads = std::pair< SequenceList, SequenceList >;
 
 class QueuedMerger : public WorkerQueue< PairedReads > {
 public:
-  using ProcessedCallback = std::function< void ( size_t, size_t )  >;
-
   QueuedMerger( QueuedWriter &writer )
-    : WorkerQueue( -1 ), mWriter( writer ), mTotalEnqueued( 0 ), mTotalProcessed( 0 )
+    : WorkerQueue( -1 ), mWriter( writer )
   {
-    mProcessedCallback = []( size_t, size_t ) { };
-  }
-
-  void Enqueue( PairedReads &item ) {
-    mTotalEnqueued += item.first.size();
-    WorkerQueue::Enqueue( item );
-  }
-
-  void OnProcessed( const ProcessedCallback &callback ) {
-    mProcessedCallback = callback;
   }
 
 protected:
@@ -112,9 +153,6 @@ protected:
         mergedReads.push_back( std::move( mergedRead ) );
       }
 
-      mTotalProcessed++;
-      gStats.numProcessed++;
-
       ++fit;
       ++rit;
     }
@@ -122,19 +160,17 @@ protected:
     if( !mergedReads.empty() )
       mWriter.Enqueue( mergedReads );
 
-    mProcessedCallback( mTotalProcessed, mTotalEnqueued );
+    gStats.numProcessed += fwd.size();
   }
 
 private:
-  size_t mTotalEnqueued;
-  size_t mTotalProcessed;
-
-  ProcessedCallback mProcessedCallback;
   QueuedWriter &mWriter;
   PairedEnd::Merger mMerger;
 };
 
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
+  const int numReadsPerWorkItem = 512;
+
   PairedEnd::Reader reader( fwdPath, revPath );
 
   QueuedWriter writer( mergedPath  );
@@ -143,19 +179,18 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   SequenceList fwdReads, revReads;
 
   while( !reader.EndOfFile() ) {
-    reader.Read( fwdReads, revReads, 512 );
+    reader.Read( fwdReads, revReads, numReadsPerWorkItem );
     auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    PrintProgressLine( "Read Reads", reader.NumBytesRead(), reader.NumBytesTotal() );
+    PrintProgressLine( "Read File", reader.NumBytesRead(), reader.NumBytesTotal(), UnitType::BYTES );
   }
 
   merger.OnProcessed( []( size_t totalReadsProcessed, size_t totalReadsEnqueued ) {
-    PrintProgressLine( "Merge Reads", totalReadsProcessed, totalReadsEnqueued );
+    PrintProgressLine( "Merge Reads", totalReadsProcessed * numReadsPerWorkItem, totalReadsEnqueued * numReadsPerWorkItem );
   });
 
   merger.WaitTillDone();
   writer.WaitTillDone();
-
   return true;
 }
 
@@ -196,6 +231,9 @@ int main( int argc, const char **argv ) {
         true, // help
         "nsearch");
 
+  // Show one decimal point
+  std::cout << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
+
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 
@@ -219,7 +257,7 @@ int main( int argc, const char **argv ) {
 
     gStats.StopTimer();
 
-    std::cout << std::endl;
+    std::cout << std::endl << std::endl;
     std::cout << "Summary:" << std::endl;
     PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
     PrintSummaryLine( gStats.numProcessed / gStats.ElapsedMillis(), "Processed/ms" );

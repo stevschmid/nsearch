@@ -7,12 +7,18 @@
 template <class QueueItem>
 class WorkerQueue {
 public:
+  using OnProcessedCallback = std::function< void ( size_t, size_t )  >;
+
   WorkerQueue( int numWorkers = 1 );
   ~WorkerQueue();
 
   void Enqueue( QueueItem &queueItem );
   bool Done() const;
   void WaitTillDone();
+
+  void OnProcessed( const OnProcessedCallback &callback ) {
+    mProcessedCallbacks.push_back( callback );
+  }
 
 protected:
   virtual void Process( const QueueItem &queueItem ) = 0;
@@ -28,12 +34,16 @@ private:
 
   std::queue< QueueItem > mQueue;
 
+  size_t mTotalEnqueued;
+  size_t mTotalProcessed;
+  std::deque< OnProcessedCallback > mProcessedCallbacks;
+
   void WorkerLoop();
 };
 
 template <class QueueItem>
 WorkerQueue< QueueItem >::WorkerQueue( int numWorkers )
-  : mStop( false ), mWorkingCount( 0 )
+  : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ), mTotalProcessed( 0 )
 {
   numWorkers = numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
 
@@ -70,6 +80,7 @@ void WorkerQueue< QueueItem >::Enqueue( QueueItem &queueItem )
 {
   {
     std::unique_lock< std::mutex > lock( mQueueMutex );
+    mTotalEnqueued++;
     mQueue.push( std::move( queueItem ) );
   }
 
@@ -102,7 +113,12 @@ void WorkerQueue< QueueItem >::WorkerLoop() {
 
     { // acquire lock
       std::unique_lock< std::mutex > lock( mQueueMutex );
+      mTotalProcessed++;
       mWorkingCount--;
+
+      for( auto &cb : mProcessedCallbacks ) {
+        cb( mTotalProcessed, mTotalEnqueued );
+      }
     } // release lock
   }
 }
