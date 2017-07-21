@@ -222,7 +222,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   ProgressOutput progress;
   progress.Add( ReadFile, "Reading files", UnitType::BYTES );
   progress.Add( ProgressType::MergeReads, "Merging reads" );
-  progress.Add( ProgressType::WriteReads, "Writing reads" );
+  progress.Add( ProgressType::WriteReads, "Writing merged reads" );
 
   merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
