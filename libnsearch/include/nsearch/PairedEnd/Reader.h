@@ -47,11 +47,11 @@ namespace PairedEnd {
     }
 
     std::streampos NumBytesRead() const {
-      return mFwdReader.NumBytesRead();
+      return mFwdReader.NumBytesRead() + mRevReader.NumBytesRead();
     }
 
     std::streampos NumBytesTotal() const {
-      return mFwdReader.NumBytesTotal();
+      return mFwdReader.NumBytesTotal() + mRevReader.NumBytesTotal();
     }
   };
 }
