@@ -22,6 +22,7 @@ public:
 
 protected:
   virtual void Process( const QueueItem &queueItem ) = 0;
+  virtual size_t CountPerItem( const QueueItem &queueItem ) const { return 1; }
 
 private:
   friend class Worker;
@@ -80,7 +81,7 @@ void WorkerQueue< QueueItem >::Enqueue( QueueItem &queueItem )
 {
   {
     std::unique_lock< std::mutex > lock( mQueueMutex );
-    mTotalEnqueued++;
+    mTotalEnqueued += CountPerItem( queueItem );
     mQueue.push( std::move( queueItem ) );
   }
 
@@ -113,7 +114,7 @@ void WorkerQueue< QueueItem >::WorkerLoop() {
 
     { // acquire lock
       std::unique_lock< std::mutex > lock( mQueueMutex );
-      mTotalProcessed++;
+      mTotalProcessed += CountPerItem( queueItem );
       mWorkingCount--;
 
       for( auto &cb : mProcessedCallbacks ) {

@@ -127,6 +127,10 @@ protected:
     }
   }
 
+  size_t CountPerItem( const SequenceList &list ) const {
+    return list.size();
+  }
+
 private:
   FASTQ::Writer mWriter;
 };
@@ -141,7 +145,7 @@ public:
   }
 
 protected:
-  void Process( const std::pair< SequenceList, SequenceList > &queueItem ) {
+  void Process( const PairedReads &queueItem ) {
     const SequenceList &fwd = queueItem.first;
     const SequenceList &rev = queueItem.second;
 
@@ -169,6 +173,10 @@ protected:
     gStats.numProcessed += fwd.size();
   }
 
+  size_t CountPerItem( const PairedReads &queueItem ) const {
+    return queueItem.first.size();
+  }
+
 private:
   QueuedWriter &mWriter;
   PairedEnd::Merger mMerger;
@@ -191,8 +199,12 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
     PrintProgressLine( "Reading File", reader.NumBytesRead(), reader.NumBytesTotal(), UnitType::BYTES );
   }
 
-  merger.OnProcessed( []( size_t totalReadsProcessed, size_t totalReadsEnqueued ) {
-    PrintProgressLine( "Merging Reads", totalReadsProcessed * numReadsPerWorkItem, totalReadsEnqueued * numReadsPerWorkItem );
+  merger.OnProcessed( []( size_t numProcessed, size_t numEnqueued ) {
+    PrintProgressLine( "Merging Reads", numProcessed, numEnqueued );
+  });
+
+  writer.OnProcessed( []( size_t numProcessed, size_t numEnqueued ) {
+    PrintProgressLine( "Writing Reads", numProcessed, numEnqueued );
   });
 
   merger.WaitTillDone();
