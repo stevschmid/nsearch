@@ -1,6 +1,7 @@
 #include <docopt.h>
 #include <iostream>
 #include <utility>
+#include <functional>
 
 #include <nsearch/Sequence.h>
 #include <nsearch/FASTQ/Writer.h>
@@ -26,26 +27,27 @@ R"(
     nsearch search <query.fasta> <database.fasta>
 )";
 
-void PrintProgressLine( size_t numProcessedReads, size_t numTotalReads )
+void PrintProgressLine( const std::string label, size_t numProcessedReads, size_t numTotalReads )
 {
+  static std::string lastLabel;
   static int PROGRESS_BAR_WIDTH = 50;
 
   double done = double( numProcessedReads ) / double( numTotalReads );
   int pos = done * PROGRESS_BAR_WIDTH;
 
-  std::cout << "\r[";
-  std::cout << std::string( pos, '=' );
-  if( done < 1.0 )
-    std::cout << '>';
-  std::cout << std::string( std::max( PROGRESS_BAR_WIDTH - pos - 1, 0 ), ' ' );
-  std::cout << "] ";
-  printf( " %.1f%%", done * 100.0 );
+  if( label != lastLabel ) {
+    std::cout << std::endl;
+    lastLabel = label;
+  }
+
+  std::cout << "\r" << label << ": ";
+  printf( "%.1f%%", done * 100.0 );
   std::cout << std::flush;
 }
 
 void PrintSummaryLine( double value, const char *line, double total = 0.0 )
 {
-  printf( "%10.1f  %s", value, line );
+  printf( "%15.1f  %s", value, line );
   if( total > 0.0 ) {
     printf( " (%.1f%%)", value / total * 100.0 );
   }
@@ -70,12 +72,25 @@ private:
   FASTQ::Writer mWriter;
 };
 
-class QueuedMerger : public WorkerQueue< std::pair< SequenceList, SequenceList > > {
-public:
-  QueuedMerger( QueuedWriter &writer )
-    : WorkerQueue( -1 ), mWriter( writer )
-  {
+using PairedReads = std::pair< SequenceList, SequenceList >;
 
+class QueuedMerger : public WorkerQueue< PairedReads > {
+public:
+  using ProcessedCallback = std::function< void ( size_t, size_t )  >;
+
+  QueuedMerger( QueuedWriter &writer )
+    : WorkerQueue( -1 ), mWriter( writer ), mTotalEnqueued( 0 ), mTotalProcessed( 0 )
+  {
+    mProcessedCallback = []( size_t, size_t ) { };
+  }
+
+  void Enqueue( PairedReads &item ) {
+    mTotalEnqueued += item.first.size();
+    WorkerQueue::Enqueue( item );
+  }
+
+  void OnProcessed( const ProcessedCallback &callback ) {
+    mProcessedCallback = callback;
   }
 
 protected:
@@ -97,6 +112,7 @@ protected:
         mergedReads.push_back( std::move( mergedRead ) );
       }
 
+      mTotalProcessed++;
       gStats.numProcessed++;
 
       ++fit;
@@ -105,9 +121,15 @@ protected:
 
     if( !mergedReads.empty() )
       mWriter.Enqueue( mergedReads );
+
+    mProcessedCallback( mTotalProcessed, mTotalEnqueued );
   }
 
 private:
+  size_t mTotalEnqueued;
+  size_t mTotalProcessed;
+
+  ProcessedCallback mProcessedCallback;
   QueuedWriter &mWriter;
   PairedEnd::Merger mMerger;
 };
@@ -115,7 +137,7 @@ private:
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
   PairedEnd::Reader reader( fwdPath, revPath );
 
-  QueuedWriter writer( mergedPath );
+  QueuedWriter writer( mergedPath  );
   QueuedMerger merger( writer );
 
   SequenceList fwdReads, revReads;
@@ -124,8 +146,12 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
     reader.Read( fwdReads, revReads, 512 );
     auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    PrintProgressLine( reader.NumBytesRead(), reader.NumBytesTotal() );
+    PrintProgressLine( "Read Reads", reader.NumBytesRead(), reader.NumBytesTotal() );
   }
+
+  merger.OnProcessed( []( size_t totalReadsProcessed, size_t totalReadsEnqueued ) {
+    PrintProgressLine( "Merge Reads", totalReadsProcessed, totalReadsEnqueued );
+  });
 
   merger.WaitTillDone();
   writer.WaitTillDone();
@@ -169,6 +195,7 @@ int main( int argc, const char **argv ) {
         { argv + 1, argv + argc },
         true, // help
         "nsearch");
+
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 

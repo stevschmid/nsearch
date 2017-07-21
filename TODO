@@ -1,5 +1,6 @@
 Masking
 Namespacing
+Proper templating (eg FASTA/FASTQ)
 Test DB with this breaking case (so HSP are not selected via length but with score)
  >40-284-M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
  >M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
