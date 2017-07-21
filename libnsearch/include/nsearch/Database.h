@@ -11,7 +11,7 @@
 
 #include "Sequence.h"
 #include "Utils.h"
-#include "Kmers.h"
+#include "Database/Kmers.h"
 
 #include "Alignment/Seed.h"
 #include "Alignment/Ranges.h"

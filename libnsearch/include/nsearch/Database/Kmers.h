@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Sequence.h"
-#include "Utils.h"
+#include "../Sequence.h"
+#include "../Utils.h"
 
 #define BIT_INDEX(pos) ( (pos) * 2 ) % ( sizeof( size_t ) * 8 )
 #define BASE_VALUE(base) \
@@ -18,7 +18,6 @@ class Kmers {
 public:
   using Callback = const std::function< void( Kmer, size_t ) >;
 
-public:
   Kmers( const Sequence &ref, size_t length )
     : mRef( ref )
   {
@@ -46,21 +45,19 @@ public:
     }
 
     // For each consecutive kmer, shift window by one
-    size_t cols = mRef.Length() - mLength;
-    for( size_t i = 1; i <= cols; i++ ) {
+    size_t maxFrame = mRef.Length() - mLength;
+    for( size_t frame = 1; frame <= maxFrame; frame++, ptr++ ) {
       kmer >>= 2;
       int8_t val = BASE_VALUE( *ptr );
       if( val < 0 ) {
-        lastAmbigIndex = i;
+        lastAmbigIndex = frame + mLength - 1;
       } else {
         kmer |= ( val << BIT_INDEX( mLength - 1 ) );
       }
 
-      if( lastAmbigIndex == (size_t)-1 || i - lastAmbigIndex >= mLength ) {
-        block( kmer, i );
+      if( lastAmbigIndex == ( size_t )-1 || frame > lastAmbigIndex ) {
+        block( kmer, frame );
       }
-
-      ptr++;
     }
   }
 
