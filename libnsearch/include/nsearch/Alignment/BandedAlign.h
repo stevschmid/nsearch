@@ -1,6 +1,11 @@
 #pragma once
 
 #include "Common.h"
+#include "Cigar.h"
+
+#include <iostream>
+#include <vector>
+#include <cassert>
 
 typedef struct BandedAlignParams {
   size_t bandwidth = 16;

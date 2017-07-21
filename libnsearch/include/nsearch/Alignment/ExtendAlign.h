@@ -1,11 +1,11 @@
 #pragma once
 
+#include "Common.h"
+#include "Cigar.h"
+
 #include <iostream>
-#include <string>
 #include <vector>
 #include <cassert>
-
-#include "Common.h"
 
 typedef struct {
   int xDrop = 32;

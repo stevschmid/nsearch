@@ -2,6 +2,7 @@
 
 #include <nsearch/Database/Kmers.h>
 
+#include <vector>
 #include <sstream>
 
 Kmer Kmerify( const std::string &a ) {
@@ -22,17 +23,20 @@ Kmer Kmerify( const std::string &a ) {
 }
 
 TEST_CASE( "Kmers" )  {
+  Sequence seq;
   std::vector< Kmer > out;
 
   SECTION( "Default" ) {
-    Kmers k( "TAGAGAGAG", 4 );
+    seq = "TAGAGAGAG";
+    Kmers k( seq, 4 );
     k.ForEach( [&]( Kmer kmer, size_t ) {
       out.push_back( kmer );
     });
   }
 
   SECTION( "Kmer length exceeds sequence" ) {
-    Kmers k( "ATG", 4 );
+    seq = "ATG";
+    Kmers k( seq, 4 );
     k.ForEach( [&]( Kmer kmer, size_t ) {
       out.push_back( kmer );
     });
@@ -42,7 +46,8 @@ TEST_CASE( "Kmers" )  {
   }
 
   SECTION( "Ambiguous Nucleotides") {
-    Kmers k( "ATNCGTAT", 3 );
+    seq = "ATNCGTAT";
+    Kmers k( seq, 3 );
     k.ForEach( [&]( Kmer kmer, size_t ) {
       out.push_back( kmer );
     });
@@ -50,7 +55,8 @@ TEST_CASE( "Kmers" )  {
     REQUIRE( out.size() == 3 );
     REQUIRE( out.front() == Kmerify( "CGT" ) );
 
-    Kmers k2( "ATGNTTA", 3 );
+    seq = "ATGNTTA";
+    Kmers k2( seq, 3 );
     out.clear();
     k2.ForEach( [&]( Kmer kmer, size_t ) {
       out.push_back( kmer );

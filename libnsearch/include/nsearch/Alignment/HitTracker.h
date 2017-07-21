@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.h"
+#include "SegmentPair.h"
 #include "Ranges.h"
 
 #include <unordered_map>
