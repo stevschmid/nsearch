@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Seed.h"
+#include "Common.h"
 #include "Ranges.h"
 
 #include <map>

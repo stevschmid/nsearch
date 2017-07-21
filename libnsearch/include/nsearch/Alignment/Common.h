@@ -4,6 +4,7 @@
 #include "../Utils.h"
 
 #include <sstream>
+#include <deque>
 
 #define MAXINT INT_MAX/2 //prevent overflow
 #define MININT -INT_MIN/2 //prevent underflow
@@ -90,3 +91,19 @@ public:
 static std::ostream &operator<<( std::ostream &os, const Cigar &cigar ) {
   return ( os << cigar.ToString() );
 }
+
+class Seed {
+public:
+  size_t s1, s2, length;
+
+  Seed( size_t s1, size_t s2, size_t length )
+    : s1( s1 ), s2( s2 ), length( length )
+  {
+  }
+
+  bool operator==( const Seed &other ) const {
+    return s1 == other.s1 && s2 == other.s2 && length == other.length;
+  }
+};
+
+using SeedList = std::deque< Seed >;

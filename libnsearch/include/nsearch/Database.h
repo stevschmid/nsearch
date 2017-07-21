@@ -13,7 +13,7 @@
 #include "Utils.h"
 #include "Database/Kmers.h"
 
-#include "Alignment/Seed.h"
+#include "Alignment/Common.h"
 #include "Alignment/Ranges.h"
 #include "Alignment/HitTracker.h"
 #include "Alignment/ExtendAlign.h"
