@@ -11,9 +11,6 @@
 #include <nsearch/PairedEnd/Reader.h>
 #include <nsearch/Database.h>
 
-#include <nsearch/Alignment/ExtendAlign.h>
-#include <nsearch/Alignment/BandedAlign.h>
-
 #include "Stats.h"
 #include "WorkerQueue.h"
 
@@ -245,7 +242,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   enum ProgressType { ReadingFile, MergingReads, WritingReads };
 
   ProgressOutput progress;
-  progress.Add( ProgressType::ReadingFile, "Reading File", UnitType::BYTES );
+  progress.Add( ProgressType::ReadingFile, "Reading Files", UnitType::BYTES );
   progress.Add( ProgressType::MergingReads, "Merging Reads" );
   progress.Add( ProgressType::WritingReads, "Writing Reads" );
 
@@ -270,6 +267,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
   progress.Activate( ProgressType::WritingReads );
   writer.WaitTillDone();
+
   return true;
 }
 
@@ -316,6 +314,7 @@ int main( int argc, const char **argv ) {
   // Show one decimal point
   std::cout << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
 
+  // Search
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 
@@ -328,6 +327,7 @@ int main( int argc, const char **argv ) {
     PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
   }
 
+  // Merge
   if( args[ "merge" ].asBool() ) {
     gStats.StartTimer();
 
