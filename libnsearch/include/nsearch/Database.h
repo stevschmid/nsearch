@@ -387,12 +387,11 @@ public:
       // Fill space between with banded align
 
       std::set< HSP > hsps;
-      for( auto &seed : hitTracker.Seeds() ) {
+      for( auto &sp : hitTracker.List() ) {
         size_t queryPos, candidatePos;
 
-
-        size_t a1 = seed.s1, a2 = seed.s1 + seed.length - 1,
-               b1 = seed.s2, b2 = seed.s2 + seed.length - 1;
+        size_t a1 = sp.s1, a2 = sp.s1 + sp.length - 1,
+               b1 = sp.s2, b2 = sp.s2 + sp.length - 1;
 
         Cigar leftCigar;
         int leftScore = mExtendAlign.Extend( query, candidateSeq,
@@ -422,8 +421,8 @@ public:
           // Construct hsp cigar (spaced seeds so we cannot assume full match)
           Cigar middleCigar;
           int middleScore = 0;
-          for( size_t s1 = seed.s1, s2 = seed.s2;
-               s1 < seed.s1 + seed.length && s2 < seed.s2 + seed.length;
+          for( size_t s1 = sp.s1, s2 = sp.s2;
+               s1 < sp.s1 + sp.length && s2 < sp.s2 + sp.length;
                s1++, s2++ )
           {
             bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] );

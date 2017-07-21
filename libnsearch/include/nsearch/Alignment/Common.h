@@ -90,18 +90,18 @@ static std::ostream &operator<<( std::ostream &os, const Cigar &cigar ) {
   return ( os << cigar.ToString() );
 }
 
-class Seed {
+class SegmentPair {
 public:
   size_t s1, s2, length;
 
-  Seed( size_t s1, size_t s2, size_t length )
+  SegmentPair( size_t s1, size_t s2, size_t length )
     : s1( s1 ), s2( s2 ), length( length )
   {
   }
 
-  bool operator==( const Seed &other ) const {
+  bool operator==( const SegmentPair &other ) const {
     return s1 == other.s1 && s2 == other.s2 && length == other.length;
   }
 };
 
-using SeedList = std::deque< Seed >;
+using SegmentPairList = std::deque< SegmentPair >;

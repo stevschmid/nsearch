@@ -16,8 +16,8 @@ public:
     ranges.Add( start1, start1 + length );
   }
 
-  SeedList Seeds() const {
-    SeedList seeds;
+  SegmentPairList List() const {
+    SegmentPairList segmentPairs;
 
     for( auto &it : mDiagonals ) {
       auto &diag = it.first;
@@ -28,11 +28,12 @@ public:
         size_t length = range.second - range.first;
         size_t start1 = range.first;
         size_t start2 = diag + start1;
-        seeds.push_back( Seed( start1, start2, length ) );
+
+        segmentPairs.emplace_back( start1, start2, length );
       }
     }
 
-    return seeds;
+    return segmentPairs;
   };
 
 private:
