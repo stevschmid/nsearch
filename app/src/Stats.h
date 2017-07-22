@@ -18,7 +18,7 @@ public:
   }
 
   double MeanMergedLength() const {
-    return double( mergedReadsTotalLength ) / numMerged;
+    return float( mergedReadsTotalLength ) / numMerged;
   }
 
   void StartTimer() {

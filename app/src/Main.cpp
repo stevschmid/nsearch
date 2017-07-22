@@ -220,7 +220,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   enum ProgressType { ReadFile, MergeReads, WriteReads };
 
   ProgressOutput progress;
-  progress.Add( ReadFile, "Reading files", UnitType::BYTES );
+  progress.Add( ProgressType::ReadFile, "Reading files", UnitType::BYTES );
   progress.Add( ProgressType::MergeReads, "Merging reads" );
   progress.Add( ProgressType::WriteReads, "Writing merged reads" );
 
