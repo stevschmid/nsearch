@@ -3,7 +3,6 @@
 #include <nsearch/Database/Kmers.h>
 
 #include <vector>
-#include <sstream>
 
 Kmer Kmerify( const std::string &a ) {
   Kmer kmer = 0;

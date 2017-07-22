@@ -2,7 +2,9 @@
 
 #include "../Alignment/Cigar.h"
 
-// High-scoring segment pairss
+#include <cassert>
+
+// High-scoring segment pair
 // HSP: first and last character in sequence (i.e. seq[a1] - seq[a2])
 class HSP {
 public:
@@ -33,10 +35,13 @@ public:
   }
 
   size_t DistanceTo( const HSP &other ) const {
-    size_t x = ( a1 > other.a2 ? a1 - other.a2 : other.a1 - a2 );
-    size_t y = ( b1 > other.b2 ? b1 - other.b2 : other.b2 - b2 );
+    size_t dx = ( a1 > other.a2 ? a1 - other.a2 : other.a1 - a2 );
+    dx = dx > 0 ? dx - 1 : 0;
 
-    return sqrt( x*x + y*y );
+    size_t dy = ( b1 > other.b2 ? b1 - other.b2 : other.b1 - b2 );
+    dy = dy > 0 ? dy - 1 : 0;
+
+    return sqrt( dx*dx + dy*dy );
   }
 
   bool operator<( const HSP &other ) const {

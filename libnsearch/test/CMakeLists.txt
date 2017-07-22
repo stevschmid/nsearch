@@ -19,6 +19,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   Alignment/ExtendAlignTest.cpp
   Alignment/BandedAlignTest.cpp
   Database/KmersTest.cpp
+  Database/HSPTest.cpp
   )
 
 add_dependencies(check testnsearch)

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <deque>
+#include <vector>
+#include <iostream>
+
 enum class CigarOp : char {
   UNKNOWN   = ' ',
   MATCH     = 'M',
