@@ -140,6 +140,59 @@ public:
     }
   }
 
+  class Highscore {
+    class Entry {
+    public:
+      size_t id = 0;
+      size_t score = 0;
+
+      bool operator<( const Entry &other ) const {
+        return score < other.score;
+      }
+    };
+  public:
+    Highscore( size_t numHighestEntriesToKeep )
+      : mLowestScore( 0 )
+    {
+      mEntries.resize( numHighestEntriesToKeep );
+    }
+
+    // score is assumed to increase for every id
+    void Set( size_t id, size_t score ) {
+      if( score < mLowestScore )
+        return;
+
+      auto it = std::find_if( mEntries.begin(), mEntries.end(), [ id ]( const Entry &candidate ) {
+        return id == candidate.id;
+      });
+
+      if( it == mEntries.end() ) {
+        it = std::find_if( mEntries.begin(), mEntries.end(), [ score ]( const Entry &candidate ) {
+          return score > candidate.score;
+        });
+      }
+
+      if( it != mEntries.end() ) {
+        it->id = id;
+        it->score = score;
+
+        mLowestScore = std::min_element( mEntries.begin(), mEntries.end() )->score;
+      }
+    }
+
+    std::vector< Entry > EntriesFromTopToBottom() const {
+      std::vector< Entry > topToBottom = mEntries;
+      std::sort( topToBottom.begin(), topToBottom.end(), []( const Entry &a, const Entry &b ) {
+        return !(a < b);
+      });
+      return topToBottom;
+    }
+
+  private:
+    size_t mLowestScore;
+    std::vector< Entry > mEntries;
+  };
+
   SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
     const size_t defaultMinHSPLength = 16;
     const size_t maxHSPJoinDistance = 16;
@@ -171,7 +224,8 @@ public:
       }
     };
 
-    std::multiset< Candidate > highscores;
+    Highscore highscore( maxHits + maxRejects );
+
     Kmers spacedSeeds( query, mWordSize );
     std::vector< bool > uniqueCheck( mNumUniqueWords );
 
@@ -186,20 +240,7 @@ public:
           size_t &counter = mHits[ candidateIdx ];
           counter++;
 
-          if( highscores.empty() || counter > highscores.begin()->counter ) {
-            auto it = std::find_if( highscores.begin(), highscores.end(), [candidateIdx]( const Candidate &c ) {
-              return c.seqIdx == candidateIdx;
-            });
-
-            if( it != highscores.end() ) {
-              highscores.erase( it );
-            }
-
-            highscores.insert( Candidate( candidateIdx, counter ) );
-            if( highscores.size() > maxHits + maxRejects ) {
-              highscores.erase( highscores.begin() );
-            }
-          }
+          highscore.Set( candidateIdx, counter );
         }
       }
     });
@@ -212,12 +253,15 @@ public:
     // - Check similarity
     int numHits = 0;
     int numRejects = 0;
+
+    auto highscores = highscore.EntriesFromTopToBottom();
     std::cout << "Highscores " << highscores.size() << std::endl;
-    for( auto it = highscores.rbegin(); it != highscores.rend(); ++it ) {
-      const size_t seqIdx = (*it).seqIdx;
+
+    for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
+      const size_t seqIdx = it->id;
       assert( seqIdx < mSequences.size() );
       const Sequence &candidateSeq = mSequences[ seqIdx ];
-      std::cout << "Highscore Entry " << seqIdx << " " << (*it).counter << std::endl;
+      std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl;
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
