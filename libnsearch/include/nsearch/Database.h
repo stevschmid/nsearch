@@ -23,25 +23,6 @@
 
 class Database {
 
-  float CalculateIdentity( const Cigar &cigar ) const {
-    size_t cols = 0;
-    size_t matches = 0;
-
-    for( const CigarEntry &c : cigar ) {
-      // Don't count terminal gaps towards identity calculation
-      if( &c == &(*cigar.cbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
-        continue;
-      if( &c == &(*cigar.crbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
-        continue;
-
-      cols += c.count;
-      if( c.op == CigarOp::MATCH )
-        matches += c.count;
-    }
-
-    return cols > 0 ? float( matches ) / float( cols ) : 0.0f;
-  }
-
 public:
 
   void Stats() const {
@@ -208,21 +189,6 @@ public:
 
     // Fast counter reset
     memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
-
-    class Candidate {
-    public:
-      size_t seqIdx;
-      size_t counter;
-
-      Candidate( size_t seqIdx, size_t counter )
-        : seqIdx( seqIdx ), counter( counter )
-      {
-      }
-
-      bool operator<( const Candidate &other ) const {
-        return counter < other.counter;
-      }
-    };
 
     Highscore highscore( maxHits + maxRejects );
 
@@ -392,7 +358,7 @@ public:
         mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::fwd, last.a2 + 1, last.b2 + 1 );
         alignment += cigar;
 
-        float identity = CalculateIdentity( alignment );
+        float identity = alignment.Identity();
         if( identity >= minIdentity ) {
           accept = true;
 

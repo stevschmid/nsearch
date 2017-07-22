@@ -71,6 +71,25 @@ public:
     }
   }
 
+  float Identity() const {
+    size_t cols = 0;
+    size_t matches = 0;
+
+    for( const CigarEntry &c : *this ) {
+      // Don't count terminal gaps towards identity calculation
+      if( &c == &(*this->cbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+        continue;
+      if( &c == &(*this->crbegin()) && ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+        continue;
+
+      cols += c.count;
+      if( c.op == CigarOp::MATCH )
+        matches += c.count;
+    }
+
+    return cols > 0 ? float( matches ) / float( cols ) : 0.0f;
+  }
+
   std::string ToFullAlignmentString( const Sequence &query, const Sequence &target, bool *correct = NULL ) const {
     std::string q;
     std::string t;
@@ -175,7 +194,6 @@ public:
 
     return ss.str();
   }
-
 
   std::string ToString() const {
     std::stringstream ss;
