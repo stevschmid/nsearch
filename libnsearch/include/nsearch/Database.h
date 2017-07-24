@@ -94,13 +94,14 @@ public:
 
     size_t totalEntries = 0;
     size_t totalFirstEntries = 0;
+
     std::vector< uint32_t > uniqueCount( mMaxUniqueWords );
     std::vector< uint32_t > uniqueIndex( mMaxUniqueWords, -1 );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
 
-      Kmers spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
+      Kmers kmers( seq, mWordSize );
+      kmers.ForEach( [&]( Kmer word, size_t pos ) {
         totalEntries++;
 
         if( uniqueIndex[ word ] != idx ) {
@@ -121,13 +122,13 @@ public:
     mFirstEntries.resize( totalFirstEntries );
     mFurtherEntries.reserve( totalEntries - totalFirstEntries );
 
-    // Entries is sorted by sequence
+    // Reset to 0
     mNumEntriesByWord = std::vector< uint32_t >( mMaxUniqueWords );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
 
-      Kmers spacedSeeds( seq, mWordSize );
-      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
+      Kmers kmers( seq, mWordSize );
+      kmers.ForEach( [&]( Kmer word, size_t pos ) {
         if( mNumEntriesByWord[ word ] == 0 ) {
           // Create new entry
           WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
@@ -160,12 +161,7 @@ public:
   }
 
 private:
-  ExtendAlign mExtendAlign;
-  BandedAlign mBandedAlign;
-
   size_t mWordSize;
-
-  std::vector< size_t > mHits;
 
   SequenceList mSequences;
   size_t mMaxUniqueWords;
@@ -234,10 +230,10 @@ public:
 
     Highscore highscore( maxHits + maxRejects );
 
-    Kmers spacedSeeds( query, mDB.mWordSize );
+    Kmers kmers( query, mDB.mWordSize );
     std::vector< bool > uniqueCheck( mDB.mMaxUniqueWords );
 
-    spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
+    kmers.ForEach( [&]( Kmer word, size_t pos ) {
       if( !uniqueCheck[ word ] ) {
         uniqueCheck[ word ] = 1;
 
@@ -274,14 +270,14 @@ public:
       // Go through each kmer, find hits
       HitTracker hitTracker;
 
-      spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
+      kmers.ForEach( [&]( Kmer word, size_t pos ) {
         const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
         for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
           if( ptr->sequence != seqIdx )
             continue;
 
           while( ptr ) {
-            hitTracker.AddHit( pos, ptr->pos, spacedSeeds.Length() );
+            hitTracker.AddHit( pos, ptr->pos, kmers.Length() );
             ptr = ptr->nextEntry;
           }
           break;
