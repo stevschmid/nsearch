@@ -20,9 +20,69 @@
 #include "Database/Kmers.h"
 #include "Database/HSP.h"
 
+class Highscore {
+  class Entry {
+  public:
+    size_t id = 0;
+    size_t score = 0;
+
+    bool operator<( const Entry &other ) const {
+      return score < other.score;
+    }
+  };
+public:
+  Highscore( size_t numHighestEntriesToKeep )
+    : mLowestScore( 0 )
+  {
+    mEntries.resize( numHighestEntriesToKeep );
+  }
+
+  // score is assumed to increase for every id
+  void Set( size_t id, size_t score ) {
+    if( score < mLowestScore )
+      return;
+
+    auto it = std::find_if( mEntries.begin(), mEntries.end(), [ id ]( const Entry &candidate ) {
+        return id == candidate.id;
+        });
+
+    if( it == mEntries.end() ) {
+      it = std::find_if( mEntries.begin(), mEntries.end(), [ score ]( const Entry &candidate ) {
+          return score > candidate.score;
+          });
+    }
+
+    if( it != mEntries.end() ) {
+      it->id = id;
+      it->score = score;
+
+      mLowestScore = std::min_element( mEntries.begin(), mEntries.end() )->score;
+    }
+  }
+
+  std::vector< Entry > EntriesFromTopToBottom() const {
+    std::vector< Entry > topToBottom = mEntries;
+    std::sort( topToBottom.begin(), topToBottom.end(), []( const Entry &a, const Entry &b ) {
+        return !(a < b);
+        });
+    return topToBottom;
+  }
+
+private:
+  size_t mLowestScore;
+  std::vector< Entry > mEntries;
+};
+
+class DatabaseSearcher;
+
 class Database {
+  friend class DatabaseSearcher;
 
 public:
+
+  size_t Size() const {
+    return mSequences.size();
+  }
 
   void Stats() const {
   }
@@ -120,60 +180,66 @@ public:
     }
   }
 
-  class Highscore {
-    class Entry {
-    public:
-      size_t id = 0;
-      size_t score = 0;
+private:
+  ExtendAlign mExtendAlign;
+  BandedAlign mBandedAlign;
 
-      bool operator<( const Entry &other ) const {
-        return score < other.score;
-      }
-    };
-  public:
-    Highscore( size_t numHighestEntriesToKeep )
-      : mLowestScore( 0 )
+  size_t mWordSize;
+
+  std::vector< size_t > mHits;
+
+  SequenceList mSequences;
+  size_t mTotalNucleotides;
+  size_t mTotalWords;
+  size_t mNumUniqueWords;
+
+  using WordEntry = struct WordEntry_s {
+    uint32_t sequence;
+    uint32_t pos;
+    WordEntry_s *nextEntry;
+
+    WordEntry_s()
+    : sequence( -1 )
     {
-      mEntries.resize( numHighestEntriesToKeep );
     }
 
-    // score is assumed to increase for every id
-    void Set( size_t id, size_t score ) {
-      if( score < mLowestScore )
-        return;
+    WordEntry_s( uint32_t s, uint32_t p, WordEntry_s *ne = NULL )
+      : sequence( s ), pos( p ), nextEntry( ne )
+    {
 
-      auto it = std::find_if( mEntries.begin(), mEntries.end(), [ id ]( const Entry &candidate ) {
-        return id == candidate.id;
-      });
-
-      if( it == mEntries.end() ) {
-        it = std::find_if( mEntries.begin(), mEntries.end(), [ score ]( const Entry &candidate ) {
-          return score > candidate.score;
-        });
-      }
-
-      if( it != mEntries.end() ) {
-        it->id = id;
-        it->score = score;
-
-        mLowestScore = std::min_element( mEntries.begin(), mEntries.end() )->score;
-      }
     }
-
-    std::vector< Entry > EntriesFromTopToBottom() const {
-      std::vector< Entry > topToBottom = mEntries;
-      std::sort( topToBottom.begin(), topToBottom.end(), []( const Entry &a, const Entry &b ) {
-        return !(a < b);
-      });
-      return topToBottom;
-    }
-
-  private:
-    size_t mLowestScore;
-    std::vector< Entry > mEntries;
   };
 
-  SequenceList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
+  std::vector< uint32_t > mIndexByWord;
+  std::vector< uint32_t > mNumEntriesByWord;
+  std::vector< WordEntry > mFirstEntries; // first word (kmer) hit for each candidate
+  std::vector< WordEntry > mFurtherEntries;
+};
+
+class DatabaseSearcher {
+public:
+  using Result = struct {
+    Sequence query;
+    Sequence target;
+
+    Cigar alignment;
+
+    size_t targetStart, targetLength;
+    size_t queryStart, queryLength;
+
+    size_t numCols, numMatches, numMismatches, numGaps;
+
+    float identity;
+  };
+  using ResultList = std::deque< Result >;
+
+  DatabaseSearcher( const Database &db )
+    : mDB( db )
+  {
+  }
+
+  ResultList Query( const Sequence &query, float minIdentity, int maxHits = 1, int maxRejects = 8 ) {
+
     const size_t defaultMinHSPLength = 16;
     const size_t maxHSPJoinDistance = 16;
 
@@ -182,8 +248,8 @@ public:
     size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
     // Go through each kmer, find hits
-    if( mHits.size() < mSequences.size() ) {
-      mHits.resize( mSequences.size() );
+    if( mHits.size() < mDB.Size() ) {
+      mHits.resize( mDB.Size() );
     }
 
     // Fast counter reset
@@ -191,15 +257,15 @@ public:
 
     Highscore highscore( maxHits + maxRejects );
 
-    Kmers spacedSeeds( query, mWordSize );
-    std::vector< bool > uniqueCheck( mNumUniqueWords );
+    Kmers spacedSeeds( query, mDB.mWordSize );
+    std::vector< bool > uniqueCheck( mDB.mNumUniqueWords );
 
     spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
       if( !uniqueCheck[ word ] ) {
         uniqueCheck[ word ] = 1;
 
-        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ word ] ];
-        for( uint32_t i = 0; i < mNumEntriesByWord[ word ]; i++, ptr++ ) {
+        const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
+        for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
           uint32_t candidateIdx = ptr->sequence;
 
           size_t &counter = mHits[ candidateIdx ];
@@ -224,16 +290,16 @@ public:
 
     for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
       const size_t seqIdx = it->id;
-      assert( seqIdx < mSequences.size() );
-      const Sequence &candidateSeq = mSequences[ seqIdx ];
+      assert( seqIdx < mDB.mSequences.size() );
+      const Sequence &candidateSeq = mDB.mSequences[ seqIdx ];
       std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl;
 
       // Go through each kmer, find hits
       HitTracker hitTracker;
 
       spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
-        WordEntry *ptr = &mFirstEntries[ mIndexByWord[ word ] ];
-        for( uint32_t i = 0; i < mNumEntriesByWord[ word ]; i++, ptr++ ) {
+        const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
+        for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
           if( ptr->sequence != seqIdx )
             continue;
 
@@ -385,51 +451,14 @@ public:
       }
     }
 
-    return SequenceList();
+    return ResultList();
   }
 
 private:
-  ExtendAlign mExtendAlign;
-  BandedAlign mBandedAlign;
-
-  size_t mWordSize;
+  const Database &mDB;
 
   std::vector< size_t > mHits;
 
-  SequenceList mSequences;
-  size_t mTotalNucleotides;
-  size_t mTotalWords;
-  size_t mNumUniqueWords;
-
-  /* using WordInfo = struct { */
-  /*   uint32_t index; */
-  /*   uint32_t pos; */
-  /* }; */
-  /* using WordInfoDatabase = std::vector< WordInfo >; */
-
-  /* std::vector< uint32_t > mWordIndices; */
-  /* std::vector< uint32_t > mWordCounts; */
-  /* WordInfoDatabase mWordInfoDB; */
-
-  using WordEntry = struct WordEntry_s {
-    uint32_t sequence;
-    uint32_t pos;
-    WordEntry_s *nextEntry;
-
-    WordEntry_s()
-    : sequence( -1 )
-    {
-    }
-
-    WordEntry_s( uint32_t s, uint32_t p, WordEntry_s *ne = NULL )
-      : sequence( s ), pos( p ), nextEntry( ne )
-    {
-
-    }
-  };
-
-  std::vector< uint32_t > mIndexByWord;
-  std::vector< uint32_t > mNumEntriesByWord;
-  std::vector< WordEntry > mFirstEntries; // first word (kmer) hit for each candidate
-  std::vector< WordEntry > mFurtherEntries;
+  ExtendAlign mExtendAlign;
+  BandedAlign mBandedAlign;
 };

@@ -278,15 +278,11 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   progress.Activate( ProgressType::ReadQueryFile );
   FASTA::Reader qryReader( queryPath );
+  DatabaseSearcher searcher( db );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
     progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), qryReader.NumBytesTotal() );
-    SequenceList candidates = db.Query( seq, 0.75, 1, 8 );
-    /* std::cout << seq.identifier << std::endl; */
-    /* for( auto &candidate : candidates ) { */
-    /*   std::cout << " " << candidate.identifier << std::endl; */
-    /* } */
-    /* std::cout << "===" << std::endl; */
+    searcher.Query( seq, 0.75, 1, 8 );
   }
 
   progress.Activate( ProgressType::SearchDB );
