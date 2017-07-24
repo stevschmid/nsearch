@@ -90,33 +90,14 @@ public:
   Database( const SequenceList &sequences, size_t wordSize )
     : mSequences( sequences ), mWordSize( wordSize )
   {
-    mNumUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
-
-    mTotalNucleotides = 0;
-
-    mTotalWords = 0;
-    for( auto &seq : mSequences ) {
-      mTotalWords += seq.Length() - mWordSize + 1;
-    }
-
-    using Entry = struct Entry_s {
-      uint32_t word;
-      uint32_t index;
-      uint32_t pos;
-
-      Entry_s(uint32_t word, uint32_t index, uint32_t pos )
-        : word( word ), index( index ), pos( pos )
-      {
-      }
-    };
+    mMaxUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
 
     size_t totalEntries = 0;
     size_t totalFirstEntries = 0;
-    std::vector< uint32_t > uniqueCount( mNumUniqueWords );
-    std::vector< uint32_t > uniqueIndex( mNumUniqueWords, -1 );
+    std::vector< uint32_t > uniqueCount( mMaxUniqueWords );
+    std::vector< uint32_t > uniqueIndex( mMaxUniqueWords, -1 );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
-      mTotalNucleotides += seq.Length();
 
       Kmers spacedSeeds( seq, mWordSize );
       spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
@@ -131,9 +112,8 @@ public:
     }
 
     // Calculate indices
-    /* mWordIndices.reserve( mNumUniqueWords ); */
-    mIndexByWord.reserve( mNumUniqueWords );
-    for( size_t i = 0; i < mNumUniqueWords; i++ ) {
+    mIndexByWord.reserve( mMaxUniqueWords );
+    for( size_t i = 0; i < mMaxUniqueWords; i++ ) {
       mIndexByWord[ i ] = i > 0 ? mIndexByWord[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
     }
 
@@ -142,10 +122,9 @@ public:
     mFurtherEntries.reserve( totalEntries - totalFirstEntries );
 
     // Entries is sorted by sequence
-    mNumEntriesByWord = std::vector< uint32_t >( mNumUniqueWords );
+    mNumEntriesByWord = std::vector< uint32_t >( mMaxUniqueWords );
     for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
       const Sequence &seq = mSequences[ idx ];
-      mTotalNucleotides += seq.Length();
 
       Kmers spacedSeeds( seq, mWordSize );
       spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
@@ -189,9 +168,7 @@ private:
   std::vector< size_t > mHits;
 
   SequenceList mSequences;
-  size_t mTotalNucleotides;
-  size_t mTotalWords;
-  size_t mNumUniqueWords;
+  size_t mMaxUniqueWords;
 
   using WordEntry = struct WordEntry_s {
     uint32_t sequence;
@@ -258,7 +235,7 @@ public:
     Highscore highscore( maxHits + maxRejects );
 
     Kmers spacedSeeds( query, mDB.mWordSize );
-    std::vector< bool > uniqueCheck( mDB.mNumUniqueWords );
+    std::vector< bool > uniqueCheck( mDB.mMaxUniqueWords );
 
     spacedSeeds.ForEach( [&]( Kmer word, size_t pos ) {
       if( !uniqueCheck[ word ] ) {
