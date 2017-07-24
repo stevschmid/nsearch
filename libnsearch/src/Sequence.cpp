@@ -11,6 +11,31 @@ Sequence::Sequence()
 
 }
 
+Sequence::Sequence( const Sequence &sequence )
+  :
+    sequence( sequence.sequence ),
+    identifier( sequence.identifier ),
+    quality( sequence.quality )
+{
+
+}
+
+Sequence::Sequence( Sequence &&sequence )
+  :
+    sequence( std::move( sequence.sequence ) ),
+    identifier( std::move( sequence.identifier ) ),
+    quality( std::move( sequence.quality ) )
+{
+
+}
+
+Sequence& Sequence::operator=( const Sequence &other ) {
+  sequence = other.sequence;
+  identifier = other.identifier;
+  quality = other.quality;
+  return *this;
+}
+
 Sequence::Sequence( const std::string &sequence )
   : Sequence( "", sequence, "" )
 {

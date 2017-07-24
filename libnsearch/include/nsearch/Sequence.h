@@ -13,6 +13,9 @@
 class Sequence {
 public:
   Sequence();
+  Sequence( const Sequence &sequence );
+  Sequence( Sequence &&sequence );
+  Sequence &operator=( const Sequence& other );
   Sequence( const std::string &sequence );
   Sequence( const char *sequence );
   Sequence( const std::string &identifier, const std::string &sequence );
