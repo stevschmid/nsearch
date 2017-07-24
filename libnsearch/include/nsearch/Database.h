@@ -84,9 +84,6 @@ public:
     return mSequences.size();
   }
 
-  void Stats() const {
-  }
-
   Database( const SequenceList &sequences, size_t wordSize )
     : mSequences( sequences ), mWordSize( wordSize )
   {

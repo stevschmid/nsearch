@@ -273,8 +273,6 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   progress.Activate( ProgressType::IndexDB );
   Database db( sequences, 8 );
-  /* db.Stats(); */
-  /* return false; */
 
   progress.Activate( ProgressType::ReadQueryFile );
   FASTA::Reader qryReader( queryPath );
