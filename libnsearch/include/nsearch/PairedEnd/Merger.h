@@ -3,6 +3,7 @@
 #include "../Sequence.h"
 
 namespace PairedEnd {
+  // TODO: Find good defaults! Seem to stringent
   static const int MERGER_DEFAULT_MIN_OVERLAP     = 16; // bases
   static const double MERGER_DEFAULT_MIN_IDENTITY = 0.9;
 
