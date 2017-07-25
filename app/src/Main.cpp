@@ -24,7 +24,7 @@ R"(
 
   Usage:
     nsearch merge <forward.fastq> <reverse.fastq> <merged.fastq>
-    nsearch search <query.fasta> <database.fasta>
+    nsearch search <query.fasta> <database.fasta> <output.txt>
 )";
 
 enum class UnitType { COUNTS, BYTES };
@@ -254,7 +254,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   return true;
 }
 
-bool Search( const std::string &queryPath, const std::string &databasePath ) {
+bool Search( const std::string &queryPath, const std::string &databasePath, const std::string &outputPath ) {
   ProgressOutput progress;
 
   Sequence seq;
@@ -311,10 +311,26 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   size_t count = 0;
 
+  std::ofstream of;
+  of.open( outputPath );
+
   for( auto &query : queries ) {
-    search.Query( query );
-    progress.Set( ProgressType::SearchDB, count++, queries.size() );
+    if( (count++) % 50 == 0 || count == queries.size() ) {
+      progress.Set( ProgressType::SearchDB, count, queries.size() );
+    }
+
+    Search::ResultList results = search.Query( query );
+    if( results.empty() )
+      continue;
+
+    of << "Found: " << results.size() << " hits" << std::endl << std::endl;
+    for( auto &result : results ) {
+      of << result << std::endl;
+    }
+    of << std::string( 50, '-') << std::endl << std::endl;
   }
+
+  of.close();
 
   return true;
 }
@@ -337,7 +353,8 @@ int main( int argc, const char **argv ) {
     gStats.StartTimer();
 
     Search( args[ "<query.fasta>" ].asString(),
-        args[ "<database.fasta>" ].asString() );
+        args[ "<database.fasta>" ].asString(),
+        args[ "<output.txt>" ].asString() );
 
     gStats.StopTimer();
 
