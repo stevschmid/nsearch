@@ -14,10 +14,8 @@
 #include "Database/HSP.h"
 #include "Database/Highscore.h"
 
-class DatabaseSearcher;
-
 class Database {
-  friend class DatabaseSearcher;
+  friend class GlobalSearch;
 
 public:
   Database( const SequenceList &sequences, size_t wordSize );

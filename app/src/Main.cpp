@@ -11,7 +11,7 @@
 #include <nsearch/PairedEnd/Reader.h>
 
 #include <nsearch/Database.h>
-#include <nsearch/Database/Searcher.h>
+#include <nsearch/Database/GlobalSearch.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"
@@ -278,11 +278,11 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   progress.Activate( ProgressType::ReadQueryFile );
   FASTA::Reader qryReader( queryPath );
-  DatabaseSearcher searcher( db );
+  GlobalSearch search( db, 0.75, 1, 8 );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
     progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), qryReader.NumBytesTotal() );
-    searcher.Query( seq, 0.75, 1, 8 );
+    search.Query( seq );
   }
 
   progress.Activate( ProgressType::SearchDB );

@@ -1,4 +1,4 @@
-#include "nsearch/Database/Searcher.h"
+#include "nsearch/Database/GlobalSearch.h"
 
 #include "nsearch/Sequence.h"
 #include "nsearch/Database.h"
@@ -7,12 +7,12 @@
 #include "nsearch/Alignment/Ranges.h"
 #include "nsearch/Alignment/HitTracker.h"
 
-DatabaseSearcher::DatabaseSearcher( const Database &db )
-  : mDB( db )
+GlobalSearch::GlobalSearch( const Database &db, float minIdentity, int maxHits, int maxRejects )
+  : Search( db ), mDB( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ), mMaxRejects( maxRejects )
 {
 }
 
-DatabaseSearcher::ResultList DatabaseSearcher::Query( const Sequence &query, float minIdentity, int maxHits, int maxRejects )
+Search::ResultList GlobalSearch::Query( const Sequence &query )
 {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance = 16;
@@ -29,7 +29,7 @@ DatabaseSearcher::ResultList DatabaseSearcher::Query( const Sequence &query, flo
   // Fast counter reset
   memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
 
-  Highscore highscore( maxHits + maxRejects );
+  Highscore highscore( mMaxHits + mMaxRejects );
 
   Kmers kmers( query, mDB.mWordSize );
   std::vector< bool > uniqueCheck( mDB.mMaxUniqueWords );
@@ -198,7 +198,7 @@ DatabaseSearcher::ResultList DatabaseSearcher::Query( const Sequence &query, flo
       alignment += cigar;
 
       float identity = alignment.Identity();
-      if( identity >= minIdentity ) {
+      if( identity >= mMinIdentity ) {
         accept = true;
 
         bool correct;
@@ -216,14 +216,14 @@ DatabaseSearcher::ResultList DatabaseSearcher::Query( const Sequence &query, flo
 
     if( accept ) {
       numHits++;
-      if( numHits >= maxHits )
+      if( numHits >= mMaxHits )
         break;
     } else {
       numRejects++;
-      if( numRejects >= maxRejects )
+      if( numRejects >= mMaxRejects )
         break;
     }
   }
 
-  return DatabaseSearcher::ResultList();
+  return Search::ResultList();
 }
