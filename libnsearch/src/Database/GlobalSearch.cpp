@@ -204,7 +204,8 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
 
       float identity = alignment.Identity();
       if( identity >= mMinIdentity ) {
-        /* results.push_back( Search::Result { query, candidateSeq, alignment } ); */
+        accept = true;
+        results.push_back( Search::Result { query, candidateSeq, alignment } );
       }
     }
 

@@ -313,9 +313,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   for( auto &query : queries ) {
     search.Query( query );
-    if( (count++) % 500 == 0 || count == queries.size() ) {
-      progress.Set( ProgressType::SearchDB, count, queries.size() );
-    }
+    progress.Set( ProgressType::SearchDB, count++, queries.size() );
   }
 
   return true;
