@@ -9,7 +9,9 @@
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
+
 #include <nsearch/Database.h>
+#include <nsearch/Database/Searcher.h>
 
 #include "Stats.h"
 #include "WorkerQueue.h"

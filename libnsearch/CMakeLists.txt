@@ -5,6 +5,8 @@ add_library(libnsearch
   src/Sequence.cpp
   src/TextReader.cpp
   src/PairedEnd/Merger.cpp
+  src/Database.cpp
+  src/Database/Searcher.cpp
   )
 
 target_include_directories(libnsearch PUBLIC

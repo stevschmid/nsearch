@@ -1,8 +1,11 @@
 #pragma once
 
+#include "nsearch/Utils.h"
+
 #include <deque>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 enum class CigarOp : char {
