@@ -87,25 +87,28 @@ public:
 
   }
 
-  void Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
+  ProgressOutput& Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
     mStages.insert( { id, Stage { label, unit, 0, 100 } } );
+    return *this;
   }
 
-  void Set( int id, float value, float max ) {
+  ProgressOutput& Set( int id, float value, float max ) {
     mStages[ id ].value = value;
     mStages[ id ].max = max;
 
     if( mActiveId == id ) {
       Print( mStages[ id ] );
     }
+    return *this;
   }
 
-  void Activate( int id ) {
+  ProgressOutput& Activate( int id ) {
     if( mActiveId != id )
       std::cout << std::endl;
 
     mActiveId = id;
     Print( mStages[ id ] );
+    return *this;
   }
 
 private:
@@ -259,13 +262,15 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
 
   FASTA::Reader dbReader( databasePath );
 
-  enum ProgressType { ReadDBFile, IndexDB, ReadQueryFile, SearchDB };
+  enum ProgressType { ReadDBFile, StatsDB, IndexDB, ReadQueryFile, SearchDB };
 
   progress.Add( ProgressType::ReadDBFile, "Reading DB file", UnitType::BYTES );
+  progress.Add( ProgressType::StatsDB, "Analyzing DB sequences");
   progress.Add( ProgressType::IndexDB, "Indexing database");
   progress.Add( ProgressType::ReadQueryFile, "Reading query file", UnitType::BYTES );
   progress.Add( ProgressType::SearchDB, "Searching database" );
 
+  // Read DB
   progress.Activate( ProgressType::ReadDBFile );
   while( !dbReader.EndOfFile() ) {
     dbReader >> seq;
@@ -273,19 +278,39 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
     progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(), dbReader.NumBytesTotal() );
   }
 
-  progress.Activate( ProgressType::IndexDB );
-  Database db( sequences, 8 );
+  // Index DB
+  Database db( sequences, 8, [&]( Database::ProgressType type, size_t num, size_t total ) {
+    switch( type ) {
+      case Database::ProgressType::StatsCollection:
+        progress.Activate( ProgressType::StatsDB ).Set( ProgressType::StatsDB, num, total );
+        break;
 
-  progress.Activate( ProgressType::ReadQueryFile );
+      case Database::ProgressType::Indexing:
+        progress.Activate( ProgressType::IndexDB ).Set( ProgressType::IndexDB, num, total );
+        break;
+
+      default:
+        break;
+    }
+  });
+
+  // Read query
   FASTA::Reader qryReader( queryPath );
-  GlobalSearch search( db, 0.75, 1, 8 );
+
+  SequenceList queries;
+  progress.Activate( ProgressType::ReadQueryFile );
   while( !qryReader.EndOfFile() )  {
     qryReader >> seq;
     progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), qryReader.NumBytesTotal() );
-    search.Query( seq );
+    queries.push_back( seq );
   }
 
+  // Search
   progress.Activate( ProgressType::SearchDB );
+  GlobalSearch search( db, 0.75, 1, 8 );
+  for( auto &query : queries ) {
+    /* search.Query( query ); */
+  }
 
   return true;
 }

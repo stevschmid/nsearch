@@ -1,7 +1,7 @@
 #include "nsearch/Database.h"
 
-Database::Database( const SequenceList &sequences, size_t wordSize )
-  : mSequences( sequences ), mWordSize( wordSize )
+Database::Database( const SequenceList &sequences, size_t wordSize, const OnProgressCallback &progressCallback )
+  : mSequences( sequences ), mWordSize( wordSize ), mProgressCallback( progressCallback )
 {
   mMaxUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
 
@@ -15,15 +15,22 @@ Database::Database( const SequenceList &sequences, size_t wordSize )
 
     Kmers kmers( seq, mWordSize );
     kmers.ForEach( [&]( Kmer word, size_t pos ) {
-        totalEntries++;
+      totalEntries++;
 
-        if( uniqueIndex[ word ] != idx ) {
+      // Count unique words
+      if( uniqueIndex[ word ] != idx ) {
         uniqueIndex[ word ] = idx;
         uniqueCount[ word ]++;
         totalFirstEntries++;
-        }
-        });
+      }
+    });
+
+    // Progress
+    if( idx % 500 == 0 || idx + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::StatsCollection, idx + 1, mSequences.size() );
+    }
   } // Calculate indices
+
   mIndexByWord.reserve( mMaxUniqueWords );
   for( size_t i = 0; i < mMaxUniqueWords; i++ ) {
     mIndexByWord[ i ] = i > 0 ? mIndexByWord[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
@@ -40,38 +47,41 @@ Database::Database( const SequenceList &sequences, size_t wordSize )
 
     Kmers kmers( seq, mWordSize );
     kmers.ForEach( [&]( Kmer word, size_t pos ) {
-        if( mNumEntriesByWord[ word ] == 0 ) {
+      if( mNumEntriesByWord[ word ] == 0 ) {
         // Create new entry
         WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
         entry->sequence = idx;
         entry->pos = pos;
         entry->nextEntry = NULL;
         mNumEntriesByWord[ word ]++;
-        } else {
+      } else {
         // Check if last entry == index
         WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] + ( mNumEntriesByWord[ word ] - 1 ) ];
 
         if( entry->sequence == idx ) {
-        mFurtherEntries.emplace_back( idx, pos );
-        WordEntry *s = entry;
-        while( s->nextEntry ) {
-        s = s->nextEntry;
-        }
-        s->nextEntry = &mFurtherEntries.back();
+          mFurtherEntries.emplace_back( idx, pos );
+          WordEntry *s = entry;
+          while( s->nextEntry ) {
+            s = s->nextEntry;
+          }
+          s->nextEntry = &mFurtherEntries.back();
         } else {
-        entry++;
-        entry->sequence = idx;
-        entry->pos = pos;
-        entry->nextEntry = NULL;
-        mNumEntriesByWord[ word ]++;
+          entry++;
+          entry->sequence = idx;
+          entry->pos = pos;
+          entry->nextEntry = NULL;
+          mNumEntriesByWord[ word ]++;
         }
-        }
+      }
     });
 
+    // Progress
+    if( idx % 500 == 0 || idx + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::Indexing, idx + 1, mSequences.size() );
+    }
   }
 }
 
 size_t Database::Size() const {
   return mSequences.size();
 }
-

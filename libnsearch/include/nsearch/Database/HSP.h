@@ -3,6 +3,7 @@
 #include "../Alignment/Cigar.h"
 
 #include <cassert>
+#include <cmath>
 
 // High-scoring segment pair
 // HSP: first and last character in sequence (i.e. seq[a1] - seq[a2])

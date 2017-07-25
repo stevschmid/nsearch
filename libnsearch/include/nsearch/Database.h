@@ -1,11 +1,7 @@
 #pragma once
-#include <unordered_map>
-#include <unordered_set>
-#include <set>
-#include <cassert>
-#include <iostream>
-#include <iomanip>
-#include <memory>
+
+#include <vector>
+#include <deque>
 
 #include "Sequence.h"
 #include "Utils.h"
@@ -18,7 +14,11 @@ class Database {
   friend class GlobalSearch;
 
 public:
-  Database( const SequenceList &sequences, size_t wordSize );
+  enum ProgressType { StatsCollection, Indexing };
+  using OnProgressCallback = std::function< void ( ProgressType, size_t, size_t )  >;
+
+  Database( const SequenceList &sequences, size_t wordSize,
+      const OnProgressCallback &progressCallback = []( ProgressType, size_t, size_t ) { } );
   size_t Size() const;
 
 private:
@@ -48,4 +48,6 @@ private:
   std::vector< uint32_t > mNumEntriesByWord;
   std::vector< WordEntry > mFirstEntries; // first word (kmer) hit for each candidate
   std::vector< WordEntry > mFurtherEntries;
+
+  OnProgressCallback mProgressCallback;
 };

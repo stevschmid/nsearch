@@ -2,10 +2,13 @@
 
 #include "nsearch/Sequence.h"
 #include "nsearch/Database.h"
+#include "nsearch/Database/HSP.h"
 
 #include "nsearch/Alignment/Common.h"
 #include "nsearch/Alignment/Ranges.h"
 #include "nsearch/Alignment/HitTracker.h"
+
+#include <set>
 
 GlobalSearch::GlobalSearch( const Database &db, float minIdentity, int maxHits, int maxRejects )
   : Search( db ), mDB( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ), mMaxRejects( maxRejects )
@@ -35,20 +38,20 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
   std::vector< bool > uniqueCheck( mDB.mMaxUniqueWords );
 
   kmers.ForEach( [&]( Kmer word, size_t pos ) {
-      if( !uniqueCheck[ word ] ) {
+    if( !uniqueCheck[ word ] ) {
       uniqueCheck[ word ] = 1;
 
       const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
       for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
-      uint32_t candidateIdx = ptr->sequence;
+        uint32_t candidateIdx = ptr->sequence;
 
-      size_t &counter = mHits[ candidateIdx ];
-      counter++;
+        size_t &counter = mHits[ candidateIdx ];
+        counter++;
 
-      highscore.Set( candidateIdx, counter );
+        highscore.Set( candidateIdx, counter );
       }
-      }
-      });
+    }
+  });
 
   // For each candidate:
   // - Get HSPs,
@@ -72,18 +75,18 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
     HitTracker hitTracker;
 
     kmers.ForEach( [&]( Kmer word, size_t pos ) {
-        const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
-        for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
+      const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
+      for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
         if( ptr->sequence != seqIdx )
-        continue;
+          continue;
 
         while( ptr ) {
-        hitTracker.AddHit( pos, ptr->pos, kmers.Length() );
-        ptr = ptr->nextEntry;
+          hitTracker.AddHit( pos, ptr->pos, kmers.Length() );
+          ptr = ptr->nextEntry;
         }
         break;
-        }
-        });
+      }
+    });
 
     // Find all HSP
     // Sort by length
