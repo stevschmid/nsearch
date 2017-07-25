@@ -308,8 +308,14 @@ bool Search( const std::string &queryPath, const std::string &databasePath ) {
   // Search
   progress.Activate( ProgressType::SearchDB );
   GlobalSearch search( db, 0.75, 1, 8 );
+
+  size_t count = 0;
+
   for( auto &query : queries ) {
-    /* search.Query( query ); */
+    search.Query( query );
+    if( (count++) % 500 == 0 || count == queries.size() ) {
+      progress.Set( ProgressType::SearchDB, count, queries.size() );
+    }
   }
 
   return true;

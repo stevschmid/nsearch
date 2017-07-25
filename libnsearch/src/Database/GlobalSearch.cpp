@@ -20,7 +20,7 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance = 16;
 
-  std::cout << "===> SEARCH " << query.identifier << std::endl;
+  /* std::cout << "===> SEARCH " << query.identifier << std::endl; */
 
   size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
@@ -63,13 +63,15 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
   int numRejects = 0;
 
   auto highscores = highscore.EntriesFromTopToBottom();
-  std::cout << "Highscores " << highscores.size() << std::endl;
+  /* std::cout << "Highscores " << highscores.size() << std::endl; */
+
+  ResultList results;
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
     const size_t seqIdx = it->id;
     assert( seqIdx < mDB.mSequences.size() );
     const Sequence &candidateSeq = mDB.mSequences[ seqIdx ];
-    std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl;
+    /* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; */
 
     // Go through each kmer, find hits
     HitTracker hitTracker;
@@ -202,18 +204,7 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
 
       float identity = alignment.Identity();
       if( identity >= mMinIdentity ) {
-        accept = true;
-
-        bool correct;
-
-        std::cout << std::endl;
-        std::cout << alignment.ToFullAlignmentString( query, candidateSeq, &correct );
-        std::cout << std::endl;
-        std::cout << std::string( 50, '=') << std::endl;
-
-        if( !correct ) {
-          std::cout << "INVALID ALIGNMENT" << std::endl;
-        }
+        /* results.push_back( Search::Result { query, candidateSeq, alignment } ); */
       }
     }
 
@@ -228,5 +219,5 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
     }
   }
 
-  return Search::ResultList();
+  return results;
 }
