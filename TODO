@@ -4,5 +4,6 @@ Proper templating (eg FASTA/FASTQ)
 Test DB with this breaking case (so HSP are not selected via length but with score)
  >40-284-M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
  >M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
-  
 
+Camila's idea: Add special coding gap model: Penalize gaps which shift the reading frame heavily, 
+but penalize gaps with 3nt, 6nt etc. which delete AAs less
