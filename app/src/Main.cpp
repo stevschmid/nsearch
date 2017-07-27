@@ -5,16 +5,14 @@
 #include <sstream>
 
 #include <nsearch/Sequence.h>
-#include <nsearch/FASTQ/Writer.h>
 #include <nsearch/FASTA/Reader.h>
-#include <nsearch/PairedEnd/Merger.h>
-#include <nsearch/PairedEnd/Reader.h>
 
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
 
+#include "Common.h"
 #include "Stats.h"
-#include "WorkerQueue.h"
+#include "Merge.h"
 
 Stats gStats;
 
@@ -27,103 +25,6 @@ R"(
     nsearch search <query.fasta> <database.fasta> <output.txt>
 )";
 
-enum class UnitType { COUNTS, BYTES };
-
-std::string ValueWithUnit( float value, UnitType unit ) {
-  static const std::map< UnitType, std::map< size_t, std::string > > CONVERSION = {
-    {
-      UnitType::COUNTS,
-      {
-        { 1, "" },
-        { 1000, "k" },
-        { 1000 * 1000, "M" },
-        { 1000 * 1000 * 1000, "G" }
-      },
-    },
-    {
-      UnitType::BYTES,
-      {
-        { 1, " Bytes" },
-        { 1024, " kB" },
-        { 1024 * 1024, " MB" },
-        { 1024 * 1024 * 1024, " GB" }
-      }
-    }
-  };
-
-  auto list = CONVERSION.find( unit  )->second;
-  auto it = list.begin();
-  while( it != list.end() && value > it->first * 10 ) {
-    it++;
-  }
-
-  std::stringstream ss;
-  if( it != list.begin() ) {
-    it--;
-    value = floor( value / it->first );
-  }
-
-  if( it->first == 1 ) {
-    ss << std::setprecision(1) << std::setiosflags( std::ios::fixed );
-  }
-
-  ss << value;
-  ss << it->second;
-  return ss.str();
-}
-
-class ProgressOutput {
-  using Stage = struct {
-    std::string label;
-    UnitType unit;
-    int value;
-    int max;
-  };
-
-public:
-  ProgressOutput()
-    : mActiveId( -1 )
-  {
-
-  }
-
-  ProgressOutput& Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
-    mStages.insert( { id, Stage { label, unit, 0, 100 } } );
-    return *this;
-  }
-
-  ProgressOutput& Set( int id, float value, float max ) {
-    mStages[ id ].value = value;
-    mStages[ id ].max = max;
-
-    if( mActiveId == id ) {
-      Print( mStages[ id ] );
-    }
-    return *this;
-  }
-
-  ProgressOutput& Activate( int id ) {
-    if( mActiveId != id )
-      std::cout << std::endl;
-
-    mActiveId = id;
-    Print( mStages[ id ] );
-    return *this;
-  }
-
-private:
-  void Print( const Stage &stage ) {
-    std::ios::fmtflags f( std::cout.flags() );
-    std::cout << stage.label << ": ";
-    std::cout << float( stage.value ) / stage.max * 100.0 << '%';
-    std::cout << " (" << ValueWithUnit( stage.value, stage.unit ) << ")";
-    std::cout << std::string( 20, ' ' ) << "\r" << std::flush;
-    std::cout.flags( f );
-  }
-
-  int mActiveId;
-  std::map< int, Stage > mStages;
-};
 
 void PrintSummaryHeader()
 {
@@ -141,117 +42,6 @@ void PrintSummaryLine( float value, const std::string &line, float total = 0.0, 
   }
   std::cout << std::endl;
   std::cout.flags( f );
-}
-
-class QueuedWriter : public WorkerQueue< SequenceList > {
-public:
-  QueuedWriter( const std::string &path )
-    : WorkerQueue( 1 ), mWriter( path )
-  {
-  }
-
-protected:
-  void Process( const SequenceList &list ) {
-    for( auto seq : list ) {
-      mWriter << seq;
-    }
-  }
-
-  size_t CountPerItem( const SequenceList &list ) const {
-    return list.size();
-  }
-
-private:
-  FASTQ::Writer mWriter;
-};
-
-using PairedReads = std::pair< SequenceList, SequenceList >;
-
-class QueuedMerger : public WorkerQueue< PairedReads > {
-public:
-  QueuedMerger( QueuedWriter &writer )
-    : WorkerQueue( -1 ), mWriter( writer )
-  {
-  }
-
-protected:
-  void Process( const PairedReads &queueItem ) {
-    const SequenceList &fwd = queueItem.first;
-    const SequenceList &rev = queueItem.second;
-
-    const PairedEnd::Merger &merger = mMerger;
-
-    Sequence mergedRead;
-    SequenceList mergedReads;
-
-    auto fit = fwd.begin();
-    auto rit = rev.begin();
-    while( fit != fwd.end() && rit != rev.end() ) {
-      if( merger.Merge( mergedRead, *fit, *rit ) ) {
-        gStats.numMerged++;
-        gStats.mergedReadsTotalLength += mergedRead.Length();
-        mergedReads.push_back( std::move( mergedRead ) );
-      }
-
-      ++fit;
-      ++rit;
-    }
-
-    if( !mergedReads.empty() )
-      mWriter.Enqueue( mergedReads );
-
-    gStats.numProcessed += fwd.size();
-  }
-
-  size_t CountPerItem( const PairedReads &queueItem ) const {
-    return queueItem.first.size();
-  }
-
-private:
-  QueuedWriter &mWriter;
-  PairedEnd::Merger mMerger;
-};
-
-bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
-  const int numReadsPerWorkItem = 512;
-
-  PairedEnd::Reader reader( fwdPath, revPath );
-
-  QueuedWriter writer( mergedPath  );
-  QueuedMerger merger( writer );
-
-  SequenceList fwdReads, revReads;
-
-  enum ProgressType { ReadFile, MergeReads, WriteReads };
-
-  ProgressOutput progress;
-  progress.Add( ProgressType::ReadFile, "Reading files", UnitType::BYTES );
-  progress.Add( ProgressType::MergeReads, "Merging reads" );
-  progress.Add( ProgressType::WriteReads, "Writing merged reads" );
-
-  merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
-  });
-
-  writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
-  });
-
-  progress.Activate( ProgressType::ReadFile );
-  while( !reader.EndOfFile() ) {
-    reader.Read( fwdReads, revReads, numReadsPerWorkItem );
-    auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
-    merger.Enqueue( pair );
-    progress.Set( ProgressType::ReadFile, reader.NumBytesRead(), reader.NumBytesTotal() );
-  }
-
-  progress.Activate( ProgressType::MergeReads );
-  merger.WaitTillDone();
-
-  progress.Activate( ProgressType::WriteReads );
-  writer.WaitTillDone();
-
-  return true;
 }
 
 bool Search( const std::string &queryPath, const std::string &databasePath, const std::string &outputPath ) {
@@ -279,7 +69,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
   }
 
   // Index DB
-  Database db( sequences, 8, [&]( Database::ProgressType type, size_t num, size_t total ) {
+  auto dbCallback = [&]( Database::ProgressType type, size_t num, size_t total ) {
     switch( type ) {
       case Database::ProgressType::StatsCollection:
         progress.Activate( ProgressType::StatsDB ).Set( ProgressType::StatsDB, num, total );
@@ -292,7 +82,8 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
       default:
         break;
     }
-  });
+  };
+  Database db( sequences, 8, dbCallback );
 
   // Read query
   FASTA::Reader qryReader( queryPath );

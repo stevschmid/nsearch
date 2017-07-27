@@ -40,3 +40,5 @@ private:
   std::chrono::high_resolution_clock::time_point mTimerStart, mTimerStop;
 
 };
+
+extern Stats gStats;
