@@ -1,27 +1,11 @@
 #pragma once
 
-#include "../TextReader.h"
-#include "../Sequence.h"
-#include "../Utils.h"
-
-#include <memory>
+#include "../SequenceReader.h"
 
 namespace FASTA {
-  class Reader {
+  class Reader : public SequenceReader {
   public:
-    Reader( const std::string &pathToFile )
-      : mTextReader( new TextFileReader( pathToFile ) )
-    {
-    }
-
-    Reader( std::istream &is )
-      : mTextReader( new TextStreamReader( is ) )
-    {
-    }
-
-    bool EndOfFile() const {
-      return mTextReader->EndOfFile();
-    }
+    using SequenceReader::SequenceReader;
 
     void operator>>( Sequence &seq ) {
       std::string identifier, sequence;
@@ -47,16 +31,7 @@ namespace FASTA {
       seq = Sequence( identifier.substr( 1 ), sequence );
     }
 
-    size_t NumBytesRead() const {
-      return mTextReader->NumBytesRead();
-    }
-
-    size_t NumBytesTotal() const {
-      return mTextReader->NumBytesTotal();
-    }
-
   private:
-    std::unique_ptr< TextReader > mTextReader;
     std::string mLastLine;
   };
 }

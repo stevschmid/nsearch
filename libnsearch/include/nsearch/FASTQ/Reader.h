@@ -1,27 +1,11 @@
 #pragma once
 
-#include "../TextReader.h"
-#include "../Sequence.h"
-#include "../Utils.h"
-
-#include <memory>
+#include "../SequenceReader.h"
 
 namespace FASTQ {
-  class Reader {
+  class Reader : public SequenceReader {
   public:
-    Reader( const std::string &pathToFile )
-      : mTextReader( new TextFileReader( pathToFile ) )
-    {
-    }
-
-    Reader( std::istream &is )
-      : mTextReader( new TextStreamReader( is ) )
-    {
-    }
-
-    bool EndOfFile() const {
-      return mTextReader->EndOfFile();
-    }
+    using SequenceReader::SequenceReader;
 
     void operator>>( Sequence &seq ) {
       (*mTextReader) >> seq.identifier;
@@ -35,16 +19,5 @@ namespace FASTQ {
       UpcaseString( seq.sequence ); // atc -> ATC
       UpcaseString( seq.quality );
     }
-
-    size_t NumBytesRead() const {
-      return mTextReader->NumBytesRead();
-    }
-
-    size_t NumBytesTotal() const {
-      return mTextReader->NumBytesTotal();
-    }
-
-  private:
-    std::unique_ptr< TextReader > mTextReader;
   };
 }
