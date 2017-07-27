@@ -8,24 +8,23 @@
 
 class Database;
 
-class Search {
+class BaseSearch {
 public:
   using Result = struct {
     Sequence query;
     Sequence target;
     Cigar alignment;
   };
-
   using ResultList = std::deque< Result >;
 
-  Search( const Database &db ) : mDB( db ) { }
+  BaseSearch( const Database &db ) : mDB( db ) { }
   virtual ResultList Query( const Sequence &query ) = 0;
 
 private:
   const Database &mDB;
 };
 
-static std::ostream& operator<<( std::ostream &os, const Search::Result &result ) {
+static std::ostream& operator<<( std::ostream &os, const BaseSearch::Result &result ) {
   std::string q;
   std::string t;
   std::string a;

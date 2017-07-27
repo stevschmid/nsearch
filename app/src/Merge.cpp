@@ -120,4 +120,3 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
   return true;
 }
-

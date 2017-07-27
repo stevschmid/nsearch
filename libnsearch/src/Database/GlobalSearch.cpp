@@ -11,11 +11,11 @@
 #include <set>
 
 GlobalSearch::GlobalSearch( const Database &db, float minIdentity, int maxHits, int maxRejects )
-  : Search( db ), mDB( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ), mMaxRejects( maxRejects )
+  : BaseSearch( db ), mDB( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ), mMaxRejects( maxRejects )
 {
 }
 
-Search::ResultList GlobalSearch::Query( const Sequence &query )
+GlobalSearch::ResultList GlobalSearch::Query( const Sequence &query )
 {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance = 16;
@@ -205,7 +205,7 @@ Search::ResultList GlobalSearch::Query( const Sequence &query )
       float identity = alignment.Identity();
       if( identity >= mMinIdentity ) {
         accept = true;
-        results.push_back( Search::Result { query, candidateSeq, alignment } );
+        results.push_back( GlobalSearch::Result { query, candidateSeq, alignment } );
       }
     }
 
