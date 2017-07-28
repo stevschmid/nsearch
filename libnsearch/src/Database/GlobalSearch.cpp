@@ -84,13 +84,7 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     // Go through each kmer, find hits
     HitTracker hitTracker;
 
-    uniqueCheck = std::vector< bool >( mDB.mMaxUniqueKmers, false );
     for( size_t pos = 0; pos < kmers.size(); pos++ ) {
-      auto kmer = kmers[ pos ];
-      if( uniqueCheck[ kmer ] )
-        continue;
-      uniqueCheck[ kmer ] = true;
-
       auto kmers2 = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
       for( size_t pos2 = 0; pos2 < mDB.mKmerCountBySequenceId[ seqId ]; pos2++ ) {
         if( kmers2[ pos2 ] != kmers[ pos ] )
