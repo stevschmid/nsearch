@@ -34,11 +34,18 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
 
   Highscore highscore( mMaxHits + mMaxRejects );
 
-  Kmers kmers( query, mDB.mKmerLength );
+  size_t kmerLength = mDB.mKmerLength;
+  Kmers kmersGen( query, kmerLength );
 
   std::vector< bool > uniqueCheck( mDB.mMaxUniqueKmers, false );
   auto hitsData = mHits.data();
-  kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+
+  std::vector< Kmer > kmers;
+  kmers.reserve( kmersGen.Count() );
+
+  kmersGen.ForEach( [&]( Kmer kmer, size_t pos ) {
+    kmers.push_back( kmer );
+
     if( uniqueCheck[ kmer ] )
       return;
 
@@ -73,18 +80,40 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     const Sequence &candidateSeq = mDB.mSequences[ seqId ];
     /* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; */
 
+
     // Go through each kmer, find hits
     HitTracker hitTracker;
 
-    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
-      auto kmerData = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
+    uniqueCheck = std::vector< bool >( mDB.mMaxUniqueKmers, false );
+    for( size_t pos = 0; pos < kmers.size(); pos++ ) {
+      auto kmer = kmers[ pos ];
+      if( uniqueCheck[ kmer ] )
+        continue;
+      uniqueCheck[ kmer ] = true;
+
+      auto kmers2 = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
       for( size_t pos2 = 0; pos2 < mDB.mKmerCountBySequenceId[ seqId ]; pos2++ ) {
-        if( kmerData[ pos2 ] != kmer )
+        if( kmers2[ pos2 ] != kmers[ pos ] )
           continue;
 
-        hitTracker.AddHit( pos, pos2, kmers.Length() );
+        if( pos == 0 || pos2 == 0 || ( kmers[ pos - 1 ] != kmers2[ pos2 - 1 ] ) ) {
+          size_t length = mDB.mKmerLength;
+
+          size_t cur = pos + 1;
+          size_t cur2 = pos2 + 1;
+          while( cur < kmers.size()
+                && cur2 < mDB.mKmerCountBySequenceId[ seqId ]
+                && kmers[ cur ] == kmers2[ cur2 ] )
+          {
+            cur++;
+            cur2++;
+            length++;
+          }
+          hitTracker.AddHit( pos, pos2, length );
+        }
+
       }
-    });
+    };
 
     // Find all HSP
     // Sort by length

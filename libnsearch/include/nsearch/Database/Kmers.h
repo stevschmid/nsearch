@@ -1,5 +1,4 @@
 #pragma once
-
 #include "../Sequence.h"
 #include "../Utils.h"
 
@@ -42,6 +41,8 @@ public:
 
     if( lastAmbigIndex == ( size_t )-1 ) {
       block( kmer, 0 );
+    } else {
+      block( 0, 0 );
     }
 
     // For each consecutive kmer, shift window by one
@@ -57,12 +58,14 @@ public:
 
       if( lastAmbigIndex == ( size_t )-1 || frame > lastAmbigIndex ) {
         block( kmer, frame );
+      } else {
+        block( 0, frame );
       }
     }
   }
 
-  size_t Length() const {
-    return mLength;
+  size_t Count() const {
+    return mRef.Length() - mLength + 1;
   }
 
 private:
