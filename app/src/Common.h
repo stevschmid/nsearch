@@ -84,7 +84,7 @@ public:
 
   ProgressOutput& Activate( int id ) {
     if( mActiveId != id )
-      std::cout << std::endl;
+      std::cerr << std::endl;
 
     mActiveId = id;
     Print( mStages[ id ] );
@@ -93,12 +93,16 @@ public:
 
 private:
   void Print( const Stage &stage ) {
-    std::ios::fmtflags f( std::cout.flags() );
-    std::cout << stage.label << ": ";
-    std::cout << float( stage.value ) / stage.max * 100.0 << '%';
-    std::cout << " (" << ValueWithUnit( stage.value, stage.unit ) << ")";
-    std::cout << std::string( 20, ' ' ) << "\r" << std::flush;
-    std::cout.flags( f );
+    std::ostream &os = std::cerr;
+
+    std::ios::fmtflags f( os.flags() );
+    // Show one decimal point
+    os << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
+    os << stage.label << ": ";
+    os << float( stage.value ) / stage.max * 100.0 << '%';
+    os << " (" << ValueWithUnit( stage.value, stage.unit ) << ")";
+    os << std::string( 20, ' ' ) << "\r" << std::flush;
+    os.flags( f );
   }
 
   int mActiveId;

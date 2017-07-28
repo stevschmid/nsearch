@@ -52,9 +52,6 @@ int main( int argc, const char **argv ) {
   // Print header
   std::cout << APP_NAME << " " << APP_VERSION << " (built on " << BUILD_TIMESTAMP << ")" << std::endl;
 
-  // Show one decimal point
-  std::cout << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
-
   // Search
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();

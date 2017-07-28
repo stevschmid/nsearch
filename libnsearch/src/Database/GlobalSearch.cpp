@@ -228,6 +228,9 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
       alignment += cigar;
 
       float identity = alignment.Identity();
+      if( query.identifier.find( "RF00967;mir-281" ) != std::string::npos ) {
+        std::cout << "IDENTITY " << identity << std::endl;
+      }
       if( identity >= mMinIdentity ) {
         accept = true;
         res.push_back( GlobalSearch::Match { query, candidateSeq, alignment } );
