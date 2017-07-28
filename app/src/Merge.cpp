@@ -32,7 +32,7 @@ public:
 private:
   FASTQ::Writer mWriter;
 };
-using MergedReadWriter = WorkerQueue< SequenceList, MergedReadWriterWorker, const std::string& >;
+using MergedReadWriter = WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
 
 using PairedReads = std::pair< SequenceList, SequenceList >;
 
@@ -81,7 +81,7 @@ private:
   MergedReadWriter &mWriter;
   PairedEnd::Merger mMerger;
 };
-using ReadMerger = WorkerQueue< PairedReads, ReadMergerWorker, MergedReadWriter& >;
+using ReadMerger = WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter& >;
 
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
   const int numReadsPerWorkItem = 512;

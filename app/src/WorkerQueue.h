@@ -10,7 +10,7 @@ public:
   static size_t Count( const T& t ) { return 1; }
 };
 
-template <class QueueItem, class Worker, typename ...Args>
+template <class Worker, class QueueItem, typename ...Args>
 class WorkerQueue {
 public:
   using OnProcessedCallback = std::function< void ( size_t, size_t )  >;

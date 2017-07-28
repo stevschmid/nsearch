@@ -8,7 +8,7 @@
 class GlobalSearch : public BaseSearch {
 public:
   GlobalSearch( const Database &db, float minIdentity, int maxHits = 1, int maxRejects = 8 );
-  ResultList Query( const Sequence &query );
+  QueryResult Query( const Sequence &query );
 
 private:
   const Database &mDB;

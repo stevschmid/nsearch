@@ -5,7 +5,75 @@
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
 
+#include "WorkerQueue.h"
+
 #include "Common.h"
+
+using QueryResultList = std::deque< GlobalSearch::QueryResult >;
+
+template<>
+class QueueItemInfo< QueryResultList > {
+public:
+  static size_t Count( const QueryResultList &list ) { return list.size(); }
+};
+
+class SearchResultsWriterWorker {
+public:
+  SearchResultsWriterWorker( const std::string &path )
+    : mWriter( path )
+  {
+
+  }
+
+  void Process( const QueryResultList &queryResults ) {
+    for( auto &queryResult : queryResults ) {
+      mWriter << "Found: " << queryResult.size() << " hits" << std::endl << std::endl;
+      for( auto &hit : queryResult ) {
+        mWriter << hit << std::endl;
+      }
+      mWriter << std::string( 50, '-') << std::endl << std::endl;
+    }
+  }
+
+private:
+  std::ofstream mWriter;
+};
+using SearchResultsWriter = WorkerQueue< SearchResultsWriterWorker, QueryResultList, const std::string& >;
+
+template<>
+class QueueItemInfo< SequenceList > {
+public:
+  static size_t Count( const SequenceList &list ) { return list.size(); }
+};
+
+class QueryDatabaseSearcherWorker {
+public:
+  QueryDatabaseSearcherWorker( SearchResultsWriter &writer, const Database &database )
+    : mWriter( writer), mGlobalSearch( database, 0.75, 1, 8 )
+  {
+  }
+
+  void Process( const SequenceList &queries ) {
+    QueryResultList queryResults;
+
+    for( auto &query : queries ) {
+      auto queryResult = mGlobalSearch.Query( query );
+      if( queryResult.empty() )
+        continue;
+
+      queryResults.push_back( queryResult );
+    }
+
+    if( !queryResults.empty() ) {
+      mWriter.Enqueue( queryResults );
+    }
+  }
+
+private:
+  GlobalSearch mGlobalSearch;
+  SearchResultsWriter &mWriter;
+};
+using QueryDatabaseSearcher = WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter&, const Database& >;
 
 bool Search( const std::string &queryPath, const std::string &databasePath, const std::string &outputPath ) {
   ProgressOutput progress;
@@ -15,13 +83,14 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
 
   FASTA::Reader dbReader( databasePath );
 
-  enum ProgressType { ReadDBFile, StatsDB, IndexDB, ReadQueryFile, SearchDB };
+  enum ProgressType { ReadDBFile, StatsDB, IndexDB, ReadQueryFile, SearchDB, WriteHits };
 
   progress.Add( ProgressType::ReadDBFile, "Reading DB file", UnitType::BYTES );
   progress.Add( ProgressType::StatsDB, "Analyzing DB sequences");
   progress.Add( ProgressType::IndexDB, "Indexing database");
   progress.Add( ProgressType::ReadQueryFile, "Reading query file", UnitType::BYTES );
   progress.Add( ProgressType::SearchDB, "Searching database" );
+  progress.Add( ProgressType::WriteHits, "Output found sequences" );
 
   // Read DB
   progress.Activate( ProgressType::ReadDBFile );
@@ -48,43 +117,36 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
   };
   Database db( sequences, 8, dbCallback );
 
-  // Read query
+  // Read and process queries
+  const int numQueriesPerWorkItem = 50;
+
+  SearchResultsWriter writer( 1, outputPath );
+  QueryDatabaseSearcher searcher( -1, writer, db );
+
+  searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+    progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
+  });
+
+  writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+    progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
+  });
+
   FASTA::Reader qryReader( queryPath );
 
   SequenceList queries;
   progress.Activate( ProgressType::ReadQueryFile );
   while( !qryReader.EndOfFile() )  {
-    qryReader >> seq;
+    qryReader.Read( queries, numQueriesPerWorkItem );
+    searcher.Enqueue( queries );
     progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), qryReader.NumBytesTotal() );
-    queries.push_back( seq );
   }
 
   // Search
   progress.Activate( ProgressType::SearchDB );
-  GlobalSearch search( db, 0.75, 1, 8 );
+  searcher.WaitTillDone();
 
-  size_t count = 0;
-
-  std::ofstream of;
-  of.open( outputPath );
-
-  for( auto &query : queries ) {
-    if( (count++) % 50 == 0 || count == queries.size() ) {
-      progress.Set( ProgressType::SearchDB, count, queries.size() );
-    }
-
-    auto results = search.Query( query );
-    if( results.empty() )
-      continue;
-
-    of << "Found: " << results.size() << " hits" << std::endl << std::endl;
-    for( auto &result : results ) {
-      of << result << std::endl;
-    }
-    of << std::string( 50, '-') << std::endl << std::endl;
-  }
-
-  of.close();
+  progress.Activate( ProgressType::WriteHits );
+  writer.WaitTillDone();
 
   return true;
 }
