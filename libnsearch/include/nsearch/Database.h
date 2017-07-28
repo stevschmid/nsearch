@@ -27,11 +27,21 @@ private:
   SequenceList mSequences;
   size_t mMaxUniqueKmers;
 
-  using SequenceNo = uint32_t; // SequenceNo
+  using SequenceId = uint32_t; // SequenceId
 
-  std::vector< uint32_t > mIndexByKmer;
-  std::vector< uint32_t > mNumEntriesByKmer;
-  std::vector< SequenceNo > mSequenceNoByKmer;
+  using KmerInfo = struct KmerInfo_s {
+    size_t pos;
+    Kmer kmer;
+    SequenceId seqId;
+
+    KmerInfo_s *prev, *next;
+  };
+
+  std::vector< uint32_t > mSequenceIdsOffsetByKmer;
+  std::vector< uint32_t > mSequenceIdsCountByKmer;
+  std::vector< SequenceId > mSequenceIds;
+
+  std::vector< KmerInfo > mKmerInfos;
 
   OnProgressCallback mProgressCallback;
 };

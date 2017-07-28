@@ -9,60 +9,60 @@ Database::Database( const SequenceList &sequences, size_t kmerLength, const OnPr
   size_t totalUniqueEntries = 0;
 
   std::vector< uint32_t > uniqueCount( mMaxUniqueKmers );
-  std::vector< SequenceNo > uniqueIndex( mMaxUniqueKmers, -1 );
+  std::vector< SequenceId > uniqueIndex( mMaxUniqueKmers, -1 );
 
-  for( SequenceNo seqNo = 0; seqNo < mSequences.size(); seqNo++ ) {
-    const Sequence &seq = mSequences[ seqNo ];
+  for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
+    const Sequence &seq = mSequences[ seqId ];
 
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
       totalEntries++;
 
       // Count unique words
-      if( uniqueIndex[ kmer ] == seqNo )
+      if( uniqueIndex[ kmer ] == seqId )
         return;
 
-      uniqueIndex[ kmer ] = seqNo;
+      uniqueIndex[ kmer ] = seqId;
       uniqueCount[ kmer ]++;
       totalUniqueEntries++;
     });
 
     // Progress
-    if( seqNo % 500 == 0 || seqNo + 1 == mSequences.size() ) {
-      mProgressCallback( ProgressType::StatsCollection, seqNo + 1, mSequences.size() );
+    if( seqId % 500 == 0 || seqId + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::StatsCollection, seqId + 1, mSequences.size() );
     }
   } // Calculate indices
 
-  mIndexByKmer.reserve( mMaxUniqueKmers );
+  mSequenceIdsOffsetByKmer.reserve( mMaxUniqueKmers );
   for( size_t i = 0; i < mMaxUniqueKmers; i++ ) {
-    mIndexByKmer[ i ] = i > 0 ? mIndexByKmer[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
+    mSequenceIdsOffsetByKmer[ i ] = i > 0 ? mSequenceIdsOffsetByKmer[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
   }
 
   // Populate DB
-  mSequenceNoByKmer.resize( totalUniqueEntries );
+  mSequenceIds.reserve( totalUniqueEntries );
 
   // Reset to 0
-  mNumEntriesByKmer = std::vector< uint32_t >( mMaxUniqueKmers );
+  mSequenceIdsCountByKmer = std::vector< uint32_t >( mMaxUniqueKmers );
 
-  uniqueIndex = std::vector< SequenceNo>( mMaxUniqueKmers, -1 );
+  uniqueIndex = std::vector< SequenceId>( mMaxUniqueKmers, -1 );
 
-  for( SequenceNo seqNo = 0; seqNo < mSequences.size(); seqNo++ ) {
-    const Sequence &seq = mSequences[ seqNo ];
+  for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
+    const Sequence &seq = mSequences[ seqId ];
 
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
-      if( uniqueIndex[ kmer ] == seqNo )
+      if( uniqueIndex[ kmer ] == seqId )
         return;
 
-      uniqueIndex[ kmer ] = seqNo;
+      uniqueIndex[ kmer ] = seqId;
 
-      mSequenceNoByKmer[ mIndexByKmer[ kmer ] + mNumEntriesByKmer[ kmer ] ] = seqNo;
-      mNumEntriesByKmer[ kmer ]++;
+      mSequenceIds[ mSequenceIdsOffsetByKmer[ kmer ] + mSequenceIdsCountByKmer[ kmer ] ] = seqId;
+      mSequenceIdsCountByKmer[ kmer ]++;
     });
 
     // Progress
-    if( seqNo % 500 == 0 || seqNo + 1 == mSequences.size() ) {
-      mProgressCallback( ProgressType::Indexing, seqNo + 1, mSequences.size() );
+    if( seqId % 500 == 0 || seqId + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::Indexing, seqId + 1, mSequences.size() );
     }
   }
 }

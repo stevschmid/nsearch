@@ -44,183 +44,178 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
 
     uniqueCheck[ kmer ] = true;
 
-    auto seqNos = &mDB.mSequenceNoByKmer[ mDB.mIndexByKmer[ kmer ] ];
-    for( auto i = 0; i < mDB.mNumEntriesByKmer[ kmer ]; i++ ) {
-      auto seqNo = seqNos[ i ];
-      Counter counter = ++hitsData[ seqNo ];
-      highscore.Set( seqNo, counter );
+    auto seqIds = &mDB.mSequenceIds[ mDB.mSequenceIdsOffsetByKmer[ kmer ] ];
+    for( auto i = 0; i < mDB.mSequenceIdsCountByKmer[ kmer ]; i++ ) {
+      auto seqId = seqIds[ i ];
+      Counter counter = ++hitsData[ seqId ];
+      highscore.Set( seqId, counter );
     }
   });
 
   return {};
 
-  /* // For each candidate: */
-  /* // - Get HSPs, */
-  /* // - Check for good HSP (>= similarity threshold) */
-  /* // - Join HSP together */
-  /* // - Align */
-  /* // - Check similarity */
-  /* int numHits = 0; */
-  /* int numRejects = 0; */
+  // For each candidate:
+  // - Get HSPs,
+  // - Check for good HSP (>= similarity threshold)
+  // - Join HSP together
+  // - Align
+  // - Check similarity
+  int numHits = 0;
+  int numRejects = 0;
 
-  /* auto highscores = highscore.EntriesFromTopToBottom(); */
-  /* /1* std::cout << "Highscores " << highscores.size() << std::endl; *1/ */
+  auto highscores = highscore.EntriesFromTopToBottom();
+  /* std::cout << "Highscores " << highscores.size() << std::endl; */
 
-  /* QueryResult res; */
+  QueryResult res;
 
-  /* for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) { */
-  /*   const size_t seqIdx = it->id; */
-  /*   assert( seqIdx < mDB.mSequences.size() ); */
-  /*   const Sequence &candidateSeq = mDB.mSequences[ seqIdx ]; */
-  /*   /1* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; *1/ */
+  for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
+    const size_t seqIdx = it->id;
+    assert( seqIdx < mDB.mSequences.size() );
+    const Sequence &candidateSeq = mDB.mSequences[ seqIdx ];
+    /* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; */
 
-  /*   // Go through each kmer, find hits */
-  /*   HitTracker hitTracker; */
+    // Go through each kmer, find hits
+    HitTracker hitTracker;
 
-  /*   kmers.ForEach( [&]( Kmer word, size_t pos ) { */
-  /*     const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ]; */
-  /*     for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) { */
-  /*       if( ptr->sequence != seqIdx ) */
-  /*         continue; */
+    kmers.ForEach( [&]( Kmer word, size_t pos ) {
+      Kmers( candidateSeq, mDB.mKmerLength ).ForEach( [&]( Kmer word2, size_t pos2 ) {
+        if( word != word2 )
+          return;
 
-  /*       while( ptr ) { */
-  /*         hitTracker.AddHit( pos, ptr->pos, kmers.Length() ); */
-  /*         ptr = ptr->nextEntry; */
-  /*       } */
-  /*       break; */
-  /*     } */
-  /*   }); */
-  /*   continue; */
+        hitTracker.AddHit( pos, pos2, kmers.Length() );
+      });
+    });
+    continue;
 
-  /*   // Find all HSP */
-  /*   // Sort by length */
-  /*   // Try to find best chain */
-  /*   // Fill space between with banded align */
+    // Find all HSP
+    // Sort by length
+    // Try to find best chain
+    // Fill space between with banded align
 
-  /*   std::set< HSP > hsps; */
-  /*   for( auto &sp : hitTracker.List() ) { */
-  /*     size_t queryPos, candidatePos; */
+    std::set< HSP > hsps;
+    for( auto &sp : hitTracker.List() ) {
+      size_t queryPos, candidatePos;
 
-  /*     size_t a1 = sp.s1, a2 = sp.s1 + sp.length - 1, */
-  /*            b1 = sp.s2, b2 = sp.s2 + sp.length - 1; */
+      size_t a1 = sp.s1, a2 = sp.s1 + sp.length - 1,
+             b1 = sp.s2, b2 = sp.s2 + sp.length - 1;
 
-  /*     Cigar leftCigar; */
-  /*     int leftScore = mExtendAlign.Extend( query, candidateSeq, */
-  /*         &queryPos, &candidatePos, */
-  /*         &leftCigar, */
-  /*         AlignmentDirection::rev, */
-  /*         a1, b1 ); */
-  /*     if( !leftCigar.empty() ) { */
-  /*       a1 = queryPos; */
-  /*       b1 = candidatePos; */
-  /*     } */
+      Cigar leftCigar;
+      int leftScore = mExtendAlign.Extend( query, candidateSeq,
+          &queryPos, &candidatePos,
+          &leftCigar,
+          AlignmentDirection::rev,
+          a1, b1 );
+      if( !leftCigar.empty() ) {
+        a1 = queryPos;
+        b1 = candidatePos;
+      }
 
-  /*     Cigar rightCigar; */
-  /*     size_t rightQuery, rightCandidate; */
-  /*     int rightScore = mExtendAlign.Extend( query, candidateSeq, */
-  /*         &queryPos, &candidatePos, */
-  /*         &rightCigar, */
-  /*         AlignmentDirection::fwd, */
-  /*         a2 + 1, b2 + 1 ); */
-  /*     if( !rightCigar.empty() ) { */
-  /*       a2 = queryPos; */
-  /*       b2 = candidatePos; */
-  /*     } */
+      Cigar rightCigar;
+      size_t rightQuery, rightCandidate;
+      int rightScore = mExtendAlign.Extend( query, candidateSeq,
+          &queryPos, &candidatePos,
+          &rightCigar,
+          AlignmentDirection::fwd,
+          a2 + 1, b2 + 1 );
+      if( !rightCigar.empty() ) {
+        a2 = queryPos;
+        b2 = candidatePos;
+      }
 
-  /*     HSP hsp( a1, a2, b1, b2 ); */
-  /*     if( hsp.Length() >= minHSPLength ) { */
-  /*       // Construct hsp cigar (spaced seeds so we cannot assume full match) */
-  /*       Cigar middleCigar; */
-  /*       int middleScore = 0; */
-  /*       for( size_t s1 = sp.s1, s2 = sp.s2; */
-  /*           s1 < sp.s1 + sp.length && s2 < sp.s2 + sp.length; */
-  /*           s1++, s2++ ) */
-  /*       { */
-  /*         bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] ); */
-  /*         middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH ); */
-  /*         middleScore += match ? mExtendAlign.AP().matchScore : mExtendAlign.AP().mismatchScore; */
-  /*       } */
-  /*       hsp.score = leftScore + middleScore + rightScore; */
-  /*       hsp.cigar = leftCigar + middleCigar + rightCigar; */
+      HSP hsp( a1, a2, b1, b2 );
+      if( hsp.Length() >= minHSPLength ) {
+        // Construct hsp cigar (spaced seeds so we cannot assume full match)
+        Cigar middleCigar;
+        int middleScore = 0;
+        for( size_t s1 = sp.s1, s2 = sp.s2;
+            s1 < sp.s1 + sp.length && s2 < sp.s2 + sp.length;
+            s1++, s2++ )
+        {
+          bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] );
+          middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
+          middleScore += match ? mExtendAlign.AP().matchScore : mExtendAlign.AP().mismatchScore;
+        }
+        hsp.score = leftScore + middleScore + rightScore;
+        hsp.cigar = leftCigar + middleCigar + rightCigar;
 
-  /*       // Save HSP */
-  /*       hsps.insert( hsp ); */
-  /*     } */
-  /*   } */
+        // Save HSP
+        hsps.insert( hsp );
+      }
+    }
 
-  /*   // Greedy join HSPs if close */
-  /*   struct HSPChainOrdering { */
-  /*     bool operator() ( const HSP &left, const HSP &right ) const { */
-  /*       return left.a1 < right.a1 && left.b1 < right.b1; */
-  /*     } */
-  /*   }; */
+    // Greedy join HSPs if close
+    struct HSPChainOrdering {
+      bool operator() ( const HSP &left, const HSP &right ) const {
+        return left.a1 < right.a1 && left.b1 < right.b1;
+      }
+    };
 
-  /*   std::set< HSP, HSPChainOrdering > chain; */
-  /*   for( auto it = hsps.rbegin(); it != hsps.rend(); ++it ) { */
-  /*     const HSP &hsp = *it; */
-  /*     bool hasNoOverlaps = std::none_of( chain.begin(), chain.end(), [&]( const HSP &existing ) { */
-  /*         return hsp.IsOverlapping( existing ); */
-  /*         }); */
-  /*     if( hasNoOverlaps ) { */
-  /*       bool anyHSPJoinable = std::any_of( chain.begin(), chain.end(), [&]( const HSP &existing ) { */
-  /*           return hsp.DistanceTo( existing ) <= maxHSPJoinDistance; */
-  /*           }); */
+    std::set< HSP, HSPChainOrdering > chain;
+    for( auto it = hsps.rbegin(); it != hsps.rend(); ++it ) {
+      const HSP &hsp = *it;
+      bool hasNoOverlaps = std::none_of( chain.begin(), chain.end(), [&]( const HSP &existing ) {
+          return hsp.IsOverlapping( existing );
+          });
+      if( hasNoOverlaps ) {
+        bool anyHSPJoinable = std::any_of( chain.begin(), chain.end(), [&]( const HSP &existing ) {
+            return hsp.DistanceTo( existing ) <= maxHSPJoinDistance;
+            });
 
-  /*       if( chain.empty() || anyHSPJoinable ) { */
-  /*         chain.insert( hsp ); */
-  /*       } */
-  /*     } */
-  /*   } */
+        if( chain.empty() || anyHSPJoinable ) {
+          chain.insert( hsp );
+        }
+      }
+    }
 
-  /*   bool accept = false; */
-  /*   if( chain.size() > 0 ) { */
-  /*     Cigar alignment; */
-  /*     Cigar cigar; */
+    bool accept = false;
+    if( chain.size() > 0 ) {
+      Cigar alignment;
+      Cigar cigar;
 
-  /*     // Align first HSP's start to whole sequences begin */
-  /*     auto &first = *chain.cbegin(); */
-  /*     mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::rev, first.a1, first.b1 ); */
-  /*     alignment += cigar; */
+      // Align first HSP's start to whole sequences begin
+      auto &first = *chain.cbegin();
+      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::rev, first.a1, first.b1 );
+      alignment += cigar;
 
-  /*     // Align in between the HSP's */
-  /*     for( auto it1 = chain.cbegin(), it2 = ++chain.cbegin(); */
-  /*         it1 != chain.cend() && it2 != chain.cend(); */
-  /*         ++it1, ++it2 ) */
-  /*     { */
-  /*       auto &current = *it1; */
-  /*       auto &next = *it2; */
+      // Align in between the HSP's
+      for( auto it1 = chain.cbegin(), it2 = ++chain.cbegin();
+          it1 != chain.cend() && it2 != chain.cend();
+          ++it1, ++it2 )
+      {
+        auto &current = *it1;
+        auto &next = *it2;
 
-  /*       alignment += current.cigar; */
-  /*       mBandedAlign.Align( query, candidateSeq, &cigar, */
-  /*           AlignmentDirection::fwd, */
-  /*           current.a2 + 1, current.b2 + 1, */
-  /*           next.a1, next.b1 ); */
-  /*       alignment += cigar; */
-  /*     } */
+        alignment += current.cigar;
+        mBandedAlign.Align( query, candidateSeq, &cigar,
+            AlignmentDirection::fwd,
+            current.a2 + 1, current.b2 + 1,
+            next.a1, next.b1 );
+        alignment += cigar;
+      }
 
-  /*     // Align last HSP's end to whole sequences end */
-  /*     auto &last = *chain.crbegin(); */
-  /*     alignment += last.cigar; */
-  /*     mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::fwd, last.a2 + 1, last.b2 + 1 ); */
-  /*     alignment += cigar; */
+      // Align last HSP's end to whole sequences end
+      auto &last = *chain.crbegin();
+      alignment += last.cigar;
+      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::fwd, last.a2 + 1, last.b2 + 1 );
+      alignment += cigar;
 
-  /*     float identity = alignment.Identity(); */
-  /*     if( identity >= mMinIdentity ) { */
-  /*       accept = true; */
-  /*       res.push_back( GlobalSearch::Match { query, candidateSeq, alignment } ); */
-  /*     } */
-  /*   } */
+      float identity = alignment.Identity();
+      if( identity >= mMinIdentity ) {
+        accept = true;
+        res.push_back( GlobalSearch::Match { query, candidateSeq, alignment } );
+      }
+    }
 
-  /*   if( accept ) { */
-  /*     numHits++; */
-  /*     if( numHits >= mMaxHits ) */
-  /*       break; */
-  /*   } else { */
-  /*     numRejects++; */
-  /*     if( numRejects >= mMaxRejects ) */
-  /*       break; */
-  /*   } */
-  /* } */
+    if( accept ) {
+      numHits++;
+      if( numHits >= mMaxHits )
+        break;
+    } else {
+      numRejects++;
+      if( numRejects >= mMaxRejects )
+        break;
+    }
+  }
 
-  /* return res; */
+  return res;
 }
