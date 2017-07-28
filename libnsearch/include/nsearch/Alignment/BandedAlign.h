@@ -146,6 +146,8 @@ public:
     bool fromEndB = ( endB == 0 || endB == lenB );
 
     mScores[ 0 ] = 0;
+
+    mVerticalGaps[ 0 ].Reset();
     mVerticalGaps[ 0 ].OpenOrExtend( mScores[ 0 ], fromBeginningB );
 
     Gap horizontalGap( mParams );

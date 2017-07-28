@@ -110,4 +110,23 @@ TEST_CASE( "BandedAlign" )  {
     ba.Align( A, B, &cigar, AlignmentDirection::fwd, 6, 3 );
     REQUIRE( cigar.ToString() == "5D" );
   }
+
+  SECTION( "Breaking case: Improper reset of vertical gap at 0,0" ) {
+    Cigar cigar1, cigar2;
+    BandedAlign ba;
+
+    // Align first with fresh alignment cache
+    int score1 = ba.Align( "ATGCC", "TTTTAGCC", &cigar1, AlignmentDirection::fwd, 1, 1 );
+    REQUIRE( cigar1.ToString() == "1M3X3D" );
+
+    // This alignment will set mVerticalGaps[0] to a low value, which will be extended
+    // upon subsequently if we don't reset
+    ba.Align( "ATGCC", "A", &cigar,  AlignmentDirection::fwd );
+
+    // Test with the "leaky" vgap
+    int score2 = ba.Align( "ATGCC", "TTTTAGCC", &cigar2,  AlignmentDirection::fwd, 1, 1 );
+
+    REQUIRE( cigar1.ToString() == cigar2.ToString() );
+    REQUIRE( score1 == score2 );
+  }
 }
