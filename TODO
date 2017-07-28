@@ -9,3 +9,4 @@ Camila's idea: Add special coding gap model: Penalize gaps which shift the readi
 but penalize gaps with 3nt, 6nt etc. which delete AAs less
 
 Test ambig nucs in sequences and DB search (ignore kmer=0, AAA...)
+q10 outputs one seq too few?
