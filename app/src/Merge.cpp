@@ -10,38 +10,45 @@
 #include "Stats.h"
 #include "WorkerQueue.h"
 
-class QueuedWriter : public WorkerQueue< SequenceList > {
+template<>
+class QueueItemInfo< SequenceList > {
 public:
-  QueuedWriter( const std::string &path )
-    : WorkerQueue( 1 ), mWriter( path )
+  static size_t Count( const SequenceList &list ) { return list.size(); }
+};
+
+class MergedReadWriterWorker {
+public:
+  MergedReadWriterWorker( const std::string &path )
+    : mWriter( path )
   {
   }
 
-protected:
-  void Process( const SequenceList &list ) {
-    for( auto seq : list ) {
+  void Process( const SequenceList &queueItem ) {
+    for( auto seq : queueItem ) {
       mWriter << seq;
     }
-  }
-
-  size_t CountPerItem( const SequenceList &list ) const {
-    return list.size();
   }
 
 private:
   FASTQ::Writer mWriter;
 };
+using MergedReadWriter = WorkerQueue< SequenceList, MergedReadWriterWorker, const std::string& >;
 
 using PairedReads = std::pair< SequenceList, SequenceList >;
 
-class QueuedMerger : public WorkerQueue< PairedReads > {
+template<>
+class QueueItemInfo< PairedReads > {
 public:
-  QueuedMerger( QueuedWriter &writer )
-    : WorkerQueue( -1 ), mWriter( writer )
+  static size_t Count( const PairedReads &list ) { return list.first.size(); }
+};
+
+class ReadMergerWorker {
+public:
+  ReadMergerWorker( MergedReadWriter& writer )
+    : mWriter( writer )
   {
   }
 
-protected:
   void Process( const PairedReads &queueItem ) {
     const SequenceList &fwd = queueItem.first;
     const SequenceList &rev = queueItem.second;
@@ -70,22 +77,19 @@ protected:
     gStats.numProcessed += fwd.size();
   }
 
-  size_t CountPerItem( const PairedReads &queueItem ) const {
-    return queueItem.first.size();
-  }
-
 private:
-  QueuedWriter &mWriter;
+  MergedReadWriter &mWriter;
   PairedEnd::Merger mMerger;
 };
+using ReadMerger = WorkerQueue< PairedReads, ReadMergerWorker, MergedReadWriter& >;
 
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
   const int numReadsPerWorkItem = 512;
 
   PairedEnd::Reader reader( fwdPath, revPath );
 
-  QueuedWriter writer( mergedPath  );
-  QueuedMerger merger( writer );
+  MergedReadWriter writer( 1, mergedPath );
+  ReadMerger merger( -1, writer );
 
   SequenceList fwdReads, revReads;
 

@@ -4,28 +4,65 @@
 #include <queue>
 #include <thread>
 
-template <class QueueItem>
+template <typename T>
+class QueueItemInfo {
+public:
+  static size_t Count( const T& t ) { return 1; }
+};
+
+template <class QueueItem, class Worker, typename ...Args>
 class WorkerQueue {
 public:
   using OnProcessedCallback = std::function< void ( size_t, size_t )  >;
 
-  WorkerQueue( int numWorkers = 1 );
-  ~WorkerQueue();
+  WorkerQueue( int numWorkers = 1, Args&& ...args )
+    : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ), mTotalProcessed( 0 )
+  {
+    numWorkers = numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
 
-  void Enqueue( QueueItem &queueItem );
-  bool Done() const;
-  void WaitTillDone();
+    for( int i = 0; i < numWorkers; i++ ) {
+      mWorkers.push_back( std::thread( [&] {
+        this->WorkerLoop( std::forward< Args >( args )... );
+      }));
+    }
+  }
+
+  ~WorkerQueue() {
+    mStop = true;
+    mCondition.notify_all();
+    for( auto &worker : mWorkers ) {
+      if( worker.joinable() ) {
+        worker.join();
+      }
+    }
+  }
+
+  void Enqueue( QueueItem &queueItem ) {
+    {
+      std::unique_lock< std::mutex > lock( mQueueMutex );
+      mTotalEnqueued += QueueItemInfo< QueueItem >::Count( queueItem );
+      mQueue.push( std::move( queueItem ) );
+    }
+
+    // Send one worker to work
+    mCondition.notify_one();
+  }
+
+  bool Done() const {
+    return mWorkingCount == 0 && mQueue.empty();
+  }
+
+  void WaitTillDone() {
+    while( !Done() ) {
+      std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+    }
+  }
 
   void OnProcessed( const OnProcessedCallback &callback ) {
     mProcessedCallbacks.push_back( callback );
   }
 
-protected:
-  virtual void Process( const QueueItem &queueItem ) = 0;
-  virtual size_t CountPerItem( const QueueItem &queueItem ) const { return 1; }
-
 private:
-  friend class Worker;
   std::deque< std::thread > mWorkers;
 
   std::condition_variable mCondition;
@@ -39,87 +76,39 @@ private:
   size_t mTotalProcessed;
   std::deque< OnProcessedCallback > mProcessedCallbacks;
 
-  void WorkerLoop();
-};
+  void WorkerLoop( Args&& ...args ) {
+    QueueItem queueItem;
+    Worker worker( std::forward< Args >( args )... );
 
-template <class QueueItem>
-WorkerQueue< QueueItem >::WorkerQueue( int numWorkers )
-  : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ), mTotalProcessed( 0 )
-{
-  numWorkers = numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
+    while( true )
+    {
+      { // acquire lock
+        std::unique_lock< std::mutex > lock( mQueueMutex );
 
-  for( int i = 0; i < numWorkers; i++ ) {
-    mWorkers.push_back( std::thread( [this] { this->WorkerLoop(); } ) );
-  }
-}
+        while( !mStop && mQueue.empty() )
+          mCondition.wait( lock );
 
-template <class QueueItem>
-WorkerQueue< QueueItem > ::~WorkerQueue() {
-  mStop = true;
-  mCondition.notify_all();
-  for( auto &worker : mWorkers ) {
-    if( worker.joinable() ) {
-      worker.join();
+        if( mStop )
+          break;
+
+        queueItem = std::move( mQueue.front() );
+        mQueue.pop();
+
+        mWorkingCount++;
+      } // release lock
+
+      worker.Process( queueItem );
+
+      { // acquire lock
+        std::unique_lock< std::mutex > lock( mQueueMutex );
+        mTotalProcessed += QueueItemInfo< QueueItem >::Count( queueItem );
+        mWorkingCount--;
+
+        for( auto &cb : mProcessedCallbacks ) {
+          cb( mTotalProcessed, mTotalEnqueued );
+        }
+      } // release lock
     }
   }
-}
+};
 
-template <class QueueItem>
-bool WorkerQueue< QueueItem >::Done() const {
-  return mWorkingCount == 0 && mQueue.empty();
-}
-
-template <class QueueItem>
-void WorkerQueue< QueueItem >::WaitTillDone() {
-  while( !Done() ) {
-    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-  }
-}
-
-template<class QueueItem>
-void WorkerQueue< QueueItem >::Enqueue( QueueItem &queueItem )
-{
-  {
-    std::unique_lock< std::mutex > lock( mQueueMutex );
-    mTotalEnqueued += CountPerItem( queueItem );
-    mQueue.push( std::move( queueItem ) );
-  }
-
-  // Send one worker to work
-  mCondition.notify_one();
-}
-
-template<class QueueItem>
-void WorkerQueue< QueueItem >::WorkerLoop() {
-  QueueItem queueItem;
-
-  while( true )
-  {
-    { // acquire lock
-      std::unique_lock< std::mutex > lock( mQueueMutex );
-
-      while( !mStop && mQueue.empty() )
-        mCondition.wait( lock );
-
-      if( mStop )
-        break;
-
-      queueItem = std::move( mQueue.front() );
-      mQueue.pop();
-
-      mWorkingCount++;
-    } // release lock
-
-    Process( queueItem );
-
-    { // acquire lock
-      std::unique_lock< std::mutex > lock( mQueueMutex );
-      mTotalProcessed += CountPerItem( queueItem );
-      mWorkingCount--;
-
-      for( auto &cb : mProcessedCallbacks ) {
-        cb( mTotalProcessed, mTotalEnqueued );
-      }
-    } // release lock
-  }
-}
