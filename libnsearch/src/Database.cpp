@@ -1,83 +1,68 @@
 #include "nsearch/Database.h"
 
-Database::Database( const SequenceList &sequences, size_t wordSize, const OnProgressCallback &progressCallback )
-  : mSequences( sequences ), mWordSize( wordSize ), mProgressCallback( progressCallback )
+Database::Database( const SequenceList &sequences, size_t kmerLength, const OnProgressCallback &progressCallback )
+  : mSequences( sequences ), mKmerLength( kmerLength ), mProgressCallback( progressCallback )
 {
-  mMaxUniqueWords = 1 << ( 2 * mWordSize ); // 2 bits per nt
+  mMaxUniqueKmers = 1 << ( 2 * mKmerLength ); // 2 bits per nt
 
   size_t totalEntries = 0;
-  size_t totalFirstEntries = 0;
+  size_t totalUniqueEntries = 0;
 
-  std::vector< uint32_t > uniqueCount( mMaxUniqueWords );
-  std::vector< uint32_t > uniqueIndex( mMaxUniqueWords, -1 );
-  for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
-    const Sequence &seq = mSequences[ idx ];
+  std::vector< uint32_t > uniqueCount( mMaxUniqueKmers );
+  std::vector< SequenceNo > uniqueIndex( mMaxUniqueKmers, -1 );
 
-    Kmers kmers( seq, mWordSize );
-    kmers.ForEach( [&]( Kmer word, size_t pos ) {
+  for( SequenceNo seqNo = 0; seqNo < mSequences.size(); seqNo++ ) {
+    const Sequence &seq = mSequences[ seqNo ];
+
+    Kmers kmers( seq, mKmerLength );
+    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
       totalEntries++;
 
       // Count unique words
-      if( uniqueIndex[ word ] != idx ) {
-        uniqueIndex[ word ] = idx;
-        uniqueCount[ word ]++;
-        totalFirstEntries++;
-      }
+      if( uniqueIndex[ kmer ] == seqNo )
+        return;
+
+      uniqueIndex[ kmer ] = seqNo;
+      uniqueCount[ kmer ]++;
+      totalUniqueEntries++;
     });
 
     // Progress
-    if( idx % 500 == 0 || idx + 1 == mSequences.size() ) {
-      mProgressCallback( ProgressType::StatsCollection, idx + 1, mSequences.size() );
+    if( seqNo % 500 == 0 || seqNo + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::StatsCollection, seqNo + 1, mSequences.size() );
     }
   } // Calculate indices
 
-  mIndexByWord.reserve( mMaxUniqueWords );
-  for( size_t i = 0; i < mMaxUniqueWords; i++ ) {
-    mIndexByWord[ i ] = i > 0 ? mIndexByWord[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
+  mIndexByKmer.reserve( mMaxUniqueKmers );
+  for( size_t i = 0; i < mMaxUniqueKmers; i++ ) {
+    mIndexByKmer[ i ] = i > 0 ? mIndexByKmer[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
   }
 
   // Populate DB
-  mFirstEntries.resize( totalFirstEntries );
-  mFurtherEntries.reserve( totalEntries - totalFirstEntries );
+  mSequenceNoByKmer.resize( totalUniqueEntries );
 
   // Reset to 0
-  mNumEntriesByWord = std::vector< uint32_t >( mMaxUniqueWords );
-  for( uint32_t idx = 0; idx < mSequences.size(); idx++ ) {
-    const Sequence &seq = mSequences[ idx ];
+  mNumEntriesByKmer = std::vector< uint32_t >( mMaxUniqueKmers );
 
-    Kmers kmers( seq, mWordSize );
-    kmers.ForEach( [&]( Kmer word, size_t pos ) {
-      if( mNumEntriesByWord[ word ] == 0 ) {
-        // Create new entry
-        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] ];
-        entry->sequence = idx;
-        entry->pos = pos;
-        entry->nextEntry = NULL;
-        mNumEntriesByWord[ word ]++;
-      } else {
-        // Check if last entry == index
-        WordEntry *entry = &mFirstEntries[ mIndexByWord[ word ] + ( mNumEntriesByWord[ word ] - 1 ) ];
+  uniqueIndex = std::vector< SequenceNo>( mMaxUniqueKmers, -1 );
 
-        if( entry->sequence == idx ) {
-          mFurtherEntries.emplace_back( idx, pos );
-          WordEntry *s = entry;
-          while( s->nextEntry ) {
-            s = s->nextEntry;
-          }
-          s->nextEntry = &mFurtherEntries.back();
-        } else {
-          entry++;
-          entry->sequence = idx;
-          entry->pos = pos;
-          entry->nextEntry = NULL;
-          mNumEntriesByWord[ word ]++;
-        }
-      }
+  for( SequenceNo seqNo = 0; seqNo < mSequences.size(); seqNo++ ) {
+    const Sequence &seq = mSequences[ seqNo ];
+
+    Kmers kmers( seq, mKmerLength );
+    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+      if( uniqueIndex[ kmer ] == seqNo )
+        return;
+
+      uniqueIndex[ kmer ] = seqNo;
+
+      mSequenceNoByKmer[ mIndexByKmer[ kmer ] + mNumEntriesByKmer[ kmer ] ] = seqNo;
+      mNumEntriesByKmer[ kmer ]++;
     });
 
     // Progress
-    if( idx % 500 == 0 || idx + 1 == mSequences.size() ) {
-      mProgressCallback( ProgressType::Indexing, idx + 1, mSequences.size() );
+    if( seqNo % 500 == 0 || seqNo + 1 == mSequences.size() ) {
+      mProgressCallback( ProgressType::Indexing, seqNo + 1, mSequences.size() );
     }
   }
 }

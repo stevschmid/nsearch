@@ -17,37 +17,21 @@ public:
   enum ProgressType { StatsCollection, Indexing };
   using OnProgressCallback = std::function< void ( ProgressType, size_t, size_t )  >;
 
-  Database( const SequenceList &sequences, size_t wordSize,
+  Database( const SequenceList &sequences, size_t kmerLength,
       const OnProgressCallback &progressCallback = []( ProgressType, size_t, size_t ) { } );
   size_t Size() const;
 
 private:
-  size_t mWordSize;
+  size_t mKmerLength;
 
   SequenceList mSequences;
-  size_t mMaxUniqueWords;
+  size_t mMaxUniqueKmers;
 
-  using WordEntry = struct WordEntry_s {
-    uint32_t sequence;
-    uint32_t pos;
-    WordEntry_s *nextEntry;
+  using SequenceNo = uint32_t; // SequenceNo
 
-    WordEntry_s()
-    : sequence( -1 )
-    {
-    }
-
-    WordEntry_s( uint32_t s, uint32_t p, WordEntry_s *ne = NULL )
-      : sequence( s ), pos( p ), nextEntry( ne )
-    {
-
-    }
-  };
-
-  std::vector< uint32_t > mIndexByWord;
-  std::vector< uint32_t > mNumEntriesByWord;
-  std::vector< WordEntry > mFirstEntries; // first word (kmer) hit for each candidate
-  std::vector< WordEntry > mFurtherEntries;
+  std::vector< uint32_t > mIndexByKmer;
+  std::vector< uint32_t > mNumEntriesByKmer;
+  std::vector< SequenceNo > mSequenceNoByKmer;
 
   OnProgressCallback mProgressCallback;
 };
