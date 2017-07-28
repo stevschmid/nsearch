@@ -13,7 +13,7 @@ GlobalSearch::GlobalSearch( const Database &db, float minIdentity, int maxHits, 
 {
 }
 
-GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
+GlobalSearch::HitList GlobalSearch::Query( const Sequence &query )
 {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance = 16;
@@ -69,7 +69,7 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
 
   auto highscores = highscore.EntriesFromTopToBottom();
 
-  QueryResult res;
+  HitList hits;
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
     const size_t seqId = it->id;
@@ -219,7 +219,7 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
       float identity = alignment.Identity();
       if( identity >= mMinIdentity ) {
         accept = true;
-        res.push_back( GlobalSearch::Match { query, candidateSeq, alignment } );
+        hits.push_back( GlobalSearch::Hit { candidateSeq, alignment } );
       }
     }
 
@@ -234,5 +234,5 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     }
   }
 
-  return res;
+  return hits;
 }

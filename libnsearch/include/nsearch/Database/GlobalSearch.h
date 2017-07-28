@@ -10,7 +10,7 @@ using Counter = unsigned short;
 class GlobalSearch : public BaseSearch {
 public:
   GlobalSearch( const Database &db, float minIdentity, int maxHits = 1, int maxRejects = 8 );
-  QueryResult Query( const Sequence &query );
+  HitList Query( const Sequence &query );
 
 private:
   const Database &mDB;
