@@ -5,8 +5,6 @@
 #include "nsearch/Database/HSP.h"
 
 #include "nsearch/Alignment/Common.h"
-#include "nsearch/Alignment/Ranges.h"
-#include "nsearch/Alignment/HitTracker.h"
 
 #include <set>
 
@@ -70,7 +68,6 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
   int numRejects = 0;
 
   auto highscores = highscore.EntriesFromTopToBottom();
-  /* std::cout << "Highscores " << highscores.size() << std::endl; */
 
   QueryResult res;
 
@@ -78,11 +75,8 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     const size_t seqId = it->id;
     assert( seqId < mDB.mSequences.size() );
     const Sequence &candidateSeq = mDB.mSequences[ seqId ];
-    /* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; */
 
-
-    // Go through each kmer, find hits
-    HitTracker hitTracker;
+    std::deque< HSP > sps;
 
     for( size_t pos = 0; pos < kmers.size(); pos++ ) {
       auto kmers2 = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
@@ -103,7 +97,8 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
             cur2++;
             length++;
           }
-          hitTracker.AddHit( pos, pos2, length );
+
+          sps.emplace_back( pos, cur - 1, pos2, cur2 - 1 );
         }
 
       }
@@ -115,11 +110,11 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     // Fill space between with banded align
 
     std::set< HSP > hsps;
-    for( auto &sp : hitTracker.List() ) {
+    for( auto &sp : sps ) {
       size_t queryPos, candidatePos;
 
-      size_t a1 = sp.s1, a2 = sp.s1 + sp.length - 1,
-             b1 = sp.s2, b2 = sp.s2 + sp.length - 1;
+      size_t a1 = sp.a1, a2 = sp.a2,
+             b1 = sp.b1, b2 = sp.b2;
 
       Cigar leftCigar;
       int leftScore = mExtendAlign.Extend( query, candidateSeq,
@@ -149,11 +144,11 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
         // Construct hsp cigar (spaced seeds so we cannot assume full match)
         Cigar middleCigar;
         int middleScore = 0;
-        for( size_t s1 = sp.s1, s2 = sp.s2;
-            s1 < sp.s1 + sp.length && s2 < sp.s2 + sp.length;
-            s1++, s2++ )
+        for( size_t a = sp.a1, b = sp.b1;
+             a <= sp.a2 && b <= sp.b2;
+             a++, b++ )
         {
-          bool match = DoNucleotidesMatch( query[ s1 ], candidateSeq[ s2 ] );
+          bool match = DoNucleotidesMatch( query[ a ], candidateSeq[ b ] );
           middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
           middleScore += match ? mExtendAlign.AP().matchScore : mExtendAlign.AP().mismatchScore;
         }

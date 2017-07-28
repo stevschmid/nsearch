@@ -14,8 +14,6 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   FASTATest.cpp
   PairedEndTest.cpp
   UtilsTest.cpp
-  Alignment/RangesTest.cpp
-  Alignment/HitTrackerTest.cpp
   Alignment/ExtendAlignTest.cpp
   Alignment/BandedAlignTest.cpp
   Database/KmersTest.cpp
