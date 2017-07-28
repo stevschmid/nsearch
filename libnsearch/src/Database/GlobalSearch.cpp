@@ -52,7 +52,6 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
     }
   });
 
-  return {};
 
   // For each candidate:
   // - Get HSPs,
@@ -69,23 +68,23 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
   QueryResult res;
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
-    const size_t seqIdx = it->id;
-    assert( seqIdx < mDB.mSequences.size() );
-    const Sequence &candidateSeq = mDB.mSequences[ seqIdx ];
+    const size_t seqId = it->id;
+    assert( seqId < mDB.mSequences.size() );
+    const Sequence &candidateSeq = mDB.mSequences[ seqId ];
     /* std::cout << "Highscore Entry " << it->id << " " << it->score << std::endl; */
 
     // Go through each kmer, find hits
     HitTracker hitTracker;
 
-    kmers.ForEach( [&]( Kmer word, size_t pos ) {
-      Kmers( candidateSeq, mDB.mKmerLength ).ForEach( [&]( Kmer word2, size_t pos2 ) {
-        if( word != word2 )
-          return;
+    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+      auto kmerData = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
+      for( size_t pos2 = 0; pos2 < mDB.mKmerCountBySequenceId[ seqId ]; pos2++ ) {
+        if( kmerData[ pos2 ] != kmer )
+          continue;
 
         hitTracker.AddHit( pos, pos2, kmers.Length() );
-      });
+      }
     });
-    continue;
 
     // Find all HSP
     // Sort by length

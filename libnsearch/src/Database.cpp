@@ -8,7 +8,8 @@ Database::Database( const SequenceList &sequences, size_t kmerLength, const OnPr
   size_t totalEntries = 0;
   size_t totalUniqueEntries = 0;
 
-  std::vector< uint32_t > uniqueCount( mMaxUniqueKmers );
+  /* std::vector< uint32_t > count( mMaxUniqueKmers ); */
+  std::vector< size_t > uniqueCount( mMaxUniqueKmers );
   std::vector< SequenceId > uniqueIndex( mMaxUniqueKmers, -1 );
 
   for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
@@ -16,6 +17,7 @@ Database::Database( const SequenceList &sequences, size_t kmerLength, const OnPr
 
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+      /* count[ kmer ]++; */
       totalEntries++;
 
       // Count unique words
@@ -34,23 +36,37 @@ Database::Database( const SequenceList &sequences, size_t kmerLength, const OnPr
   } // Calculate indices
 
   mSequenceIdsOffsetByKmer.reserve( mMaxUniqueKmers );
+  /* mKmerInfosOffsetByKmer.reserve( mMaxUniqueKmers ); */
   for( size_t i = 0; i < mMaxUniqueKmers; i++ ) {
     mSequenceIdsOffsetByKmer[ i ] = i > 0 ? mSequenceIdsOffsetByKmer[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
+    /* mKmerInfosOffsetByKmer[ i ] = i > 0 ? mKmerInfosOffsetByKmer[ i - 1 ] + count[ i - 1 ] : 0; */
   }
 
   // Populate DB
   mSequenceIds.reserve( totalUniqueEntries );
+  /* mKmerInfos.reserve( totalEntries ); */
+  mKmers.reserve( totalEntries );
 
   // Reset to 0
-  mSequenceIdsCountByKmer = std::vector< uint32_t >( mMaxUniqueKmers );
+  mSequenceIdsCountByKmer = std::vector< size_t >( mMaxUniqueKmers );
+  mKmerCountBySequenceId = std::vector< size_t >( mSequences.size() );
+  mKmerOffsetBySequenceId = std::vector< size_t >( mSequences.size() );
+  /* mKmerInfosCountByKmer = std::vector< uint32_t >( mMaxUniqueKmers ); */
 
   uniqueIndex = std::vector< SequenceId>( mMaxUniqueKmers, -1 );
+
+  auto kmersData = mKmers.data();
+  size_t kmerCount = 0;
 
   for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
     const Sequence &seq = mSequences[ seqId ];
 
+    mKmerOffsetBySequenceId[ seqId ] = kmerCount;
+
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+      kmersData[ kmerCount++ ] = kmer;
+
       if( uniqueIndex[ kmer ] == seqId )
         return;
 
@@ -59,6 +75,8 @@ Database::Database( const SequenceList &sequences, size_t kmerLength, const OnPr
       mSequenceIds[ mSequenceIdsOffsetByKmer[ kmer ] + mSequenceIdsCountByKmer[ kmer ] ] = seqId;
       mSequenceIdsCountByKmer[ kmer ]++;
     });
+
+    mKmerCountBySequenceId[ seqId ] = kmerCount - mKmerOffsetBySequenceId[ seqId ];
 
     // Progress
     if( seqId % 500 == 0 || seqId + 1 == mSequences.size() ) {

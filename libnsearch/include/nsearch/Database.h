@@ -29,19 +29,30 @@ private:
 
   using SequenceId = uint32_t; // SequenceId
 
-  using KmerInfo = struct KmerInfo_s {
-    size_t pos;
-    Kmer kmer;
-    SequenceId seqId;
+  /* using KmerInfo = struct KmerInfo_s { */
+  /*   uint32_t pos; */
+  /*   /1* Kmer kmer; *1/ */
+  /*   SequenceId seqId; */
 
-    KmerInfo_s *prev, *next;
-  };
+  /*   KmerInfo_s *prev; */
+  /*   KmerInfo_s *next; */
+  /* }; */
 
-  std::vector< uint32_t > mSequenceIdsOffsetByKmer;
-  std::vector< uint32_t > mSequenceIdsCountByKmer;
+  std::vector< size_t > mSequenceIdsOffsetByKmer;
+  std::vector< size_t > mSequenceIdsCountByKmer;
   std::vector< SequenceId > mSequenceIds;
 
-  std::vector< KmerInfo > mKmerInfos;
+  /* std::vector< uint32_t > mKmerInfosOffsetByKmer; */
+  /* std::vector< uint32_t > mKmerInfosCountByKmer; */
+  /* std::vector< KmerInfo > mKmerInfos; */
+
+  /* std::vector< uint32_t > mKmerOffsetBySequenceId; */
+  /* std::vector< uint32_t > mKmerInfosCountByKmer; */
+  /* std::vector< KmerInfo > mKmerInfos; */
+
+  std::vector< size_t > mKmerOffsetBySequenceId;
+  std::vector< size_t > mKmerCountBySequenceId;
+  std::vector< Kmer > mKmers;
 
   OnProgressCallback mProgressCallback;
 };
