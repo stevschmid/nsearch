@@ -6,6 +6,7 @@
 #include <map>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
 
 enum class UnitType { COUNTS, BYTES };
 
@@ -52,12 +53,16 @@ static std::string ValueWithUnit( float value, UnitType unit ) {
   return ss.str();
 }
 
+
 class ProgressOutput {
+  using clock = std::chrono::steady_clock;
+
   using Stage = struct {
     std::string label;
     UnitType unit;
     int value;
     int max;
+    clock::time_point lastPrint;
   };
 
 public:
@@ -68,16 +73,17 @@ public:
   }
 
   ProgressOutput& Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
-    mStages.insert( { id, Stage { label, unit, 0, 100 } } );
+    mStages.insert( { id, Stage { label, unit, 0, 100, clock::now() } } );
     return *this;
   }
 
   ProgressOutput& Set( int id, float value, float max ) {
-    mStages[ id ].value = value;
-    mStages[ id ].max = max;
+    auto &stage = mStages[ id ];
+    stage.value = value;
+    stage.max = max;
 
     if( mActiveId == id ) {
-      Print( mStages[ id ] );
+      Print( stage );
     }
     return *this;
   }
@@ -92,7 +98,15 @@ public:
   }
 
 private:
-  void Print( const Stage &stage ) {
+  void Print( Stage &stage ) {
+    // Make sure we don't waste perf by outputting wasteful
+    auto now = clock::now();
+    auto millis = std::chrono::duration_cast < std::chrono::milliseconds >( now - stage.lastPrint ).count();
+    if( millis < 100 && stage.value != stage.max ) {
+      return;
+    }
+    stage.lastPrint = now;
+
     std::ostream &os = std::cerr;
 
     std::ios::fmtflags f( os.flags() );
