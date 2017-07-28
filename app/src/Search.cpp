@@ -90,7 +90,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
   progress.Add( ProgressType::IndexDB, "Indexing database");
   progress.Add( ProgressType::ReadQueryFile, "Reading query file", UnitType::BYTES );
   progress.Add( ProgressType::SearchDB, "Searching database" );
-  progress.Add( ProgressType::WriteHits, "Output found sequences" );
+  progress.Add( ProgressType::WriteHits, "Write hits" );
 
   // Read DB
   progress.Activate( ProgressType::ReadDBFile );
