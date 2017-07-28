@@ -5,6 +5,8 @@
 #include "nsearch/Alignment/ExtendAlign.h"
 #include "nsearch/Alignment/BandedAlign.h"
 
+using Counter = unsigned short;
+
 class GlobalSearch : public BaseSearch {
 public:
   GlobalSearch( const Database &db, float minIdentity, int maxHits = 1, int maxRejects = 8 );
@@ -17,7 +19,7 @@ private:
   int mMaxHits;
   int mMaxRejects;
 
-  std::vector< size_t > mHits;
+  std::vector< Counter > mHits;
   ExtendAlign mExtendAlign;
   BandedAlign mBandedAlign;
 };

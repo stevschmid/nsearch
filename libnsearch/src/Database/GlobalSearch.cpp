@@ -30,12 +30,14 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
   }
 
   // Fast counter reset
-  memset( mHits.data(), 0, sizeof( size_t ) * mHits.capacity() );
+  memset( mHits.data(), 0, sizeof( Counter ) * mHits.capacity() );
 
   Highscore highscore( mMaxHits + mMaxRejects );
 
   Kmers kmers( query, mDB.mWordSize );
   std::vector< bool > uniqueCheck( mDB.mMaxUniqueWords );
+
+  auto data = mHits.data();
 
   kmers.ForEach( [&]( Kmer word, size_t pos ) {
     if( !uniqueCheck[ word ] ) {
@@ -44,10 +46,7 @@ GlobalSearch::QueryResult GlobalSearch::Query( const Sequence &query )
       const Database::WordEntry *ptr = &mDB.mFirstEntries[ mDB.mIndexByWord[ word ] ];
       for( uint32_t i = 0; i < mDB.mNumEntriesByWord[ word ]; i++, ptr++ ) {
         uint32_t candidateIdx = ptr->sequence;
-
-        size_t &counter = mHits[ candidateIdx ];
-        counter++;
-
+        Counter counter = data[ candidateIdx ]++;
         highscore.Set( candidateIdx, counter );
       }
     }
