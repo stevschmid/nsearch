@@ -109,10 +109,15 @@ private:
 
     std::ostream &os = std::cerr;
 
+    size_t maxLabelLen = 0;
+    for( auto &s : mStages ) {
+      maxLabelLen = std::max( maxLabelLen, s.second.label.size() );
+    }
+
     std::ios::fmtflags f( os.flags() );
     // Show one decimal point
     os << std::setiosflags( std::ios::fixed ) << std::setprecision( 1 );
-    os << stage.label << ": ";
+    os << std::right << std::setw( maxLabelLen ) << stage.label << ": ";
     os << float( stage.value ) / stage.max * 100.0 << '%';
     os << " (" << ValueWithUnit( stage.value, stage.unit ) << ")";
     os << std::string( 20, ' ' ) << "\r" << std::flush;

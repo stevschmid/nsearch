@@ -92,11 +92,11 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
 
   enum ProgressType { ReadDBFile, StatsDB, IndexDB, ReadQueryFile, SearchDB, WriteHits };
 
-  progress.Add( ProgressType::ReadDBFile, "Reading DB file", UnitType::BYTES );
-  progress.Add( ProgressType::StatsDB, "Analyzing DB sequences");
-  progress.Add( ProgressType::IndexDB, "Indexing database");
-  progress.Add( ProgressType::ReadQueryFile, "Reading query file", UnitType::BYTES );
-  progress.Add( ProgressType::SearchDB, "Searching database" );
+  progress.Add( ProgressType::ReadDBFile, "Read database", UnitType::BYTES );
+  progress.Add( ProgressType::StatsDB, "Analyze database");
+  progress.Add( ProgressType::IndexDB, "Index database");
+  progress.Add( ProgressType::ReadQueryFile, "Read queries", UnitType::BYTES );
+  progress.Add( ProgressType::SearchDB, "Search database" );
   progress.Add( ProgressType::WriteHits, "Write hits" );
 
   // Read DB
