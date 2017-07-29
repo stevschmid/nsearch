@@ -8,5 +8,7 @@ Test DB with this breaking case (so HSP are not selected via length but with sco
 Camila's idea: Add special coding gap model: Penalize gaps which shift the reading frame heavily, 
 but penalize gaps with 3nt, 6nt etc. which delete AAs less
 
+Tests and so on for Kmers and INVALID_KMER (0, AAA..)
+
 Tests for DB in general
 Test ambig nucs in sequences and DB search (ignore kmer=0, AAA...)
