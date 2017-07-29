@@ -16,7 +16,11 @@ using QueryWithHitsList = std::deque< QueryWithHits >;
 template<>
 class QueueItemInfo< QueryWithHitsList > {
 public:
-  static size_t Count( const QueryWithHitsList &list ) { return list.size(); }
+  static size_t Count( const QueryWithHitsList &list ) {
+    return std::accumulate( list.begin(), list.end(), 0, []( int sum, const QueryWithHits &q ) {
+      return sum + q.second.size();
+    });
+  }
 };
 
 class SearchResultsWriterWorker {
