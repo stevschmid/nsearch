@@ -44,8 +44,8 @@ public:
 
 class ReadMergerWorker {
 public:
-  ReadMergerWorker( MergedReadWriter& writer )
-    : mWriter( writer )
+  ReadMergerWorker( MergedReadWriter *writer )
+    : mWriter( *writer )
   {
   }
 
@@ -81,7 +81,7 @@ private:
   MergedReadWriter &mWriter;
   PairedEnd::Merger mMerger;
 };
-using ReadMerger = WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter& >;
+using ReadMerger = WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
 
 bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
   const int numReadsPerWorkItem = 512;
@@ -89,7 +89,7 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
   PairedEnd::Reader reader( fwdPath, revPath );
 
   MergedReadWriter writer( 1, mergedPath );
-  ReadMerger merger( -1, writer );
+  ReadMerger merger( -1, &writer );
 
   SequenceList fwdReads, revReads;
 

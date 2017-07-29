@@ -19,8 +19,13 @@ R"(
   Process and search sequences.
 
   Usage:
-    nsearch merge <forward.fastq> <reverse.fastq> <merged.fastq>
-    nsearch search <query.fasta> <database.fasta> <output.txt>
+    nsearch merge --forward=<forward.fastq> --reverse=<reverse.fastq> --out=<merged.fastq>
+    nsearch search --query=<query.fasta> --database=<database.fasta> --alnout=<output.aln> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+
+  Options:
+    --minidentity=<minidentity>    Minimum identity threshold (e.g. 0.8).
+    --maxaccepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
+    --maxrejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
 )";
 
 
@@ -56,9 +61,13 @@ int main( int argc, const char **argv ) {
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 
-    Search( args[ "<query.fasta>" ].asString(),
-        args[ "<database.fasta>" ].asString(),
-        args[ "<output.txt>" ].asString() );
+    Search( args[ "--query" ].asString(),
+        args[ "--database" ].asString(),
+        args[ "--alnout" ].asString(),
+        std::stof( args[ "--minidentity" ].asString() ),
+        args[ "--maxaccepts" ].asLong(),
+        args[ "--maxrejects" ].asLong()
+        );
 
     gStats.StopTimer();
 
@@ -70,10 +79,9 @@ int main( int argc, const char **argv ) {
   if( args[ "merge" ].asBool() ) {
     gStats.StartTimer();
 
-    Merge( args[ "<forward.fastq>" ].asString(),
-        args[ "<reverse.fastq>" ].asString(),
-        args[ "<merged.fastq>" ].asString() );
-
+    Merge( args[ "--forward" ].asString(),
+        args[ "--reverse" ].asString(),
+        args[ "--out" ].asString() );
 
     gStats.StopTimer();
 

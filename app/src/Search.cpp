@@ -46,8 +46,9 @@ public:
 
 class QueryDatabaseSearcherWorker {
 public:
-  QueryDatabaseSearcherWorker( SearchResultsWriter &writer, const Database &database )
-    : mWriter( writer), mGlobalSearch( database, 0.75, 1, 8 )
+  QueryDatabaseSearcherWorker( SearchResultsWriter *writer, const Database *database,
+      float minIdentity, int maxAccepts, int maxRejects )
+    : mWriter( *writer ), mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects )
   {
   }
 
@@ -71,9 +72,13 @@ private:
   GlobalSearch mGlobalSearch;
   SearchResultsWriter &mWriter;
 };
-using QueryDatabaseSearcher = WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter&, const Database& >;
+using QueryDatabaseSearcher = WorkerQueue< QueryDatabaseSearcherWorker, SequenceList,
+      SearchResultsWriter*, const Database*,
+      float, int, int >;
 
-bool Search( const std::string &queryPath, const std::string &databasePath, const std::string &outputPath ) {
+bool Search( const std::string &queryPath, const std::string &databasePath, const std::string &outputPath,
+    float minIdentity, int maxAccepts, int maxRejects )
+{
   ProgressOutput progress;
 
   Sequence seq;
@@ -119,7 +124,7 @@ bool Search( const std::string &queryPath, const std::string &databasePath, cons
   const int numQueriesPerWorkItem = 50;
 
   SearchResultsWriter writer( 1, outputPath );
-  QueryDatabaseSearcher searcher( -1, writer, db );
+  QueryDatabaseSearcher searcher( -1, &writer, &db, minIdentity, maxAccepts, maxRejects );
 
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );

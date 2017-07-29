@@ -49,7 +49,8 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence &query )
 
     uniqueCheck[ kmer ] = true;
 
-    auto seqIds = &mDB.mSequenceIds[ mDB.mSequenceIdsOffsetByKmer[ kmer ] ];
+    auto offset = mDB.mSequenceIdsOffsetByKmer[ kmer ];
+    auto seqIds = &mDB.mSequenceIds[ offset ];
     for( auto i = 0; i < mDB.mSequenceIdsCountByKmer[ kmer ]; i++ ) {
       auto seqId = seqIds[ i ];
       Counter counter = ++hitsData[ seqId ];
