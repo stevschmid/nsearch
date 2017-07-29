@@ -43,7 +43,7 @@ namespace Alnout {
           << '%'
           << std::setw( 7 )
           << hit.target.Length()
-          << "  >"  << hit.target.identifier
+          << "  "  << hit.target.identifier
           << std::endl;
       }
       mOutput << std::endl;
@@ -69,8 +69,8 @@ namespace Alnout {
 
         mOutput << std::endl;
         for( auto &line : lines ) {
-          auto padLen = std::max( std::to_string( lines.back().qs ).size(),
-              std::to_string( lines.back().ts ).size() );
+          auto padLen = std::max( std::to_string( lines.back().qe ).size(),
+              std::to_string( lines.back().te ).size() );
 
           mOutput << "Qry "
             << std::setw( padLen )
