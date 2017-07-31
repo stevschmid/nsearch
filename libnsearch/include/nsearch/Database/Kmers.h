@@ -2,16 +2,27 @@
 #include "../Sequence.h"
 #include "../Utils.h"
 
-#define BIT_INDEX(pos) ( (pos) * 2 ) % ( sizeof( size_t ) * 8 )
-#define BASE_VALUE(base) \
-    ( (base) == 'A' ? 0b00 : \
-      ( (base) == 'C' ? 0b01 : \
-        ( (base) == 'T' || (base) == 'U' ) ? 0b10 : \
-          ( (base) == 'G' ? 0b11 : (-1) ) \
-      ) \
-    )
-
 using Kmer = uint32_t;
+
+inline size_t BitIndexForPosition( const int pos ) {
+  return ( pos * 2 ) % ( sizeof( Kmer ) * 8 );
+}
+
+inline int8_t MapNucleotide( const char base ) {
+  switch( base ) {
+    case 'A':
+      return 0b00;
+    case 'C':
+      return 0b01;
+    case 'U':
+    case 'T':
+      return 0b10;
+    case 'G':
+      return 0b11;
+    default:
+      return -1;
+  }
+}
 
 class Kmers {
 public:
@@ -30,11 +41,11 @@ public:
     size_t lastAmbigIndex = ( size_t )-1;
     Kmer kmer = 0;
     for( size_t k = 0; k < mLength; k++ ) {
-      int8_t val = BASE_VALUE( *ptr );
+      int8_t val = MapNucleotide( *ptr );
       if( val < 0 ) {
         lastAmbigIndex = k;
       } else {
-        kmer |= ( val << BIT_INDEX( k ) );
+        kmer |= ( val << BitIndexForPosition( k ) );
       }
       ptr++;
     }
@@ -49,11 +60,11 @@ public:
     size_t maxFrame = mRef.Length() - mLength;
     for( size_t frame = 1; frame <= maxFrame; frame++, ptr++ ) {
       kmer >>= 2;
-      int8_t val = BASE_VALUE( *ptr );
+      int8_t val = MapNucleotide( *ptr );
       if( val < 0 ) {
         lastAmbigIndex = frame + mLength - 1;
       } else {
-        kmer |= ( val << BIT_INDEX( mLength - 1 ) );
+        kmer |= ( val << BitIndexForPosition( mLength - 1 ) );
       }
 
       if( lastAmbigIndex == ( size_t )-1 || frame > lastAmbigIndex ) {
