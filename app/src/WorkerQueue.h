@@ -15,15 +15,15 @@ public:
 template < class Worker, class QueueItem, typename... Args >
 class WorkerQueue {
 public:
-  using OnProcessedCallback = std::function< void( size_t, size_t ) >;
+  using OnProcessedCallback = std::function< void( const size_t, const size_t ) >;
 
-  WorkerQueue( int numWorkers = 1, Args... args )
+  WorkerQueue( const int numWorkers = 1, Args... args )
       : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ),
         mTotalProcessed( 0 ) {
-    numWorkers =
+    auto actualWorkers =
       numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
 
-    for( int i = 0; i < numWorkers; i++ ) {
+    for( int i = 0; i < actualWorkers; i++ ) {
       mWorkers.push_back( std::thread(
         [this]( Args&&... args ) {
           this->WorkerLoop( std::forward< Args >( args )... );

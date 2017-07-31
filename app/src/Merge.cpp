@@ -101,11 +101,11 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
   progress.Add( ProgressType::MergeReads, "Merge reads" );
   progress.Add( ProgressType::WriteReads, "Write merged reads" );
 
-  merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+  merger.OnProcessed( [&]( const size_t numProcessed, const size_t numEnqueued ) {
     progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
   } );
 
-  writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
+  writer.OnProcessed( [&]( const size_t numProcessed, const size_t numEnqueued ) {
     progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
   } );
 

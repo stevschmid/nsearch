@@ -10,7 +10,7 @@
 
 enum class UnitType { COUNTS, BYTES };
 
-static std::string ValueWithUnit( float value, UnitType unit ) {
+static std::string ValueWithUnit( const float value, const UnitType unit ) {
   static const std::map< UnitType, std::map< size_t, std::string > > CONVERSION = {
     {
       UnitType::COUNTS,
@@ -39,16 +39,17 @@ static std::string ValueWithUnit( float value, UnitType unit ) {
   }
 
   std::stringstream ss;
+  float dividedValue = value;
   if( it != list.begin() ) {
     it--;
-    value = floor( value / it->first );
+    dividedValue = floor( value / it->first );
   }
 
   if( it->first == 1 ) {
     ss << std::setprecision(1) << std::setiosflags( std::ios::fixed );
   }
 
-  ss << value;
+  ss << dividedValue;
   ss << it->second;
   return ss.str();
 }
@@ -67,13 +68,13 @@ class ProgressOutput {
 public:
   ProgressOutput() : mActiveId( -1 ) {}
 
-  ProgressOutput& Add( int id, const std::string& label,
-                       UnitType unit = UnitType::COUNTS ) {
+  ProgressOutput& Add( const int id, const std::string& label,
+                       const UnitType unit = UnitType::COUNTS ) {
     mStages.insert( { id, Stage{ label, unit, 0, 100, clock::now() } } );
     return *this;
   }
 
-  ProgressOutput& Set( int id, float value, float max ) {
+  ProgressOutput& Set( const int id, const float value, const float max ) {
     auto& stage = mStages[ id ];
     stage.value = value;
     stage.max   = max;
@@ -84,7 +85,7 @@ public:
     return *this;
   }
 
-  ProgressOutput& Activate( int id ) {
+  ProgressOutput& Activate( const int id ) {
     if( mActiveId != id )
       std::cerr << std::endl;
 

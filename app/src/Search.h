@@ -4,5 +4,5 @@
 
 extern bool Search( const std::string& queryPath,
                     const std::string& databasePath,
-                    const std::string& outputPath, float minIdentity,
-                    int maxAccepts, int maxRejects );
+                    const std::string& outputPath, const float minIdentity,
+                    const int maxAccepts, const int maxRejects );

@@ -51,8 +51,9 @@ public:
 class QueryDatabaseSearcherWorker {
 public:
   QueryDatabaseSearcherWorker( SearchResultsWriter* writer,
-                               const Database* database, float minIdentity,
-                               int maxAccepts, int maxRejects )
+                               const Database*      database,
+                               const float minIdentity, const int maxAccepts,
+                               const int maxRejects )
       : mWriter( *writer ),
         mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects ) {}
 
@@ -78,11 +79,11 @@ private:
 };
 using QueryDatabaseSearcher =
   WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter*,
-               const Database*, float, int, int >;
+               const Database*, const float, const int, const int >;
 
 bool Search( const std::string& queryPath, const std::string& databasePath,
-             const std::string& outputPath, float minIdentity, int maxAccepts,
-             int maxRejects ) {
+             const std::string& outputPath, const float minIdentity,
+             const int maxAccepts, const int maxRejects ) {
   ProgressOutput progress;
 
   Sequence     seq;
