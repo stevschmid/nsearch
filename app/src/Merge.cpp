@@ -1,29 +1,26 @@
 #include "Merge.h"
 
-#include <nsearch/Sequence.h>
-#include <nsearch/FASTQ/Writer.h>
 #include <nsearch/FASTA/Reader.h>
+#include <nsearch/FASTQ/Writer.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
+#include <nsearch/Sequence.h>
 
 #include "Common.h"
 #include "Stats.h"
 #include "WorkerQueue.h"
 
-template<>
+template <>
 class QueueItemInfo< SequenceList > {
 public:
-  static size_t Count( const SequenceList &list ) { return list.size(); }
+  static size_t Count( const SequenceList& list ) { return list.size(); }
 };
 
 class MergedReadWriterWorker {
 public:
-  MergedReadWriterWorker( const std::string &path )
-    : mWriter( path )
-  {
-  }
+  MergedReadWriterWorker( const std::string& path ) : mWriter( path ) {}
 
-  void Process( const SequenceList &queueItem ) {
+  void Process( const SequenceList& queueItem ) {
     for( auto seq : queueItem ) {
       mWriter << seq;
     }
@@ -32,30 +29,28 @@ public:
 private:
   FASTQ::Writer mWriter;
 };
-using MergedReadWriter = WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
+using MergedReadWriter =
+    WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
 
 using PairedReads = std::pair< SequenceList, SequenceList >;
 
-template<>
+template <>
 class QueueItemInfo< PairedReads > {
 public:
-  static size_t Count( const PairedReads &list ) { return list.first.size(); }
+  static size_t Count( const PairedReads& list ) { return list.first.size(); }
 };
 
 class ReadMergerWorker {
 public:
-  ReadMergerWorker( MergedReadWriter *writer )
-    : mWriter( *writer )
-  {
-  }
+  ReadMergerWorker( MergedReadWriter* writer ) : mWriter( *writer ) {}
 
-  void Process( const PairedReads &queueItem ) {
-    const SequenceList &fwd = queueItem.first;
-    const SequenceList &rev = queueItem.second;
+  void Process( const PairedReads& queueItem ) {
+    const SequenceList& fwd = queueItem.first;
+    const SequenceList& rev = queueItem.second;
 
-    const PairedEnd::Merger &merger = mMerger;
+    const PairedEnd::Merger& merger = mMerger;
 
-    Sequence mergedRead;
+    Sequence     mergedRead;
     SequenceList mergedReads;
 
     auto fit = fwd.begin();
@@ -78,18 +73,20 @@ public:
   }
 
 private:
-  MergedReadWriter &mWriter;
+  MergedReadWriter& mWriter;
   PairedEnd::Merger mMerger;
 };
-using ReadMerger = WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
+using ReadMerger =
+    WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
 
-bool Merge( const std::string &fwdPath, const std::string &revPath, const std::string &mergedPath ) {
+bool Merge( const std::string& fwdPath, const std::string& revPath,
+            const std::string& mergedPath ) {
   const int numReadsPerWorkItem = 512;
 
   PairedEnd::Reader reader( fwdPath, revPath );
 
   MergedReadWriter writer( 1, mergedPath );
-  ReadMerger merger( -1, &writer );
+  ReadMerger       merger( -1, &writer );
 
   SequenceList fwdReads, revReads;
 
@@ -102,18 +99,20 @@ bool Merge( const std::string &fwdPath, const std::string &revPath, const std::s
 
   merger.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
-  });
+  } );
 
   writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
-  });
+  } );
 
   progress.Activate( ProgressType::ReadFile );
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, numReadsPerWorkItem );
-    auto pair = std::pair< SequenceList, SequenceList >( std::move( fwdReads ), std::move( revReads ) );
+    auto pair = std::pair< SequenceList, SequenceList >(
+        std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
-    progress.Set( ProgressType::ReadFile, reader.NumBytesRead(), reader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadFile, reader.NumBytesRead(),
+                  reader.NumBytesTotal() );
   }
 
   progress.Activate( ProgressType::MergeReads );

@@ -58,29 +58,26 @@ class ProgressOutput {
   using clock = std::chrono::steady_clock;
 
   using Stage = struct {
-    std::string label;
-    UnitType unit;
-    int value;
-    int max;
+    std::string       label;
+    UnitType          unit;
+    int               value;
+    int               max;
     clock::time_point lastPrint;
   };
 
 public:
-  ProgressOutput()
-    : mActiveId( -1 )
-  {
+  ProgressOutput() : mActiveId( -1 ) {}
 
-  }
-
-  ProgressOutput& Add( int id, const std::string& label, UnitType unit = UnitType::COUNTS ) {
-    mStages.insert( { id, Stage { label, unit, 0, 100, clock::now() } } );
+  ProgressOutput& Add( int id, const std::string& label,
+                       UnitType unit = UnitType::COUNTS ) {
+    mStages.insert( { id, Stage{ label, unit, 0, 100, clock::now() } } );
     return *this;
   }
 
   ProgressOutput& Set( int id, float value, float max ) {
-    auto &stage = mStages[ id ];
+    auto& stage = mStages[ id ];
     stage.value = value;
-    stage.max = max;
+    stage.max   = max;
 
     if( mActiveId == id ) {
       Print( stage );
@@ -98,19 +95,21 @@ public:
   }
 
 private:
-  void Print( Stage &stage ) {
+  void Print( Stage& stage ) {
     // Make sure we don't waste perf by outputting wasteful
-    auto now = clock::now();
-    auto millis = std::chrono::duration_cast < std::chrono::milliseconds >( now - stage.lastPrint ).count();
+    auto now    = clock::now();
+    auto millis = std::chrono::duration_cast< std::chrono::milliseconds >(
+                      now - stage.lastPrint )
+                      .count();
     if( millis < 100 && stage.value != stage.max ) {
       return;
     }
     stage.lastPrint = now;
 
-    std::ostream &os = std::cerr;
+    std::ostream& os = std::cerr;
 
     size_t maxLabelLen = 0;
-    for( auto &s : mStages ) {
+    for( auto& s : mStages ) {
       maxLabelLen = std::max( maxLabelLen, s.second.label.size() );
     }
 
