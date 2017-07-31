@@ -44,7 +44,9 @@ using SearchResultsWriter =
 template <>
 class QueueItemInfo< SequenceList > {
 public:
-  static size_t Count( const SequenceList& list ) { return list.size(); }
+  static size_t Count( const SequenceList& list ) {
+    return list.size();
+  }
 };
 
 class QueryDatabaseSearcherWorker {

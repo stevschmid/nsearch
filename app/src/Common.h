@@ -53,7 +53,6 @@ static std::string ValueWithUnit( float value, UnitType unit ) {
   return ss.str();
 }
 
-
 class ProgressOutput {
   using clock = std::chrono::steady_clock;
 

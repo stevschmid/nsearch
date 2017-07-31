@@ -13,7 +13,9 @@
 template <>
 class QueueItemInfo< SequenceList > {
 public:
-  static size_t Count( const SequenceList& list ) { return list.size(); }
+  static size_t Count( const SequenceList& list ) {
+    return list.size();
+  }
 };
 
 class MergedReadWriterWorker {
@@ -37,7 +39,9 @@ using PairedReads = std::pair< SequenceList, SequenceList >;
 template <>
 class QueueItemInfo< PairedReads > {
 public:
-  static size_t Count( const PairedReads& list ) { return list.first.size(); }
+  static size_t Count( const PairedReads& list ) {
+    return list.first.size();
+  }
 };
 
 class ReadMergerWorker {
