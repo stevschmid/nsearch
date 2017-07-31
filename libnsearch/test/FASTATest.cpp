@@ -4,22 +4,22 @@
 
 #include <sstream>
 
-TEST_CASE( "FASTA" )  {
+TEST_CASE( "FASTA" ) {
   SECTION( "Reader" ) {
     std::string content = ">Seq1\n"
-      "TGGCG\n"
-      "ATTGG\n"
-      "\n"
-      ">Seq2\n"
-      "TTTTT\n"
-      "CAGTC\n"
-      ">Seq3\n"
-      "actgc\n";
+                          "TGGCG\n"
+                          "ATTGG\n"
+                          "\n"
+                          ">Seq2\n"
+                          "TTTTT\n"
+                          "CAGTC\n"
+                          ">Seq3\n"
+                          "actgc\n";
 
     std::istringstream iss( content );
 
     FASTA::Reader reader( iss );
-    Sequence sequence;
+    Sequence      sequence;
 
     reader >> sequence;
     REQUIRE( sequence.identifier == "Seq1" );

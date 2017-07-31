@@ -1,7 +1,7 @@
 #pragma once
 
-#include "nsearch/Sequence.h"
 #include "nsearch/Alignment/Cigar.h"
+#include "nsearch/Sequence.h"
 
 #include <deque>
 #include <vector>
@@ -12,13 +12,13 @@ class BaseSearch {
 public:
   using Hit = struct {
     Sequence target;
-    Cigar alignment;
+    Cigar    alignment;
   };
   using HitList = std::deque< Hit >;
 
-  BaseSearch( const Database &db ) : mDB( db ) { }
-  virtual HitList Query( const Sequence &query ) = 0;
+  BaseSearch( const Database& db ) : mDB( db ) {}
+  virtual HitList Query( const Sequence& query ) = 0;
 
 private:
-  const Database &mDB;
+  const Database& mDB;
 };

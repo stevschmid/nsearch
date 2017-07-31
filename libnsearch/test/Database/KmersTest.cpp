@@ -4,7 +4,7 @@
 
 #include <vector>
 
-Kmer Kmerify( const std::string &a ) {
+Kmer Kmerify( const std::string& a ) {
   Kmer kmer = 0;
   size_t counter = 0;
   for( auto &ch : a ) {
@@ -21,35 +21,29 @@ Kmer Kmerify( const std::string &a ) {
   return kmer;
 }
 
-TEST_CASE( "Kmers" )  {
-  Sequence seq;
+TEST_CASE( "Kmers" ) {
+  Sequence            seq;
   std::vector< Kmer > out;
 
   SECTION( "Default" ) {
     seq = "TAGAGAGAG";
     Kmers k( seq, 4 );
-    k.ForEach( [&]( Kmer kmer, size_t ) {
-      out.push_back( kmer );
-    });
+    k.ForEach( [&]( Kmer kmer, size_t ) { out.push_back( kmer ); } );
   }
 
   SECTION( "Kmer length exceeds sequence" ) {
     seq = "ATG";
     Kmers k( seq, 4 );
-    k.ForEach( [&]( Kmer kmer, size_t ) {
-      out.push_back( kmer );
-    });
+    k.ForEach( [&]( Kmer kmer, size_t ) { out.push_back( kmer ); } );
 
     REQUIRE( out.size() == 1 );
     REQUIRE( out.front() == Kmerify( "ATG" ) );
   }
 
-  SECTION( "Ambiguous Nucleotides") {
+  SECTION( "Ambiguous Nucleotides" ) {
     seq = "ATNCGTAT";
     Kmers k( seq, 3 );
-    k.ForEach( [&]( Kmer kmer, size_t ) {
-      out.push_back( kmer );
-    });
+    k.ForEach( [&]( Kmer kmer, size_t ) { out.push_back( kmer ); } );
 
     REQUIRE( out.size() == 3 );
     REQUIRE( out.front() == Kmerify( "CGT" ) );
@@ -57,9 +51,7 @@ TEST_CASE( "Kmers" )  {
     seq = "ATGNTTA";
     Kmers k2( seq, 3 );
     out.clear();
-    k2.ForEach( [&]( Kmer kmer, size_t ) {
-      out.push_back( kmer );
-    });
+    k2.ForEach( [&]( Kmer kmer, size_t ) { out.push_back( kmer ); } );
 
     REQUIRE( out.size() == 2 );
     REQUIRE( out.front() == Kmerify( "ATG" ) );

@@ -1,22 +1,18 @@
 #pragma once
 
-#include "TextReader.h"
 #include "Sequence.h"
+#include "TextReader.h"
 #include "Utils.h"
 
 #include <memory>
 
 class SequenceReader {
 public:
-  SequenceReader( const std::string &pathToFile )
-    : mTextReader( new TextFileReader( pathToFile ) )
-  {
-  }
+  SequenceReader( const std::string& pathToFile )
+      : mTextReader( new TextFileReader( pathToFile ) ) {}
 
-  SequenceReader( std::istream &is )
-    : mTextReader( new TextStreamReader( is ) )
-  {
-  }
+  SequenceReader( std::istream& is )
+      : mTextReader( new TextStreamReader( is ) ) {}
 
   bool EndOfFile() const {
     return mTextReader->EndOfFile();
@@ -30,9 +26,9 @@ public:
     return mTextReader->NumBytesTotal();
   }
 
-  virtual void operator>>( Sequence &seq ) = 0;
+  virtual void operator>>( Sequence& seq ) = 0;
 
-  void Read( SequenceList &out, size_t count ) {
+  void Read( SequenceList& out, size_t count ) {
     Sequence seq;
 
     for( size_t i = 0; i < count && !EndOfFile(); i++ ) {

@@ -2,7 +2,7 @@
 
 #include <nsearch/Sequence.h>
 
-TEST_CASE( "Sequence" )  {
+TEST_CASE( "Sequence" ) {
   Sequence seq( "Id", "ACCT", "JJ::" );
 
   REQUIRE( seq.Length() == 4 );
@@ -23,7 +23,7 @@ TEST_CASE( "Sequence" )  {
   }
 
   SECTION( "operator +" ) {
-    Sequence m = seq + Sequence( "Id2", "GCTT",  "BBAJ" );
+    Sequence m = seq + Sequence( "Id2", "GCTT", "BBAJ" );
 
     REQUIRE( m.identifier == "Id" );
     REQUIRE( m.sequence == "ACCTGCTT" );
@@ -36,13 +36,13 @@ TEST_CASE( "Sequence" )  {
   }
 
   SECTION( "operator == and !=" ) {
-    REQUIRE( Sequence("ATCG") == Sequence("ATCG") );
-    REQUIRE( Sequence("ATTG") != Sequence("ATCG") );
+    REQUIRE( Sequence( "ATCG" ) == Sequence( "ATCG" ) );
+    REQUIRE( Sequence( "ATTG" ) != Sequence( "ATCG" ) );
 
-    REQUIRE( Sequence("NNTT") == Sequence("CGTT") );
-    REQUIRE( Sequence("AUUT") == Sequence("ATTT") );
+    REQUIRE( Sequence( "NNTT" ) == Sequence( "CGTT" ) );
+    REQUIRE( Sequence( "AUUT" ) == Sequence( "ATTT" ) );
 
-    REQUIRE( Sequence("ATT") != Sequence("ATTG") );
+    REQUIRE( Sequence( "ATT" ) != Sequence( "ATTG" ) );
   }
 
   SECTION( "complement" ) {

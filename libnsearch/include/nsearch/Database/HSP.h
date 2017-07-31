@@ -11,12 +11,11 @@ class HSP {
 public:
   size_t a1, a2;
   size_t b1, b2;
-  int score;
-  Cigar cigar;
+  int    score;
+  Cigar  cigar;
 
   HSP( size_t a1, size_t a2, size_t b1, size_t b2, int score = 0 )
-    : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 ), score( score )
-  {
+      : a1( a1 ), a2( a2 ), b1( b1 ), b2( b2 ), score( score ) {
     assert( a2 >= a1 && b2 >= b1 );
   }
 
@@ -28,24 +27,22 @@ public:
     return score;
   }
 
-  bool IsOverlapping( const HSP &other ) const {
-    return
-      ( a1 <= other.a2 && other.a1 <= a2 ) // overlap in A direction
-      ||
-      ( b1 <= other.b2 && other.b1 <= b2 ); // overlap in B direction
+  bool IsOverlapping( const HSP& other ) const {
+    return ( a1 <= other.a2 && other.a1 <= a2 )     // overlap in A direction
+           || ( b1 <= other.b2 && other.b1 <= b2 ); // overlap in B direction
   }
 
-  size_t DistanceTo( const HSP &other ) const {
+  size_t DistanceTo( const HSP& other ) const {
     size_t dx = ( a1 > other.a2 ? a1 - other.a2 : other.a1 - a2 );
-    dx = dx > 0 ? dx - 1 : 0;
+    dx        = dx > 0 ? dx - 1 : 0;
 
     size_t dy = ( b1 > other.b2 ? b1 - other.b2 : other.b1 - b2 );
-    dy = dy > 0 ? dy - 1 : 0;
+    dy        = dy > 0 ? dy - 1 : 0;
 
-    return sqrt( dx*dx + dy*dy );
+    return sqrt( dx * dx + dy * dy );
   }
 
-  bool operator<( const HSP &other ) const {
+  bool operator<( const HSP& other ) const {
     return Score() < other.Score();
   }
 };

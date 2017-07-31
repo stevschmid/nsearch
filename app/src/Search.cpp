@@ -17,10 +17,9 @@ template <>
 class QueueItemInfo< QueryWithHitsList > {
 public:
   static size_t Count( const QueryWithHitsList& list ) {
-    return std::accumulate( list.begin(), list.end(), 0,
-                            []( int sum, const QueryWithHits& q ) {
-                              return sum + q.second.size();
-                            } );
+    return std::accumulate(
+      list.begin(), list.end(), 0,
+      []( int sum, const QueryWithHits& q ) { return sum + q.second.size(); } );
   }
 };
 
@@ -38,8 +37,8 @@ private:
   Alnout::Writer mWriter;
 };
 using SearchResultsWriter =
-    WorkerQueue< SearchResultsWriterWorker, QueryWithHitsList,
-                 const std::string& >;
+  WorkerQueue< SearchResultsWriterWorker, QueryWithHitsList,
+               const std::string& >;
 
 template <>
 class QueueItemInfo< SequenceList > {
@@ -78,8 +77,8 @@ private:
   SearchResultsWriter& mWriter;
 };
 using QueryDatabaseSearcher =
-    WorkerQueue< QueryDatabaseSearcherWorker, SequenceList,
-                 SearchResultsWriter*, const Database*, float, int, int >;
+  WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter*,
+               const Database*, float, int, int >;
 
 bool Search( const std::string& queryPath, const std::string& databasePath,
              const std::string& outputPath, float minIdentity, int maxAccepts,
@@ -122,12 +121,12 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
     switch( type ) {
     case Database::ProgressType::StatsCollection:
       progress.Activate( ProgressType::StatsDB )
-          .Set( ProgressType::StatsDB, num, total );
+        .Set( ProgressType::StatsDB, num, total );
       break;
 
     case Database::ProgressType::Indexing:
       progress.Activate( ProgressType::IndexDB )
-          .Set( ProgressType::IndexDB, num, total );
+        .Set( ProgressType::IndexDB, num, total );
       break;
 
     default:

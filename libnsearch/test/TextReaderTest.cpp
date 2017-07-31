@@ -4,16 +4,19 @@
 
 #include <sstream>
 
-TEST_CASE( "TextReader" )  {
+TEST_CASE( "TextReader" ) {
 
-#if defined(__APPLE__) || defined(__unix__)
+#if defined( __APPLE__ ) || defined( __unix__ )
   SECTION( "File" ) {
-    const char filename[] = "/tmp/textreadertest.tmp";
+    const char    filename[] = "/tmp/textreadertest.tmp";
     std::ofstream file( filename );
-    file << "Hello" << std::endl << std::endl << "Happy " << std::endl << "World";
+    file << "Hello" << std::endl
+         << std::endl
+         << "Happy " << std::endl
+         << "World";
     file.close();
 
-    std::string line;
+    std::string    line;
     TextFileReader reader( filename );
 
     reader >> line;
@@ -33,13 +36,12 @@ TEST_CASE( "TextReader" )  {
       REQUIRE( reader.EndOfFile() == true );
     }
   }
-
 #endif
 
   SECTION( "Stream" ) {
     std::istringstream iss( "Hello\nWhat \n\nIs up\n" );
 
-    std::string line;
+    std::string      line;
     TextStreamReader reader( iss );
 
     reader >> line;

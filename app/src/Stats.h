@@ -26,7 +26,7 @@ public:
   double ElapsedMillis() const {
     auto diff = mTimerStop - mTimerStart;
     auto elapsedMs =
-        std::chrono::duration_cast< std::chrono::milliseconds >( diff ).count();
+      std::chrono::duration_cast< std::chrono::milliseconds >( diff ).count();
     return elapsedMs;
   }
 

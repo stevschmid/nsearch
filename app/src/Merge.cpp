@@ -32,7 +32,7 @@ private:
   FASTQ::Writer mWriter;
 };
 using MergedReadWriter =
-    WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
+  WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
 
 using PairedReads = std::pair< SequenceList, SequenceList >;
 
@@ -81,7 +81,7 @@ private:
   PairedEnd::Merger mMerger;
 };
 using ReadMerger =
-    WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
+  WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
 
 bool Merge( const std::string& fwdPath, const std::string& revPath,
             const std::string& mergedPath ) {
@@ -113,7 +113,7 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
   while( !reader.EndOfFile() ) {
     reader.Read( fwdReads, revReads, numReadsPerWorkItem );
     auto pair = std::pair< SequenceList, SequenceList >(
-        std::move( fwdReads ), std::move( revReads ) );
+      std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
     progress.Set( ProgressType::ReadFile, reader.NumBytesRead(),
                   reader.NumBytesTotal() );

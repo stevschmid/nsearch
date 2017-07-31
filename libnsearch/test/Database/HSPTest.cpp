@@ -4,7 +4,7 @@
 
 #include <vector>
 
-TEST_CASE( "HSP" )  {
+TEST_CASE( "HSP" ) {
   SECTION( "Basic methods" ) {
     HSP hsp( 5, 6, 11, 15, -62 );
 
@@ -43,7 +43,7 @@ TEST_CASE( "HSP" )  {
       HSP hsp2( 5, 10, 30, 35 );
       // x: 2 -> 5 = 2 empty cells
       // y: 26 -> 30 = 3 empty cells
-      REQUIRE( hsp1.DistanceTo( hsp2 ) == ( size_t )sqrt( 2 * 2 + 3 * 3 )  );
+      REQUIRE( hsp1.DistanceTo( hsp2 ) == ( size_t ) sqrt( 2 * 2 + 3 * 3 ) );
       REQUIRE( hsp1.DistanceTo( hsp2 ) == hsp2.DistanceTo( hsp1 ) );
     }
   }

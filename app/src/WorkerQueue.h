@@ -21,14 +21,14 @@ public:
       : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ),
         mTotalProcessed( 0 ) {
     numWorkers =
-        numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
+      numWorkers <= 0 ? std::thread::hardware_concurrency() : numWorkers;
 
     for( int i = 0; i < numWorkers; i++ ) {
       mWorkers.push_back( std::thread(
-          [this]( Args&&... args ) {
-            this->WorkerLoop( std::forward< Args >( args )... );
-          },
-          args... ) );
+        [this]( Args&&... args ) {
+          this->WorkerLoop( std::forward< Args >( args )... );
+        },
+        args... ) );
     }
   }
 

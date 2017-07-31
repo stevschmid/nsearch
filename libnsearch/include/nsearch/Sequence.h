@@ -1,35 +1,37 @@
 #pragma once
 
-#include <deque>
-#include <string>
-#include <iostream>
 #include <cassert>
+#include <deque>
+#include <iostream>
+#include <string>
 
 /**
  *
- * DNA Sequence. Allowed nucleotides: http://www.bioinformatics.org/sms/iupac.html
+ * DNA Sequence. Allowed nucleotides:
+ * http://www.bioinformatics.org/sms/iupac.html
  *
  */
 class Sequence {
 public:
   Sequence();
-  Sequence( const Sequence &sequence );
-  Sequence( Sequence &&sequence );
-  Sequence &operator=( const Sequence& other );
-  Sequence( const std::string &sequence );
-  Sequence( const char *sequence );
-  Sequence( const std::string &identifier, const std::string &sequence );
-  Sequence( const std::string &identifier, const std::string &sequence, const std::string &quality );
+  Sequence( const Sequence& sequence );
+  Sequence( Sequence&& sequence );
+  Sequence& operator=( const Sequence& other );
+  Sequence( const std::string& sequence );
+  Sequence( const char* sequence );
+  Sequence( const std::string& identifier, const std::string& sequence );
+  Sequence( const std::string& identifier, const std::string& sequence,
+            const std::string& quality );
 
   size_t Length() const;
 
   Sequence Subsequence( size_t pos, size_t len = std::string::npos ) const;
 
-  Sequence operator+( const Sequence &other ) const;
+  Sequence operator+( const Sequence& other ) const;
   char& operator[]( size_t index );
   char operator[]( size_t index ) const;
-  bool operator==( const Sequence &other ) const;
-  bool operator!=( const Sequence &other ) const;
+  bool operator==( const Sequence& other ) const;
+  bool operator!=( const Sequence& other ) const;
 
   Sequence Reverse() const;
   Sequence Complement() const; // complements only ATCG
@@ -40,7 +42,7 @@ public:
   std::string quality;
 };
 
-static std::ostream &operator<<( std::ostream &os, const Sequence &seq ) {
+static std::ostream& operator<<( std::ostream& os, const Sequence& seq ) {
   if( !seq.identifier.empty() )
     os << ">" << seq.identifier << std::endl;
   if( !seq.sequence.empty() )

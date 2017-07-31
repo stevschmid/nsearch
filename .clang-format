@@ -9,6 +9,7 @@ AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: 'false'
 AlwaysBreakTemplateDeclarations: 'true'
+ContinuationIndentWidth: 2
 Cpp11BracedListStyle: 'false'
 Language: Cpp
 PointerAlignment: Left

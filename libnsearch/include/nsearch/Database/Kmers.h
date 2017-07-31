@@ -10,17 +10,12 @@ inline size_t BitIndexForPosition( const int pos ) {
 
 inline int8_t MapNucleotide( const char base ) {
   switch( base ) {
-    case 'A':
-      return 0b00;
-    case 'C':
-      return 0b01;
+    case 'A': return 0b00;
+    case 'C': return 0b01;
     case 'U':
-    case 'T':
-      return 0b10;
-    case 'G':
-      return 0b11;
-    default:
-      return -1;
+    case 'T': return 0b10;
+    case 'G': return 0b11;
+    default: return -1;
   }
 }
 
@@ -28,18 +23,16 @@ class Kmers {
 public:
   using Callback = const std::function< void( Kmer, size_t ) >;
 
-  Kmers( const Sequence &ref, size_t length )
-    : mRef( ref )
-  {
+  Kmers( const Sequence& ref, size_t length ) : mRef( ref ) {
     mLength = std::min( { length, mRef.Length(), sizeof( Kmer ) * 4 } );
   }
 
-  void ForEach( const Callback &block ) const {
-    const char *ptr = mRef.sequence.data();
+  void ForEach( const Callback& block ) const {
+    const char* ptr = mRef.sequence.data();
 
     // First kmer
-    size_t lastAmbigIndex = ( size_t )-1;
-    Kmer kmer = 0;
+    size_t lastAmbigIndex = ( size_t ) -1;
+    Kmer   kmer           = 0;
     for( size_t k = 0; k < mLength; k++ ) {
       int8_t val = MapNucleotide( *ptr );
       if( val < 0 ) {
@@ -50,7 +43,7 @@ public:
       ptr++;
     }
 
-    if( lastAmbigIndex == ( size_t )-1 ) {
+    if( lastAmbigIndex == ( size_t ) -1 ) {
       block( kmer, 0 );
     } else {
       block( 0, 0 );
@@ -67,7 +60,7 @@ public:
         kmer |= ( val << BitIndexForPosition( mLength - 1 ) );
       }
 
-      if( lastAmbigIndex == ( size_t )-1 || frame > lastAmbigIndex ) {
+      if( lastAmbigIndex == ( size_t ) -1 || frame > lastAmbigIndex ) {
         block( kmer, frame );
       } else {
         block( 0, frame );
@@ -80,6 +73,6 @@ public:
   }
 
 private:
-  size_t mLength;
-  const Sequence &mRef;
+  size_t          mLength;
+  const Sequence& mRef;
 };

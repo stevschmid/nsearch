@@ -1,22 +1,22 @@
 #pragma once
 
-#include "Common.h"
 #include "Cigar.h"
+#include "Common.h"
 
+#include <cassert>
 #include <iostream>
 #include <vector>
-#include <cassert>
 
 typedef struct BandedAlignParams {
   size_t bandwidth = 16;
 
-  int matchScore = 2;
+  int matchScore    = 2;
   int mismatchScore = -4;
 
-  int interiorGapOpenScore = -20;
+  int interiorGapOpenScore   = -20;
   int interiorGapExtendScore = -2;
 
-  int terminalGapOpenScore = -2;
+  int terminalGapOpenScore   = -2;
   int terminalGapExtendScore = -1;
 } BandedAlignParams;
 
@@ -24,14 +24,13 @@ class BandedAlign {
 private:
   class Gap {
   private:
-    int mScore;
+    int  mScore;
     bool mIsTerminal;
 
-    const BandedAlignParams &mParams;
+    const BandedAlignParams& mParams;
 
   public:
-    Gap( const BandedAlignParams &params ) : mParams( params )
-    {
+    Gap( const BandedAlignParams& params ) : mParams( params ) {
       Reset();
     }
 
@@ -39,14 +38,17 @@ private:
     void OpenOrExtend( int score, bool terminal, size_t length = 1 ) {
       int newGapScore = score;
       if( length > 0 ) {
-        newGapScore += ( terminal ? mParams.terminalGapOpenScore : mParams.interiorGapOpenScore )
-          + length * ( terminal ? mParams.terminalGapExtendScore : mParams.interiorGapExtendScore );
+        newGapScore += ( terminal ? mParams.terminalGapOpenScore
+                                  : mParams.interiorGapOpenScore ) +
+                       length * ( terminal ? mParams.terminalGapExtendScore
+                                           : mParams.interiorGapExtendScore );
       }
 
-      mScore += length * ( mIsTerminal ? mParams.terminalGapExtendScore : mParams.interiorGapExtendScore );
+      mScore += length * ( mIsTerminal ? mParams.terminalGapExtendScore
+                                       : mParams.interiorGapExtendScore );
 
       if( newGapScore > mScore ) {
-        mScore = newGapScore;
+        mScore      = newGapScore;
         mIsTerminal = terminal;
       }
     }
@@ -60,44 +62,39 @@ private:
     }
 
     void Reset() {
-      mScore = MININT;
+      mScore      = MININT;
       mIsTerminal = false;
     }
   };
 
   using Scores = std::vector< int >;
-  using Gaps = std::vector< Gap >;
+  using Gaps   = std::vector< Gap >;
 
   void PrintRow( size_t width ) {
     for( int i = 0; i < width; i++ ) {
       int score = mScores[ i ];
       if( score <= MININT ) {
         printf( "%5c", 'X' );
-      }  else {
+      } else {
         printf( "%5d", score );
       }
     }
-    printf("\n");
+    printf( "\n" );
   }
 
-  Scores mScores;
-  Gaps mVerticalGaps;
-  CigarOps mOperations;
+  Scores            mScores;
+  Gaps              mVerticalGaps;
+  CigarOps          mOperations;
   BandedAlignParams mParams;
 
 public:
   BandedAlign( const BandedAlignParams& params = BandedAlignParams() )
-    : mParams( params )
-  {
+      : mParams( params ) {}
 
-  }
-
-  int Align( const Sequence &A, const Sequence &B,
-      Cigar *cigar = NULL,
-      AlignmentDirection dir = AlignmentDirection::fwd,
-      size_t startA = 0, size_t startB = 0,
-      size_t endA = -1, size_t endB = -1 )
-  {
+  int Align( const Sequence& A, const Sequence& B, Cigar* cigar = NULL,
+             AlignmentDirection dir = AlignmentDirection::fwd,
+             size_t startA = 0, size_t startB = 0, size_t endA = -1,
+             size_t endB = -1 ) {
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
     // A will be on the X axis (width of matrix)
@@ -107,20 +104,24 @@ public:
     size_t lenA = A.Length();
     size_t lenB = B.Length();
 
-    if( endA == ( size_t )-1 ) {
+    if( endA == ( size_t ) -1 ) {
       endA = ( dir == AlignmentDirection::fwd ? lenA : 0 );
     }
 
-    if( endB == ( size_t )-1 ) {
+    if( endB == ( size_t ) -1 ) {
       endB = ( dir == AlignmentDirection::fwd ? lenB : 0 );
     }
 
-    if( startA > lenA ) startA = lenA;
-    if( startB > lenB ) startB = lenB;
-    if( endA > lenA ) endA = lenA;
-    if( endB > lenB ) endB = lenB;
+    if( startA > lenA )
+      startA = lenA;
+    if( startB > lenB )
+      startB = lenB;
+    if( endA > lenA )
+      endA = lenA;
+    if( endB > lenB )
+      endB = lenB;
 
-    width = ( endA > startA ? endA - startA : startA - endA ) + 1;
+    width  = ( endA > startA ? endA - startA : startA - endA ) + 1;
     height = ( endB > startB ? endB - startB : startB - endB ) + 1;
 
     // Make sure we have enough cells
@@ -158,7 +159,7 @@ public:
         break;
 
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
-      mScores[ x ] = horizontalGap.Score();
+      mScores[ x ]     = horizontalGap.Score();
       mOperations[ x ] = CigarOp::INSERTION;
       mVerticalGaps[ x ].Reset();
     }
@@ -170,15 +171,17 @@ public:
 
     // Row by row...
     size_t center = 1;
-    bool hitEnd = false;
+    bool   hitEnd = false;
     for( y = 1; y < height && !hitEnd; y++ ) {
       int score = MININT;
 
       // Calculate band bounds
-      size_t leftBound = std::min( center > bw ? ( center - bw ) : 0, width - 1 );
+      size_t leftBound =
+        std::min( center > bw ? ( center - bw ) : 0, width - 1 );
       size_t rightBound = std::min( center + bw, width - 1 );
 
-      /* // If we are in the last row, make sure we calculate up to the last cell (for traceback) */
+      /* // If we are in the last row, make sure we calculate up to the last
+       * cell (for traceback) */
       /* if( y == height - 1 ) { */
       /*   rightBound = width - 1; */
       /* } */
@@ -186,9 +189,9 @@ public:
       // Set diagonal score for first calculated cell in row
       int diagScore = MININT;
       if( leftBound > 0 ) {
-        diagScore = mScores[ leftBound - 1 ];
+        diagScore                = mScores[ leftBound - 1 ];
         mScores[ leftBound - 1 ] = MININT;
-        mVerticalGaps[ leftBound - 1].Reset();
+        mVerticalGaps[ leftBound - 1 ].Reset();
       }
 
       // Calculate row within the band bounds
@@ -196,13 +199,16 @@ public:
       for( x = leftBound; x <= rightBound; x++ ) {
         // Calculate diagonal score
         size_t aIdx = 0, bIdx = 0;
-        bool match;
+        bool   match;
         if( x > 0 ) {
-          aIdx = ( dir == AlignmentDirection::fwd ) ? startA + x - 1 : startA - x;
-          bIdx = ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
+          aIdx =
+            ( dir == AlignmentDirection::fwd ) ? startA + x - 1 : startA - x;
+          bIdx =
+            ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
           match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
-          score = diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
+          score =
+            diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
         }
 
         // Select highest score
@@ -212,7 +218,7 @@ public:
         if( score < horizontalGap.Score() )
           score = horizontalGap.Score();
 
-        Gap &verticalGap = mVerticalGaps[ x ];
+        Gap& verticalGap = mVerticalGaps[ x ];
         if( score < verticalGap.Score() )
           score = verticalGap.Score();
 
@@ -243,7 +249,7 @@ public:
 
       if( rightBound + 1 < width ) {
         mScores[ rightBound + 1 ] = MININT;
-        mVerticalGaps[ rightBound + 1].Reset();
+        mVerticalGaps[ rightBound + 1 ].Reset();
       }
 
       hitEnd = ( rightBound == leftBound );
@@ -266,23 +272,23 @@ public:
         cigar->Add( op );
 
         switch( op ) {
-          case CigarOp::INSERTION:
-            bx--;
-            break;
-          case CigarOp::DELETION:
-            by--;
-            break;
-          case CigarOp::MATCH:
-            bx--;
-            by--;
-            break;
-          case CigarOp::MISMATCH:
-            bx--;
-            by--;
-            break;
-          default:
-            assert( true );
-            break;
+        case CigarOp::INSERTION:
+          bx--;
+          break;
+        case CigarOp::DELETION:
+          by--;
+          break;
+        case CigarOp::MATCH:
+          bx--;
+          by--;
+          break;
+        case CigarOp::MISMATCH:
+          bx--;
+          by--;
+          break;
+        default:
+          assert( true );
+          break;
         }
       }
 
@@ -293,8 +299,8 @@ public:
     int score = mScores[ x - 1 ];
     if( x == width ) {
       // We reached the end of A, emulate going down on B (vertical gaps)
-      size_t remainingB = height - y;
-      Gap &verticalGap = mVerticalGaps[ x - 1 ];
+      size_t remainingB  = height - y;
+      Gap&   verticalGap = mVerticalGaps[ x - 1 ];
       verticalGap.OpenOrExtend( score, verticalGap.IsTerminal(), remainingB );
       score = verticalGap.Score();
 
@@ -305,7 +311,8 @@ public:
     } else if( y == height ) {
       // We reached the end of B, emulate going down on A (horizontal gaps)
       size_t remainingA = width - x;
-      horizontalGap.OpenOrExtend( score, horizontalGap.IsTerminal(), remainingA );
+      horizontalGap.OpenOrExtend( score, horizontalGap.IsTerminal(),
+                                  remainingA );
       score = horizontalGap.Score();
 
       // Add tails to backtrack info

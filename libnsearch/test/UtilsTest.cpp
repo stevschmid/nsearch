@@ -2,7 +2,7 @@
 
 #include <nsearch/Utils.h>
 
-TEST_CASE( "Utils" )  {
+TEST_CASE( "Utils" ) {
   SECTION( "IsBlank" ) {
     REQUIRE( IsBlank( "" ) == true );
     REQUIRE( IsBlank( " " ) == true );

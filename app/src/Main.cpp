@@ -1,4 +1,4 @@
-#include <docopt.h>
+/* #include <docopt.h> */
 #include <functional>
 #include <iostream>
 #include <sstream>
@@ -14,8 +14,7 @@
 
 Stats gStats;
 
-static const char USAGE[] =
-    R"(
+static const char USAGE[] = R"(
   Process and search sequences.
 
   Usage:
@@ -46,47 +45,47 @@ void PrintSummaryLine( float value, const std::string& line, float total = 0.0,
 }
 
 int main( int argc, const char** argv ) {
-  std::map< std::string, docopt::value > args =
-      docopt::docopt( USAGE, { argv + 1, argv + argc },
-                      true, // help
-                      APP_NAME );
+  /* std::map< std::string, docopt::value > args = */
+  /*     docopt::docopt( USAGE, { argv + 1, argv + argc }, */
+  /*                     true, // help */
+  /*                     "LUL" ); */
 
-  // Print header
-  std::cout << APP_NAME << " " << APP_VERSION << " (built on "
-            << BUILD_TIMESTAMP << ")" << std::endl;
+  /* // Print header */
+  /* /1* std::cout << APP_NAME << " " << APP_VERSION << " (built on " *1/ */
+  /* /1*           << BUILD_TIMESTAMP << ")" << std::endl; *1/ */
 
-  // Search
-  if( args[ "search" ].asBool() ) {
-    gStats.StartTimer();
+  /* // Search */
+  /* if( args[ "search" ].asBool() ) { */
+  /*   gStats.StartTimer(); */
 
-    Search( args[ "--query" ].asString(), args[ "--database" ].asString(),
-            args[ "--alnout" ].asString(),
-            std::stof( args[ "--minidentity" ].asString() ),
-            args[ "--maxaccepts" ].asLong(), args[ "--maxrejects" ].asLong() );
+  /*   Search( args[ "--query" ].asString(), args[ "--database" ].asString(), */
+  /*           args[ "--alnout" ].asString(), */
+  /*           std::stof( args[ "--minidentity" ].asString() ), */
+  /*           args[ "--maxaccepts" ].asLong(), args[ "--maxrejects" ].asLong() ); */
 
-    gStats.StopTimer();
+  /*   gStats.StopTimer(); */
 
-    PrintSummaryHeader();
-    PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
-  }
+  /*   PrintSummaryHeader(); */
+  /*   PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" ); */
+  /* } */
 
-  // Merge
-  if( args[ "merge" ].asBool() ) {
-    gStats.StartTimer();
+  /* // Merge */
+  /* if( args[ "merge" ].asBool() ) { */
+  /*   gStats.StartTimer(); */
 
-    Merge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(),
-           args[ "--out" ].asString() );
+  /*   Merge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(), */
+  /*          args[ "--out" ].asString() ); */
 
-    gStats.StopTimer();
+  /*   gStats.StopTimer(); */
 
-    PrintSummaryHeader();
-    PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
-    PrintSummaryLine( gStats.numProcessed / gStats.ElapsedMillis(),
-                      "Processed/ms" );
-    PrintSummaryLine( gStats.numProcessed, "Pairs" );
-    PrintSummaryLine( gStats.numMerged, "Merged", gStats.numProcessed );
-    PrintSummaryLine( gStats.MeanMergedLength(), "Mean merged length" );
-  }
+  /*   PrintSummaryHeader(); */
+  /*   PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" ); */
+  /*   PrintSummaryLine( gStats.numProcessed / gStats.ElapsedMillis(), */
+  /*                     "Processed/ms" ); */
+  /*   PrintSummaryLine( gStats.numProcessed, "Pairs" ); */
+  /*   PrintSummaryLine( gStats.numMerged, "Merged", gStats.numProcessed ); */
+  /*   PrintSummaryLine( gStats.MeanMergedLength(), "Mean merged length" ); */
+  /* } */
 
   return 0;
 }

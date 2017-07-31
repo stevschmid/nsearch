@@ -1,17 +1,15 @@
 #include "nsearch/TextReader.h"
 #include "nsearch/Utils.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 /*
  * TextStreamReader
  */
-TextStreamReader::TextStreamReader( std::istream &is )
-  : mInput( is )
-{
+TextStreamReader::TextStreamReader( std::istream& is ) : mInput( is ) {
   mInput.seekg( 0, mInput.end );
   mTotalBytes = mInput.tellg();
   mInput.seekg( 0, mInput.beg );
@@ -30,7 +28,7 @@ bool TextStreamReader::EndOfFile() const {
   return !mInput || mInput.peek() == EOF;
 }
 
-void TextStreamReader::operator>>( std::string &str ) {
+void TextStreamReader::operator>>( std::string& str ) {
   do {
     getline( mInput, str );
   } while( !EndOfFile() && IsBlank( str ) );
@@ -41,12 +39,13 @@ void TextStreamReader::operator>>( std::string &str ) {
  */
 void TextFileReader::NextBuffer() {
   mBufferSize = read( mFd, mBuffer, mTotalBufferSize );
-  mBufferPos = 0;
+  mBufferPos  = 0;
 }
 
-TextFileReader::TextFileReader( const std::string &fileName, size_t totalBufferSize )
-  : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ), mBuffer( NULL )
-{
+TextFileReader::TextFileReader( const std::string& fileName,
+                                size_t             totalBufferSize )
+    : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ),
+      mBuffer( NULL ) {
   mFd = open( fileName.c_str(), O_RDONLY ); // orly?
   if( mFd != -1 ) {
     mBuffer = new char[ totalBufferSize ];
@@ -64,18 +63,19 @@ TextFileReader::~TextFileReader() {
   close( mFd );
 }
 
-void TextFileReader::operator>>( std::string &str ) {
+void TextFileReader::operator>>( std::string& str ) {
   str.clear();
 ReadLine:
   while( !EndOfFile() ) {
-    char *pos = ( char* )memchr( mBuffer + mBufferPos, '\n', mBufferSize - mBufferPos );
+    char* pos =
+      ( char* ) memchr( mBuffer + mBufferPos, '\n', mBufferSize - mBufferPos );
 
     if( pos == NULL ) {
       str += std::string( mBuffer + mBufferPos, mBufferSize - mBufferPos );
       NextBuffer();
     } else {
       size_t numBytes = pos - ( mBuffer + mBufferPos );
-      str += std::string( mBuffer + mBufferPos,  numBytes );
+      str += std::string( mBuffer + mBufferPos, numBytes );
 
       mBufferPos += numBytes + 1; // skip '\n'
       if( mBufferPos >= mBufferSize )
