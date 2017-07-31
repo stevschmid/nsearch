@@ -12,3 +12,4 @@ Tests and so on for Kmers and INVALID_KMER (0, AAA..)
 
 Tests for DB in general
 Test ambig nucs in sequences and DB search (ignore kmer=0, AAA...)
+Consistent code style 
