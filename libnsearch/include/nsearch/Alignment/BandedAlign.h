@@ -35,7 +35,8 @@ private:
     }
 
     // Open new or extend existing
-    void OpenOrExtend( int score, bool terminal, size_t length = 1 ) {
+    void OpenOrExtend( const int score, const bool terminal,
+                       const size_t length = 1 ) {
       int newGapScore = score;
       if( length > 0 ) {
         newGapScore += ( terminal ? mParams.terminalGapOpenScore
@@ -70,7 +71,7 @@ private:
   using Scores = std::vector< int >;
   using Gaps   = std::vector< Gap >;
 
-  void PrintRow( size_t width ) {
+  void PrintRow( const size_t width ) {
     for( int i = 0; i < width; i++ ) {
       int score = mScores[ i ];
       if( score <= MININT ) {
@@ -92,9 +93,9 @@ public:
       : mParams( params ) {}
 
   int Align( const Sequence& A, const Sequence& B, Cigar* cigar = NULL,
-             AlignmentDirection dir = AlignmentDirection::fwd,
-             size_t startA = 0, size_t startB = 0, size_t endA = -1,
-             size_t endB = -1 ) {
+             const AlignmentDirection dir = AlignmentDirection::fwd,
+             size_t startA = 0, size_t startB = 0,
+             size_t endA = -1, size_t endB = -1 ) {
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
     // A will be on the X axis (width of matrix)

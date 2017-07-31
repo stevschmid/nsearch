@@ -16,7 +16,7 @@ public:
   Reader( std::istream& fwd, std::istream& rev )
       : mFwdReader( fwd ), mRevReader( rev ) {}
 
-  void Read( SequenceList& fwds, SequenceList& revs, int count ) {
+  void Read( SequenceList& fwds, SequenceList& revs, const int count ) {
     for( int i = 0; i < count; i++ ) {
       Sequence fwd, rev;
 

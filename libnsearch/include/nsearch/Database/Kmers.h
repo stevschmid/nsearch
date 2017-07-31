@@ -21,9 +21,9 @@ inline int8_t MapNucleotide( const char base ) {
 
 class Kmers {
 public:
-  using Callback = const std::function< void( Kmer, size_t ) >;
+  using Callback = const std::function< void( const Kmer, const size_t ) >;
 
-  Kmers( const Sequence& ref, size_t length ) : mRef( ref ) {
+  Kmers( const Sequence& ref, const size_t length ) : mRef( ref ) {
     mLength = std::min( { length, mRef.Length(), sizeof( Kmer ) * 4 } );
   }
 
@@ -45,8 +45,7 @@ public:
 
     if( lastAmbigIndex == ( size_t ) -1 ) {
       block( kmer, 0 );
-    } else {
-      block( 0, 0 );
+    } else { block( 0, 0 );
     }
 
     // For each consecutive kmer, shift window by one

@@ -28,7 +28,7 @@ public:
 
   virtual void operator>>( Sequence& seq ) = 0;
 
-  void Read( SequenceList& out, size_t count ) {
+  void Read( SequenceList& out, const size_t count ) {
     Sequence seq;
 
     for( size_t i = 0; i < count && !EndOfFile(); i++ ) {

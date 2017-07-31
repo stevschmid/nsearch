@@ -10,30 +10,30 @@ static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'J'
 // Calculate of posterior Q Scores as outlined by Edgar & Flyvbjerg (2015)
 class QScore {
 public:
-  double ScoreToProbability( int q ) const {
+  double ScoreToProbability( const int q ) const {
     return pow( 10.0, -double( q ) / 10.0 );
   }
 
-  int ProbabilityToScore( double p ) const {
+  int ProbabilityToScore( const double p ) const {
     int q = round( -10.0 * log10( p ) );
     if( q > Q_MAX_SCORE )
       q = Q_MAX_SCORE;
     return q;
   }
 
-  int CalculatePosteriorScoreForMatch( int q1, int q2 ) const {
+  int CalculatePosteriorScoreForMatch( const int q1, const int q2 ) const {
     return mPosteriorScoresForMatch[ q1 ][ q2 ];
   }
 
-  int CalculatePosteriorScoreForMismatch( int q1, int q2 ) const {
+  int CalculatePosteriorScoreForMismatch( const int q1, const int q2 ) const {
     return mPosteriorScoresForMismatch[ q1 ][ q2 ];
   }
 
-  double CalculatePosteriorErrorProbabilityForMatch( int q1, int q2 ) const {
+  double CalculatePosteriorErrorProbabilityForMatch( const int q1, const int q2 ) const {
     return mPosteriorErrorProbabilitiesForMatch[ q1 ][ q2 ];
   }
 
-  double CalculatePosteriorErrorProbabilityForMismatch( int q1, int q2 ) const {
+  double CalculatePosteriorErrorProbabilityForMismatch( const int q1, const int q2 ) const {
     return mPosteriorErrorProbabilitiesForMismatch[ q1 ][ q2 ];
   }
 

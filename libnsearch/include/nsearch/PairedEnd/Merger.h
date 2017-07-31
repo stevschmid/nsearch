@@ -9,8 +9,8 @@ static const double MERGER_DEFAULT_MIN_IDENTITY = 0.9;
 
 class Merger {
 public:
-  Merger( int    minOverlap  = MERGER_DEFAULT_MIN_OVERLAP,
-          double minIdentity = MERGER_DEFAULT_MIN_IDENTITY );
+  Merger( const int    minOverlap  = MERGER_DEFAULT_MIN_OVERLAP,
+          const double minIdentity = MERGER_DEFAULT_MIN_IDENTITY );
   bool Merge( Sequence& merged, const Sequence& fwd,
               const Sequence& rev ) const;
 
@@ -26,7 +26,7 @@ private:
 
   double ComputeOverlapScore( const char* sequence1, const char* sequence2,
                               const char* quality1, const char* quality2,
-                              size_t len ) const;
+                              const size_t len ) const;
   bool FindBestOverlap( overlapInfo& overlap, const Sequence& sequence1,
                         const Sequence& sequence2 ) const;
   bool IsStaggered( const overlapInfo& overlap ) const;

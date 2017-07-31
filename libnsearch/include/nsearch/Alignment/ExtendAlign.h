@@ -55,9 +55,10 @@ public:
   }
 
   // Heavily influenced by Blast's SemiGappedAlign function
-  int Extend( const Sequence& A, const Sequence& B, size_t* bestA = NULL,
-              size_t* bestB = NULL, Cigar* cigar = NULL,
-              AlignmentDirection dir = AlignmentDirection::fwd,
+  int Extend( const Sequence& A, const Sequence& B,
+              size_t* bestA = NULL, size_t* bestB = NULL,
+              Cigar* cigar = NULL,
+              const AlignmentDirection dir = AlignmentDirection::fwd,
               size_t startA = 0, size_t startB = 0 ) {
     int    score;
     size_t x, y;

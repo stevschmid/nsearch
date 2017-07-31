@@ -8,8 +8,8 @@
 
 #include <set>
 
-GlobalSearch::GlobalSearch( const Database& db, float minIdentity, int maxHits,
-                            int maxRejects )
+GlobalSearch::GlobalSearch( const Database& db, const float minIdentity,
+                            const int maxHits, const int maxRejects )
     : BaseSearch( db ), mDB( db ), mMinIdentity( minIdentity ),
       mMaxHits( maxHits ), mMaxRejects( maxRejects ) {}
 
@@ -32,7 +32,7 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
   Highscore highscore( mMaxHits + mMaxRejects );
 
   size_t kmerLength = mDB.mKmerLength;
-  Kmers kmersGen( query, kmerLength );
+  Kmers  kmersGen( query, kmerLength );
 
   std::vector< bool > uniqueCheck( mDB.mMaxUniqueKmers, false );
 
@@ -41,7 +41,7 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
   std::vector< Kmer > kmers;
   kmers.reserve( kmersGen.Count() );
 
-  kmersGen.ForEach( [&]( Kmer kmer, size_t pos ) {
+  kmersGen.ForEach( [&]( const Kmer kmer, const size_t pos ) {
     kmers.push_back( kmer );
 
     if( uniqueCheck[ kmer ] )

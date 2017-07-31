@@ -36,7 +36,7 @@ private:
 class TextFileReader : public TextReader {
 public:
   TextFileReader( const std::string& fileName,
-                  size_t             totalBufferSize = 32 * 1024 );
+                  const size_t       totalBufferSize = 32 * 1024 );
   ~TextFileReader();
 
   size_t NumBytesRead() const;

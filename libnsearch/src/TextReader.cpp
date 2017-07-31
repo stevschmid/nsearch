@@ -43,7 +43,7 @@ void TextFileReader::NextBuffer() {
 }
 
 TextFileReader::TextFileReader( const std::string& fileName,
-                                size_t             totalBufferSize )
+                                const size_t       totalBufferSize )
     : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ),
       mBuffer( NULL ) {
   mFd = open( fileName.c_str(), O_RDONLY ); // orly?

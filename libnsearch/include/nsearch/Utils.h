@@ -48,7 +48,7 @@ static const int8_t NUC_MATRIX[ NUC_MATRIX_SIZE ][ NUC_MATRIX_SIZE ] = {
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }
 };
 
-static inline bool DoNucleotidesMatch( char nucA, char nucB ) {
+static inline bool DoNucleotidesMatch( const char nucA, const char nucB ) {
   int a = nucA - NUC_MIN_ASCII;
   int b = nucB - NUC_MIN_ASCII;
   assert( a >= 0 && a < NUC_MATRIX_SIZE );
@@ -56,7 +56,7 @@ static inline bool DoNucleotidesMatch( char nucA, char nucB ) {
   return NUC_MATRIX[ a ][ b ] > 0;
 }
 
-static inline char NucleotideComplement( char nuc ) {
+static inline char NucleotideComplement( const char nuc ) {
   switch( nuc ) {
     case 'A': return 'T';
     case 'G': return 'C';

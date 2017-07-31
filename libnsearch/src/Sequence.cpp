@@ -39,7 +39,8 @@ size_t Sequence::Length() const {
   return sequence.length();
 }
 
-Sequence Sequence::Subsequence( size_t pos, size_t len ) const {
+Sequence Sequence::Subsequence( const size_t pos, const size_t len_ ) const {
+  size_t len = len_;
   if( len == std::string::npos ) {
     len = Length() - pos;
   }
@@ -54,12 +55,12 @@ Sequence Sequence::operator+( const Sequence& other ) const {
                    quality + other.quality );
 }
 
-char& Sequence::operator[]( size_t index ) {
+char& Sequence::operator[]( const size_t index ) {
   assert( index >= 0 && index < sequence.size() );
   return sequence[ index ];
 }
 
-char Sequence::operator[]( size_t index ) const {
+char Sequence::operator[]( const size_t index ) const {
   assert( index >= 0 && index < sequence.size() );
   return sequence[ index ];
 }

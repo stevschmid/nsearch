@@ -25,11 +25,11 @@ public:
 
   size_t Length() const;
 
-  Sequence Subsequence( size_t pos, size_t len = std::string::npos ) const;
+  Sequence Subsequence( const size_t pos, const size_t len = std::string::npos ) const;
 
   Sequence operator+( const Sequence& other ) const;
-  char& operator[]( size_t index );
-  char operator[]( size_t index ) const;
+  char& operator[]( const size_t index );
+  char operator[]( const size_t index ) const;
   bool operator==( const Sequence& other ) const;
   bool operator!=( const Sequence& other ) const;
 

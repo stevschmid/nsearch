@@ -9,7 +9,7 @@
 using FASTQ::QScore;
 
 namespace PairedEnd {
-  Merger::Merger( int minOverlap, double minIdentity )
+  Merger::Merger( const int minOverlap, const double minIdentity )
     : mMinOverlap( minOverlap ), mMinIdentity( minIdentity )
   {
 

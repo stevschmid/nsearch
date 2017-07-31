@@ -1,6 +1,6 @@
 #include "nsearch/Database.h"
 
-Database::Database( const SequenceList& sequences, size_t kmerLength,
+Database::Database( const SequenceList& sequences, const size_t kmerLength,
                     const OnProgressCallback& progressCallback )
     : mSequences( sequences ), mKmerLength( kmerLength ),
       mProgressCallback( progressCallback ) {
@@ -17,7 +17,7 @@ Database::Database( const SequenceList& sequences, size_t kmerLength,
     const Sequence& seq = mSequences[ seqId ];
 
     Kmers kmers( seq, mKmerLength );
-    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+    kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
       /* count[ kmer ]++; */
       totalEntries++;
 
@@ -68,7 +68,7 @@ Database::Database( const SequenceList& sequences, size_t kmerLength,
     mKmerOffsetBySequenceId[ seqId ] = kmerCount;
 
     Kmers kmers( seq, mKmerLength );
-    kmers.ForEach( [&]( Kmer kmer, size_t pos ) {
+    kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
       kmersData[ kmerCount++ ] = kmer;
 
       if( uniqueIndex[ kmer ] == seqId )

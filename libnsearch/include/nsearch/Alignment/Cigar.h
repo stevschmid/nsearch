@@ -23,7 +23,7 @@ public:
   CigarOp op    = CigarOp::UNKNOWN;
 
   CigarEntry() {}
-  CigarEntry( int count, CigarOp op ) : count( count ), op( op ) {}
+  CigarEntry( const int count, const CigarOp op ) : count( count ), op( op ) {}
 };
 
 class Cigar : public std::deque< CigarEntry > {

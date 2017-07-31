@@ -12,12 +12,12 @@ class Highscore {
   };
 
 public:
-  Highscore( size_t numHighestEntriesToKeep ) : mLowestScore( 0 ) {
+  Highscore( const size_t numHighestEntriesToKeep ) : mLowestScore( 0 ) {
     mEntries.resize( numHighestEntriesToKeep );
   }
 
   // score is assumed to increase for every id
-  void Set( size_t id, size_t score ) {
+  void Set( const size_t id, const size_t score ) {
     if( score < mLowestScore )
       return;
 

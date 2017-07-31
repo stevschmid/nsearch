@@ -16,11 +16,11 @@ class Database {
 public:
   enum ProgressType { StatsCollection, Indexing };
   using OnProgressCallback =
-    std::function< void( ProgressType, size_t, size_t ) >;
+    std::function< void( ProgressType, const size_t, const size_t ) >;
 
-  Database( const SequenceList& sequences, size_t kmerLength,
+  Database( const SequenceList& sequences, const size_t kmerLength,
             const OnProgressCallback& progressCallback =
-              []( ProgressType, size_t, size_t ) {} );
+              []( ProgressType, const size_t, const size_t ) {} );
   size_t Size() const;
 
 private:
