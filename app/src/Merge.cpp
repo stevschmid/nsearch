@@ -60,7 +60,7 @@ public:
     auto fit = fwd.begin();
     auto rit = rev.begin();
     while( fit != fwd.end() && rit != rev.end() ) {
-      if( merger.Merge( mergedRead, *fit, *rit ) ) {
+      if( merger.Merge( *fit, *rit, &mergedRead ) ) {
         gStats.numMerged++;
         gStats.mergedReadsTotalLength += mergedRead.Length();
         mergedReads.push_back( std::move( mergedRead ) );
@@ -111,7 +111,7 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
 
   progress.Activate( ProgressType::ReadFile );
   while( !reader.EndOfFile() ) {
-    reader.Read( fwdReads, revReads, numReadsPerWorkItem );
+    reader.Read( numReadsPerWorkItem, &fwdReads, &revReads );
     auto pair = std::pair< SequenceList, SequenceList >(
       std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );

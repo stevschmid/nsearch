@@ -28,12 +28,12 @@ public:
 
   virtual void operator>>( Sequence& seq ) = 0;
 
-  void Read( SequenceList& out, const size_t count ) {
+  void Read( const size_t count, SequenceList* out ) {
     Sequence seq;
 
     for( size_t i = 0; i < count && !EndOfFile(); i++ ) {
       *this >> seq;
-      out.push_back( std::move( seq ) );
+      out->push_back( std::move( seq ) );
     }
   }
 

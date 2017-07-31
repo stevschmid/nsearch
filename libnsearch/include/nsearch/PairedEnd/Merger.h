@@ -11,8 +11,8 @@ class Merger {
 public:
   Merger( const int    minOverlap  = MERGER_DEFAULT_MIN_OVERLAP,
           const double minIdentity = MERGER_DEFAULT_MIN_IDENTITY );
-  bool Merge( Sequence& merged, const Sequence& fwd,
-              const Sequence& rev ) const;
+  bool Merge( const Sequence& fwd, const Sequence& rev,
+              Sequence* merged ) const;
 
 private:
   int    mMinOverlap;
@@ -22,15 +22,15 @@ private:
     size_t length;
     size_t pos1;
     size_t pos2;
-  } overlapInfo;
+  } OverlapInfo;
 
   double ComputeOverlapScore( const char* sequence1, const char* sequence2,
                               const char* quality1, const char* quality2,
                               const size_t len ) const;
-  bool FindBestOverlap( overlapInfo& overlap, const Sequence& sequence1,
-                        const Sequence& sequence2 ) const;
-  bool IsStaggered( const overlapInfo& overlap ) const;
+  bool FindBestOverlap( const Sequence& sequence1, const Sequence& sequence2,
+                        OverlapInfo* overlap ) const;
+  bool IsStaggered( const OverlapInfo& overlap ) const;
   void PrintOverlap( const Sequence& seq1, const Sequence& seq2,
-                     const overlapInfo& overlap ) const;
+                     const OverlapInfo& overlap ) const;
 };
 } // namespace PairedEnd

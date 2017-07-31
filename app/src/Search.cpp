@@ -156,7 +156,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   SequenceList queries;
   progress.Activate( ProgressType::ReadQueryFile );
   while( !qryReader.EndOfFile() ) {
-    qryReader.Read( queries, numQueriesPerWorkItem );
+    qryReader.Read( numQueriesPerWorkItem, &queries );
     searcher.Enqueue( queries );
     progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(),
                   qryReader.NumBytesTotal() );

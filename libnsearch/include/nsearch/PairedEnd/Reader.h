@@ -16,24 +16,24 @@ public:
   Reader( std::istream& fwd, std::istream& rev )
       : mFwdReader( fwd ), mRevReader( rev ) {}
 
-  void Read( SequenceList& fwds, SequenceList& revs, const int count ) {
-    for( int i = 0; i < count; i++ ) {
-      Sequence fwd, rev;
+  void Read( const int count, SequenceList* fwds, SequenceList* revs )  {
+    Sequence fwd, rev;
 
-      if( !Read( fwd, rev ) )
+    for( int i = 0; i < count; i++ ) {
+      if( !Read( &fwd, &rev ) )
         break;
 
-      fwds.push_back( fwd );
-      revs.push_back( rev );
+      fwds->push_back( std::move( fwd ) );
+      revs->push_back( std::move( rev ) );
     }
   }
 
-  bool Read( Sequence& fwd, Sequence& rev ) {
+  bool Read( Sequence* fwd, Sequence* rev ) {
     if( EndOfFile() )
       return false;
 
-    mFwdReader >> fwd;
-    mRevReader >> rev;
+    mFwdReader >> *fwd;
+    mRevReader >> *rev;
 
     return true;
   }
