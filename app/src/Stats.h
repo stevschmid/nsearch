@@ -15,9 +15,13 @@ public:
     return float( mergedReadsTotalLength ) / numMerged;
   }
 
-  void StartTimer() { mTimerStart = std::chrono::steady_clock::now(); }
+  void StartTimer() {
+    mTimerStart = std::chrono::steady_clock::now();
+  }
 
-  void StopTimer() { mTimerStop = std::chrono::steady_clock::now(); }
+  void StopTimer() {
+    mTimerStop = std::chrono::steady_clock::now();
+  }
 
   double ElapsedMillis() const {
     auto diff = mTimerStop - mTimerStart;

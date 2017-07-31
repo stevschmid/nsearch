@@ -7,7 +7,9 @@
 template < typename T >
 class QueueItemInfo {
 public:
-  static size_t Count( const T& t ) { return 1; }
+  static size_t Count( const T& t ) {
+    return 1;
+  }
 };
 
 template < class Worker, class QueueItem, typename... Args >
@@ -51,7 +53,9 @@ public:
     mCondition.notify_one();
   }
 
-  bool Done() const { return mWorkingCount == 0 && mQueue.empty(); }
+  bool Done() const {
+    return mWorkingCount == 0 && mQueue.empty();
+  }
 
   void WaitTillDone() {
     while( !Done() ) {

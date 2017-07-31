@@ -5,6 +5,7 @@ AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'true'
 AlignOperands: 'true'
 AlignTrailingComments: 'true'
+AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: 'false'
 AlwaysBreakTemplateDeclarations: 'true'
