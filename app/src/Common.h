@@ -99,8 +99,8 @@ private:
     // Make sure we don't waste perf by outputting wasteful
     auto now    = clock::now();
     auto millis = std::chrono::duration_cast< std::chrono::milliseconds >(
-                      now - stage.lastPrint )
-                      .count();
+                    now - stage.lastPrint )
+                    .count();
     if( millis < 100 && stage.value != stage.max ) {
       return;
     }
