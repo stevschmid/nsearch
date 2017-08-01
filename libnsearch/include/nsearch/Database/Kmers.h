@@ -45,7 +45,8 @@ public:
 
     if( lastAmbigIndex == ( size_t ) -1 ) {
       block( kmer, 0 );
-    } else { block( 0, 0 );
+    } else {
+      block( 0, 0 );
     }
 
     // For each consecutive kmer, shift window by one

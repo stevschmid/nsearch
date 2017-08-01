@@ -18,7 +18,6 @@ Database::Database( const SequenceList& sequences, const size_t kmerLength,
 
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
-      /* count[ kmer ]++; */
       totalEntries++;
 
       // Count unique words
@@ -38,24 +37,19 @@ Database::Database( const SequenceList& sequences, const size_t kmerLength,
   } // Calculate indices
 
   mSequenceIdsOffsetByKmer.reserve( mMaxUniqueKmers );
-  /* mKmerInfosOffsetByKmer.reserve( mMaxUniqueKmers ); */
   for( size_t i = 0; i < mMaxUniqueKmers; i++ ) {
     mSequenceIdsOffsetByKmer[ i ] =
       i > 0 ? mSequenceIdsOffsetByKmer[ i - 1 ] + uniqueCount[ i - 1 ] : 0;
-    /* mKmerInfosOffsetByKmer[ i ] = i > 0 ? mKmerInfosOffsetByKmer[ i - 1 ] +
-     * count[ i - 1 ] : 0; */
   }
 
   // Populate DB
   mSequenceIds.reserve( totalUniqueEntries );
-  /* mKmerInfos.reserve( totalEntries ); */
   mKmers.reserve( totalEntries );
 
   // Reset to 0
   mSequenceIdsCountByKmer = std::vector< size_t >( mMaxUniqueKmers );
   mKmerCountBySequenceId  = std::vector< size_t >( mSequences.size() );
   mKmerOffsetBySequenceId = std::vector< size_t >( mSequences.size() );
-  /* mKmerInfosCountByKmer = std::vector< uint32_t >( mMaxUniqueKmers ); */
 
   uniqueIndex = std::vector< SequenceId >( mMaxUniqueKmers, -1 );
 
@@ -69,6 +63,8 @@ Database::Database( const SequenceList& sequences, const size_t kmerLength,
 
     Kmers kmers( seq, mKmerLength );
     kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
+      // Encode position in kmersData implicitly
+      // by saving _every_ kmer
       kmersData[ kmerCount++ ] = kmer;
 
       if( uniqueIndex[ kmer ] == seqId )

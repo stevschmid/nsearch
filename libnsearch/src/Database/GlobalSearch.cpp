@@ -31,17 +31,11 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
 
   Highscore highscore( mMaxHits + mMaxRejects );
 
-  size_t kmerLength = mDB.mKmerLength;
-  Kmers  kmersGen( query, kmerLength );
-
-  std::vector< bool > uniqueCheck( mDB.mMaxUniqueKmers, false );
-
   auto hitsData = mHits.data();
 
   std::vector< Kmer > kmers;
-  kmers.reserve( kmersGen.Count() );
-
-  kmersGen.ForEach( [&]( const Kmer kmer, const size_t pos ) {
+  std::vector< bool > uniqueCheck( mDB.mMaxUniqueKmers, false );
+  Kmers( query, mDB.mKmerLength ).ForEach( [&]( const Kmer kmer, const size_t pos ) {
     kmers.push_back( kmer );
 
     if( uniqueCheck[ kmer ] )
