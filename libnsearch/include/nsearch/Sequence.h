@@ -34,7 +34,7 @@ public:
   bool operator!=( const Sequence& other ) const;
 
   Sequence Reverse() const;
-  Sequence Complement() const; // complements only ATCG
+  Sequence Complement() const;
   Sequence ReverseComplement() const;
 
   std::string sequence;
