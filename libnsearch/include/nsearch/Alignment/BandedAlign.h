@@ -273,23 +273,23 @@ public:
         cigar->Add( op );
 
         switch( op ) {
-        case CigarOp::INSERTION:
-          bx--;
-          break;
-        case CigarOp::DELETION:
-          by--;
-          break;
-        case CigarOp::MATCH:
-          bx--;
-          by--;
-          break;
-        case CigarOp::MISMATCH:
-          bx--;
-          by--;
-          break;
-        default:
-          assert( true );
-          break;
+          case CigarOp::INSERTION:
+            bx--;
+            break;
+          case CigarOp::DELETION:
+            by--;
+            break;
+          case CigarOp::MATCH:
+            bx--;
+            by--;
+            break;
+          case CigarOp::MISMATCH:
+            bx--;
+            by--;
+            break;
+          default:
+            assert( true );
+            break;
         }
       }
 

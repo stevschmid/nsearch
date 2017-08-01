@@ -120,18 +120,18 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   auto dbCallback = [&]( Database::ProgressType type, size_t num,
                          size_t total ) {
     switch( type ) {
-    case Database::ProgressType::StatsCollection:
-      progress.Activate( ProgressType::StatsDB )
-        .Set( ProgressType::StatsDB, num, total );
-      break;
+      case Database::ProgressType::StatsCollection:
+        progress.Activate( ProgressType::StatsDB )
+          .Set( ProgressType::StatsDB, num, total );
+        break;
 
-    case Database::ProgressType::Indexing:
-      progress.Activate( ProgressType::IndexDB )
-        .Set( ProgressType::IndexDB, num, total );
-      break;
+      case Database::ProgressType::Indexing:
+        progress.Activate( ProgressType::IndexDB )
+          .Set( ProgressType::IndexDB, num, total );
+        break;
 
-    default:
-      break;
+      default:
+        break;
     }
   };
   Database db( sequences, 8, dbCallback );

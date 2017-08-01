@@ -11,6 +11,7 @@ AlwaysBreakBeforeMultilineStrings: 'false'
 AlwaysBreakTemplateDeclarations: 'true'
 ContinuationIndentWidth: 2
 Cpp11BracedListStyle: 'false'
+IndentCaseLabels: 'true'
 Language: Cpp
 PointerAlignment: Left
 SortIncludes: 'true'

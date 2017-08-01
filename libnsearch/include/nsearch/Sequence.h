@@ -25,7 +25,8 @@ public:
 
   size_t Length() const;
 
-  Sequence Subsequence( const size_t pos, const size_t len = std::string::npos ) const;
+  Sequence Subsequence( const size_t pos,
+                        const size_t len = std::string::npos ) const;
 
   Sequence operator+( const Sequence& other ) const;
   char& operator[]( const size_t index );

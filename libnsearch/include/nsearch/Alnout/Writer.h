@@ -146,44 +146,44 @@ private:
     for( auto& c : cigar ) {
       for( int i = 0; i < c.count; i++ ) {
         switch( c.op ) {
-        case CigarOp::INSERTION:
-          line.t += '-';
-          line.q += query[ qcount++ ];
-          line.a += ' ';
-          numGaps++;
-          break;
+          case CigarOp::INSERTION:
+            line.t += '-';
+            line.q += query[ qcount++ ];
+            line.a += ' ';
+            numGaps++;
+            break;
 
-        case CigarOp::DELETION:
-          line.q += '-';
-          line.t += target[ tcount++ ];
-          line.a += ' ';
-          numGaps++;
-          break;
+          case CigarOp::DELETION:
+            line.q += '-';
+            line.t += target[ tcount++ ];
+            line.a += ' ';
+            numGaps++;
+            break;
 
-        case CigarOp::MATCH:
-          numMatches++;
-          line.q += query[ qcount++ ];
-          line.t += target[ tcount++ ];
-          {
-            bool match = DoNucleotidesMatch( line.q.back(), line.t.back() );
-            if( !match ) {
-              correct = false;
+          case CigarOp::MATCH:
+            numMatches++;
+            line.q += query[ qcount++ ];
+            line.t += target[ tcount++ ];
+            {
+              bool match = DoNucleotidesMatch( line.q.back(), line.t.back() );
+              if( !match ) {
+                correct = false;
 
-              line.a += 'X';
-            } else {
-              line.a += '|';
+                line.a += 'X';
+              } else {
+                line.a += '|';
+              }
             }
-          }
-          break;
+            break;
 
-        case CigarOp::MISMATCH:
-          line.a += ' ';
-          line.q += query[ qcount++ ];
-          line.t += target[ tcount++ ];
-          break;
+          case CigarOp::MISMATCH:
+            line.a += ' ';
+            line.q += query[ qcount++ ];
+            line.t += target[ tcount++ ];
+            break;
 
-        default:
-          break;
+          default:
+            break;
         }
 
         numCols++;
