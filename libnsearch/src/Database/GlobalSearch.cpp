@@ -22,8 +22,8 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
   size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
   // Go through each kmer, find hits
-  if( mHits.size() < mDB.Size() ) {
-    mHits.resize( mDB.Size() );
+  if( mHits.size() < mDB.NumSequences() ) {
+    mHits.resize( mDB.NumSequences() );
   }
 
   // Fast counter reset
@@ -34,8 +34,8 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
   auto hitsData = mHits.data();
 
   std::vector< Kmer > kmers;
-  std::vector< bool > uniqueCheck( mDB.mMaxUniqueKmers, false );
-  Kmers( query, mDB.mKmerLength ).ForEach( [&]( const Kmer kmer, const size_t pos ) {
+  std::vector< bool > uniqueCheck( mDB.MaxUniqueKmers(), false );
+  Kmers( query, mDB.KmerLength() ).ForEach( [&]( const Kmer kmer, const size_t pos ) {
     kmers.push_back( kmer );
 
     if( uniqueCheck[ kmer ] )
@@ -43,11 +43,16 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
 
     uniqueCheck[ kmer ] = true;
 
-    auto offset = mDB.mSequenceIdsOffsetByKmer[ kmer ];
-    auto seqIds = &mDB.mSequenceIds[ offset ];
-    for( auto i = 0; i < mDB.mSequenceIdsCountByKmer[ kmer ]; i++ ) {
-      auto    seqId   = seqIds[ i ];
-      Counter counter = ++hitsData[ seqId ];
+    size_t numSeqIds;
+    const Database::SequenceId *seqIds;
+
+    if( !mDB.GetSequenceIdsIncludingKmer( kmer, &seqIds, &numSeqIds ) )
+      return;
+
+    for( size_t i = 0; i < numSeqIds; i++ ) {
+      const auto& seqId   = seqIds[ i ];
+      Counter     counter = ++hitsData[ seqId ];
+
       highscore.Set( seqId, counter );
     }
   } );
@@ -67,26 +72,28 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
     const size_t seqId = it->id;
-    assert( seqId < mDB.mSequences.size() );
-    const Sequence& candidateSeq = mDB.mSequences[ seqId ];
+    const Sequence& candidateSeq = mDB.GetSequenceById( seqId );
 
     std::deque< HSP > sps;
 
     for( size_t pos = 0; pos < kmers.size(); pos++ ) {
-      auto kmers2 = &mDB.mKmers[ mDB.mKmerOffsetBySequenceId[ seqId ] ];
-      for( size_t pos2 = 0; pos2 < mDB.mKmerCountBySequenceId[ seqId ];
-           pos2++ ) {
+      const Kmer* kmers2;
+      size_t      kmers2count;
+      if( !mDB.GetKmersForSequenceId( seqId, &kmers2, &kmers2count ) )
+        continue;
+
+      for( size_t pos2 = 0; pos2 < kmers2count; pos2++ ) {
         if( kmers2[ pos2 ] != kmers[ pos ] )
           continue;
 
         if( pos == 0 || pos2 == 0 ||
             ( kmers[ pos - 1 ] != kmers2[ pos2 - 1 ] ) ) {
-          size_t length = mDB.mKmerLength;
+          size_t length = mDB.KmerLength();
 
           size_t cur  = pos + 1;
           size_t cur2 = pos2 + 1;
           while( cur < kmers.size() &&
-                 cur2 < mDB.mKmerCountBySequenceId[ seqId ] &&
+                 cur2 < kmers2count &&
                  kmers[ cur ] == kmers2[ cur2 ] ) {
             cur++;
             cur2++;

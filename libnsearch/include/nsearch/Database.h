@@ -11,9 +11,9 @@
 #include "Database/Kmers.h"
 
 class Database {
-  friend class GlobalSearch;
-
 public:
+  using SequenceId = uint32_t; // SequenceId
+
   enum ProgressType { StatsCollection, Indexing };
   using OnProgressCallback =
     std::function< void( ProgressType, const size_t, const size_t ) >;
@@ -21,15 +21,23 @@ public:
   Database( const SequenceList& sequences, const size_t kmerLength,
             const OnProgressCallback& progressCallback =
               []( ProgressType, const size_t, const size_t ) {} );
-  size_t Size() const;
+
+  size_t NumSequences() const;
+  size_t MaxUniqueKmers() const;
+  size_t KmerLength() const;
+
+  const Sequence& GetSequenceById( const SequenceId& seqId ) const;
+
+  bool GetKmersForSequenceId( const SequenceId& seqId, const Kmer** kmers,
+                              size_t* numKmers ) const;
+  bool GetSequenceIdsIncludingKmer( const Kmer& kmer, const SequenceId** seqIds,
+                                    size_t* numSeqIds ) const;
 
 private:
   size_t mKmerLength;
 
   SequenceList mSequences;
   size_t       mMaxUniqueKmers;
-
-  using SequenceId = uint32_t; // SequenceId
 
   std::vector< size_t >     mSequenceIdsOffsetByKmer;
   std::vector< size_t >     mSequenceIdsCountByKmer;

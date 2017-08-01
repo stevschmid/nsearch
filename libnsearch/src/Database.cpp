@@ -30,7 +30,7 @@ Database::Database( const SequenceList& sequences, const size_t kmerLength,
     } );
 
     // Progress
-    if( seqId % 500 == 0 || seqId + 1 == mSequences.size() ) {
+    if( seqId % 512 == 0 || seqId + 1 == mSequences.size() ) {
       mProgressCallback( ProgressType::StatsCollection, seqId + 1,
                          mSequences.size() );
     }
@@ -81,12 +81,53 @@ Database::Database( const SequenceList& sequences, const size_t kmerLength,
       kmerCount - mKmerOffsetBySequenceId[ seqId ];
 
     // Progress
-    if( seqId % 500 == 0 || seqId + 1 == mSequences.size() ) {
+    if( seqId % 512 == 0 || seqId + 1 == mSequences.size() ) {
       mProgressCallback( ProgressType::Indexing, seqId + 1, mSequences.size() );
     }
   }
 }
 
-size_t Database::Size() const {
+const Sequence& Database::GetSequenceById( const SequenceId& seqId ) const {
+  assert( seqId < NumSequences() );
+  return mSequences[ seqId ];
+}
+
+size_t Database::NumSequences() const {
   return mSequences.size();
+}
+
+size_t Database::MaxUniqueKmers() const {
+  return mMaxUniqueKmers;
+}
+
+size_t Database::KmerLength() const {
+  return mKmerLength;
+}
+
+bool Database::GetKmersForSequenceId( const SequenceId& seqId,
+                                      const Kmer**      kmers,
+                                      size_t*           numKmers ) const {
+  if( seqId >= NumSequences() )
+    return false;
+
+  const auto& offset = mKmerOffsetBySequenceId[ seqId ];
+  const auto& count  = mKmerCountBySequenceId[ seqId ];
+
+  *kmers    = &mKmers[ offset ];
+  *numKmers = count;
+  return true;
+}
+
+bool Database::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
+                                            const SequenceId** seqIds,
+                                            size_t* numSeqIds ) const {
+  if( kmer >= MaxUniqueKmers() )
+    return false;
+
+  const auto& offset = mSequenceIdsOffsetByKmer[ kmer ];
+  const auto& count  = mSequenceIdsCountByKmer[ kmer ];
+
+  *seqIds    = &mSequenceIds[ offset ];
+  *numSeqIds = count;
+  return true;
 }
