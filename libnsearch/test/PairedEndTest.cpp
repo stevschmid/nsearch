@@ -16,7 +16,7 @@ TEST_CASE( "Merger" ) {
     Sequence rev1 =
       Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
 
-    res = merger.Merge( merged, fwd1, rev1 );
+    res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
     REQUIRE( merged == Sequence( "ACTGGATGGAATCCC" ) );
   }
@@ -27,7 +27,7 @@ TEST_CASE( "Merger" ) {
     Sequence rev1 =
       Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
 
-    res = merger.Merge( merged, fwd1, rev1 );
+    res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
     REQUIRE( merged == Sequence( "ATCCC" ) );
   }
@@ -39,7 +39,7 @@ TEST_CASE( "Merger" ) {
     Sequence rev1 =
       Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
 
-    res = merger.Merge( merged, fwd1, rev1 );
+    res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == false );
   }
 
@@ -50,7 +50,7 @@ TEST_CASE( "Merger" ) {
     Sequence rev1 =
       Sequence( "rev1", "GATAGAATCCC", "JJJJJJJJJJJ" ).ReverseComplement();
 
-    res = merger.Merge( merged, fwd1, rev1 );
+    res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == false );
   }
 
@@ -60,7 +60,7 @@ TEST_CASE( "Merger" ) {
     Sequence rev1 =
       Sequence( "rev1", "ACCGTGAATC", "?AAAAFFFFF" ).ReverseComplement();
 
-    res = merger.Merge( merged, fwd1, rev1 );
+    res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
     REQUIRE( merged.sequence == "ATTGACCGTGAATC" );
     REQUIRE( merged.quality == "1>AAJJJJJFFFFF" );
@@ -115,10 +115,10 @@ ABAAB@DBFFFBGGGGGGAGBFGHGGEGGBGHHHGHHHHGFGGGDFGGGHHGHHHHHHHHHFHGFFHHHGHFB3FGGFCE
   FASTQ::Writer writer( os );
   Sequence      fwd, rev;
 
-  while( reader.Read( fwd, rev ) ) {
+  while( reader.Read( &fwd, &rev ) ) {
     Sequence merged;
 
-    if( merger.Merge( merged, fwd, rev ) ) {
+    if( merger.Merge( fwd, rev, &merged ) ) {
       writer << merged;
     }
   }
