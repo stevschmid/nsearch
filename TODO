@@ -9,10 +9,10 @@ Camila's idea: Add special coding gap model: Penalize gaps which shift the readi
 but penalize gaps with 3nt, 6nt etc. which delete AAs less
 
 Tests and so on for Kmers and INVALID_KMER (0, AAA..)
-  InvalidKmer at end of Kmer spectrum
+  AmbiguousKmer at end of Kmer spectrum
 
-Tests for DB in general
-Test ambig nucs in sequences and DB search (ignore kmer=0, AAA...)
+Tests for searching functionality
+  Handling ambig nucs
 Lower case method names?
 Allow diff. alphabets (proteins etc.), using C++ traits
 

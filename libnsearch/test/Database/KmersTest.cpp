@@ -31,7 +31,7 @@ TEST_CASE( "Kmers" ) {
     k.ForEach( [&]( Kmer kmer, size_t ) { out.push_back( kmer ); } );
 
     REQUIRE( out.size() == 6 );
-    REQUIRE( out.front() == InvalidKmer );
+    REQUIRE( out.front() == AmbiguousKmer );
 
     seq = "ATGNTTA";
     Kmers k2( seq, 3 );
@@ -40,9 +40,9 @@ TEST_CASE( "Kmers" ) {
 
     REQUIRE( out.size() == 5 );
     REQUIRE( out[ 0 ] == Kmerify( "ATG" ) );
-    REQUIRE( out[ 1 ] == InvalidKmer );
-    REQUIRE( out[ 2 ] == InvalidKmer );
-    REQUIRE( out[ 3 ] == InvalidKmer );
+    REQUIRE( out[ 1 ] == AmbiguousKmer );
+    REQUIRE( out[ 2 ] == AmbiguousKmer );
+    REQUIRE( out[ 3 ] == AmbiguousKmer );
     REQUIRE( out[ 4 ] == Kmerify( "TTA" ) );
   }
 }

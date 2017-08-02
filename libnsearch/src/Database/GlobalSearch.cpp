@@ -38,7 +38,7 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
   Kmers( query, mDB.KmerLength() ).ForEach( [&]( const Kmer kmer, const size_t pos ) {
     kmers.push_back( kmer );
 
-    if( uniqueCheck[ kmer ] )
+    if( kmer == AmbiguousKmer || uniqueCheck[ kmer ] )
       return;
 
     uniqueCheck[ kmer ] = true;
@@ -87,6 +87,8 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
           continue;
 
         if( pos == 0 || pos2 == 0 ||
+            kmers[ pos - 1 ] == AmbiguousKmer ||
+            kmers2[ pos2 - 1 ] == AmbiguousKmer ||
             ( kmers[ pos - 1 ] != kmers2[ pos2 - 1 ] ) ) {
           size_t length = mDB.KmerLength();
 
@@ -94,6 +96,8 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
           size_t cur2 = pos2 + 1;
           while( cur < kmers.size() &&
                  cur2 < kmers2count &&
+                 kmers[ cur ] != AmbiguousKmer &&
+                 kmers2[ cur ] != AmbiguousKmer &&
                  kmers[ cur ] == kmers2[ cur2 ] ) {
             cur++;
             cur2++;

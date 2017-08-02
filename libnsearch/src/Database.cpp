@@ -29,7 +29,7 @@ void Database::Initialize( const SequenceList& sequences ) {
       totalEntries++;
 
       // Count unique words
-      if( uniqueIndex[ kmer ] == seqId )
+      if( kmer == AmbiguousKmer || uniqueIndex[ kmer ] == seqId )
         return;
 
       uniqueIndex[ kmer ] = seqId;
@@ -75,7 +75,7 @@ void Database::Initialize( const SequenceList& sequences ) {
       // by saving _every_ kmer
       kmersData[ kmerCount++ ] = kmer;
 
-      if( uniqueIndex[ kmer ] == seqId )
+      if( kmer == AmbiguousKmer || uniqueIndex[ kmer ] == seqId )
         return;
 
       uniqueIndex[ kmer ] = seqId;
@@ -129,6 +129,9 @@ bool Database::GetKmersForSequenceId( const SequenceId& seqId,
 bool Database::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
                                             const SequenceId** seqIds,
                                             size_t* numSeqIds ) const {
+  if( kmer == AmbiguousKmer )
+    return false;
+
   if( kmer >= MaxUniqueKmers() )
     return false;
 

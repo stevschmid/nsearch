@@ -5,12 +5,12 @@
 #include "Support.h"
 
 TEST_CASE( "Database" ) {
-  SequenceList sequences = { "ATGGG", "CATGGCCC", "GAGAGA" };
+  SequenceList sequences = { "ATGGG", "CATGGCCC", "GAGAGA", "CTTTN" };
   Database db( 4 );
   db.Initialize( sequences );
 
   SECTION( "Sequences" ) {
-    REQUIRE( db.NumSequences() == 3 );
+    REQUIRE( db.NumSequences() == 4 );
     REQUIRE( db.GetSequenceById( 0 ) == Sequence( "ATGGG" ) );
   }
 
@@ -42,6 +42,12 @@ TEST_CASE( "Database" ) {
       REQUIRE( numSeqIds == 2 );
       REQUIRE( seqIds[ 0 ] == 0 );
       REQUIRE( seqIds[ 1 ] == 1 );
+
+      SECTION( "Ambiguous nucleotide handling" ) {
+        found =
+          db.GetSequenceIdsIncludingKmer( AmbiguousKmer, &seqIds, &numSeqIds );
+        REQUIRE( found == false );
+      }
     }
   }
 
@@ -58,5 +64,13 @@ TEST_CASE( "Database" ) {
     REQUIRE( numKmers == 2 );
     REQUIRE( kmers[ 0 ] == Kmerify( "ATGG" ) );
     REQUIRE( kmers[ 1 ] == Kmerify( "TGGG" ) );
+
+    SECTION( "Ambiguous nucleotide handling" ) {
+      found = db.GetKmersForSequenceId( 3, &kmers, &numKmers );
+      REQUIRE( found == true );
+      REQUIRE( numKmers == 2 );
+      REQUIRE( kmers[ 0 ] == Kmerify( "CTTT" ) );
+      REQUIRE( kmers[ 1 ] == AmbiguousKmer );
+    }
   }
 }

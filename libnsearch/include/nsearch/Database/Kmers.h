@@ -4,11 +4,7 @@
 
 using Kmer = uint32_t;
 
-// AAA... needs to be masked anyway, so use it to represent invalid kmer
-// We need to use 0 since we use Kmer for array indexing
-// Use InvalidKmers later for masked kmers
-// Report kmers in ForEach since we want to encode Kmer position implicitly
-const Kmer InvalidKmer = 0;
+const Kmer AmbiguousKmer = ( Kmer )-1;
 
 inline size_t BitIndexForPosition( const int pos ) {
   return ( pos * 2 ) % ( sizeof( Kmer ) * 8 );
@@ -52,7 +48,7 @@ public:
     if( lastAmbigIndex == ( size_t ) -1 ) {
       block( kmer, 0 );
     } else {
-      block( InvalidKmer, 0 );
+      block( AmbiguousKmer, 0 );
     }
 
     // For each consecutive kmer, shift window by one
@@ -69,7 +65,7 @@ public:
       if( lastAmbigIndex == ( size_t ) -1 || frame > lastAmbigIndex ) {
         block( kmer, frame );
       } else {
-        block( InvalidKmer, frame );
+        block( AmbiguousKmer, frame );
       }
     }
   }
