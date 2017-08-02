@@ -18,3 +18,5 @@ Allow diff. alphabets (proteins etc.), using C++ traits
 
 README (compiling, clang format)
 API docs
+
+allow WorkerQueue Enqueue with rvalues

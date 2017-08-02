@@ -8,6 +8,8 @@
 #define MAX_ALIGNMENT_STRING_LENGTH_LINE 60
 
 namespace Alnout {
+
+template <typename Alphabet>
 class Writer {
 private:
   std::ofstream mFile;
@@ -20,7 +22,8 @@ public:
       : mFile( pathToFile ), mOutput( mFile ) {}
 
   void operator<<(
-    const std::pair< Sequence, GlobalSearch::HitList >& queryWithHits ) {
+    const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
+      queryWithHits ) {
     const auto& query = queryWithHits.first;
     const auto& hits  = queryWithHits.second;
 
@@ -94,8 +97,8 @@ private:
   };
   using AlignmentLines = std::deque< AlignmentLine >;
 
-  static AlignmentLines ExtractAlignmentLines( const Sequence& query,
-                                               const Sequence& target,
+  static AlignmentLines ExtractAlignmentLines( const Sequence< Alphabet >& query,
+                                               const Sequence< Alphabet >& target,
                                                const Cigar&    alignment,
                                                size_t* outNumCols    = NULL,
                                                size_t* outNumMatches = NULL,
@@ -225,4 +228,5 @@ private:
   }
 
 }; // Writer
+
 } // namespace Alnout

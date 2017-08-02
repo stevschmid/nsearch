@@ -5,10 +5,6 @@
 #include <ctype.h>
 #include <numeric>
 
-static bool IsBlank( const std::string& str ) {
-  return str.empty() || std::all_of( str.begin(), str.end(), isspace );
-}
-
 static void UpcaseString( std::string& str ) {
   for( auto& ch : str )
     if( ch >= 97 && ch <= 122 ) // upcase

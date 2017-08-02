@@ -10,10 +10,11 @@
 #include "Database/Highscore.h"
 #include "Database/Kmers.h"
 
+using SequenceId = uint32_t; // SequenceId
+
+template < typename Alphabet >
 class Database {
 public:
-  using SequenceId = uint32_t; // SequenceId
-
   enum ProgressType { StatsCollection, Indexing };
   using OnProgressCallback =
     std::function< void( ProgressType, const size_t, const size_t ) >;
@@ -21,13 +22,13 @@ public:
   Database( const size_t kmerLength );
 
   void SetProgressCallback( const OnProgressCallback& progressCallback );
-  void Initialize( const SequenceList& sequences );
+  void Initialize( const SequenceList< Alphabet >& sequences ) const;
 
   size_t NumSequences() const;
   size_t MaxUniqueKmers() const;
   size_t KmerLength() const;
 
-  const Sequence& GetSequenceById( const SequenceId& seqId ) const;
+  const Sequence< Alphabet >& GetSequenceById( const SequenceId& seqId ) const;
 
   bool GetKmersForSequenceId( const SequenceId& seqId, const Kmer** kmers,
                               size_t* numKmers ) const;
@@ -37,8 +38,8 @@ public:
 private:
   size_t mKmerLength;
 
-  SequenceList mSequences;
-  size_t       mMaxUniqueKmers;
+  SequenceList< Alphabet > mSequences;
+  size_t                   mMaxUniqueKmers;
 
   std::vector< size_t >     mSequenceIdsOffsetByKmer;
   std::vector< size_t >     mSequenceIdsCountByKmer;

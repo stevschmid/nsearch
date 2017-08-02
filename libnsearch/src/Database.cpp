@@ -1,17 +1,20 @@
 #include "nsearch/Database.h"
 
-Database::Database( const size_t kmerLength )
+template < typename A >
+Database< A >::Database( const size_t kmerLength )
     : mKmerLength( kmerLength ),
       mProgressCallback( []( ProgressType, const size_t, const size_t ) {} ),
       mMaxUniqueKmers( 1 << ( 2 * mKmerLength ) ) // 2 bits per nt
 {}
 
-void Database::SetProgressCallback(
+template < typename A >
+void Database< A >::SetProgressCallback(
   const OnProgressCallback& progressCallback ) {
   mProgressCallback = progressCallback;
 }
 
-void Database::Initialize( const SequenceList& sequences ) {
+template < typename A >
+void Database< A >::Initialize( const SequenceList< A >& sequences ) const {
   mSequences = sequences;
 
   size_t totalEntries       = 0;
@@ -22,9 +25,9 @@ void Database::Initialize( const SequenceList& sequences ) {
   std::vector< SequenceId > uniqueIndex( mMaxUniqueKmers, -1 );
 
   for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
-    const Sequence& seq = mSequences[ seqId ];
+    const Sequence< A >& seq = mSequences[ seqId ];
 
-    Kmers kmers( seq, mKmerLength );
+    Kmers< A > kmers( seq, mKmerLength );
     kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
       totalEntries++;
 
@@ -65,11 +68,11 @@ void Database::Initialize( const SequenceList& sequences ) {
   size_t kmerCount = 0;
 
   for( SequenceId seqId = 0; seqId < mSequences.size(); seqId++ ) {
-    const Sequence& seq = mSequences[ seqId ];
+    const Sequence< A >& seq = mSequences[ seqId ];
 
     mKmerOffsetBySequenceId[ seqId ] = kmerCount;
 
-    Kmers kmers( seq, mKmerLength );
+    Kmers< A > kmers( seq, mKmerLength );
     kmers.ForEach( [&]( const Kmer kmer, const size_t pos ) {
       // Encode position in kmersData implicitly
       // by saving _every_ kmer
@@ -95,26 +98,32 @@ void Database::Initialize( const SequenceList& sequences ) {
   }
 }
 
-const Sequence& Database::GetSequenceById( const SequenceId& seqId ) const {
+template < typename A >
+const Sequence< A >&
+Database< A >::GetSequenceById( const SequenceId& seqId ) const {
   assert( seqId < NumSequences() );
   return mSequences[ seqId ];
 }
 
-size_t Database::NumSequences() const {
+template < typename A >
+size_t Database< A >::NumSequences() const {
   return mSequences.size();
 }
 
-size_t Database::MaxUniqueKmers() const {
+template < typename A >
+size_t Database< A >::MaxUniqueKmers() const {
   return mMaxUniqueKmers;
 }
 
-size_t Database::KmerLength() const {
+template < typename A >
+size_t Database< A >::KmerLength() const {
   return mKmerLength;
 }
 
-bool Database::GetKmersForSequenceId( const SequenceId& seqId,
-                                      const Kmer**      kmers,
-                                      size_t*           numKmers ) const {
+template < typename A >
+bool Database< A >::GetKmersForSequenceId( const SequenceId& seqId,
+                                           const Kmer**      kmers,
+                                           size_t*           numKmers ) const {
   if( seqId >= NumSequences() )
     return false;
 
@@ -126,9 +135,10 @@ bool Database::GetKmersForSequenceId( const SequenceId& seqId,
   return count > 0;
 }
 
-bool Database::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
-                                            const SequenceId** seqIds,
-                                            size_t* numSeqIds ) const {
+template < typename A >
+bool Database< A >::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
+                                                 const SequenceId** seqIds,
+                                                 size_t* numSeqIds ) const {
   if( kmer == AmbiguousKmer )
     return false;
 

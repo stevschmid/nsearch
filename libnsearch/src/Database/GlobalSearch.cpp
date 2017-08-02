@@ -8,12 +8,15 @@
 
 #include <set>
 
-GlobalSearch::GlobalSearch( const Database& db, const float minIdentity,
-                            const int maxHits, const int maxRejects )
-    : BaseSearch( db ), mDB( db ), mMinIdentity( minIdentity ),
-      mMaxHits( maxHits ), mMaxRejects( maxRejects ) {}
+template < typename A >
+GlobalSearch< A >::GlobalSearch( const Database< A >& db,
+                                 const float minIdentity, const int maxHits,
+                                 const int maxRejects )
+    : BaseSearch< A >( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ),
+      mMaxRejects( maxRejects ) {}
 
-GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
+template < typename A >
+HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance  = 16;
 
@@ -35,27 +38,28 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
 
   std::vector< Kmer > kmers;
   std::vector< bool > uniqueCheck( mDB.MaxUniqueKmers(), false );
-  Kmers( query, mDB.KmerLength() ).ForEach( [&]( const Kmer kmer, const size_t pos ) {
-    kmers.push_back( kmer );
+  Kmers< A >( query, mDB.KmerLength() )
+    .ForEach( [&]( const Kmer kmer, const size_t pos ) {
+      kmers.push_back( kmer );
 
-    if( kmer == AmbiguousKmer || uniqueCheck[ kmer ] )
-      return;
+      if( kmer == AmbiguousKmer || uniqueCheck[ kmer ] )
+        return;
 
-    uniqueCheck[ kmer ] = true;
+      uniqueCheck[ kmer ] = true;
 
-    size_t numSeqIds;
-    const Database::SequenceId *seqIds;
+      size_t numSeqIds;
+      const SequenceId* seqIds;
 
-    if( !mDB.GetSequenceIdsIncludingKmer( kmer, &seqIds, &numSeqIds ) )
-      return;
+      if( !mDB.GetSequenceIdsIncludingKmer( kmer, &seqIds, &numSeqIds ) )
+        return;
 
-    for( size_t i = 0; i < numSeqIds; i++ ) {
-      const auto& seqId   = seqIds[ i ];
-      Counter     counter = ++hitsData[ seqId ];
+      for( size_t i = 0; i < numSeqIds; i++ ) {
+        const auto& seqId   = seqIds[ i ];
+        Counter     counter = ++hitsData[ seqId ];
 
-      highscore.Set( seqId, counter );
-    }
-  } );
+        highscore.Set( seqId, counter );
+      }
+    } );
 
   // For each candidate:
   // - Get HSPs,
@@ -68,11 +72,11 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
 
   auto highscores = highscore.EntriesFromTopToBottom();
 
-  HitList hits;
+  HitList< A > hits;
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
-    const size_t seqId = it->id;
-    const Sequence& candidateSeq = mDB.GetSequenceById( seqId );
+    const size_t    seqId        = it->id;
+    const Sequence< A >& candidateSeq = mDB.GetSequenceById( seqId );
 
     std::deque< HSP > sps;
 
@@ -86,16 +90,14 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
         if( kmers2[ pos2 ] != kmers[ pos ] )
           continue;
 
-        if( pos == 0 || pos2 == 0 ||
-            kmers[ pos - 1 ] == AmbiguousKmer ||
+        if( pos == 0 || pos2 == 0 || kmers[ pos - 1 ] == AmbiguousKmer ||
             kmers2[ pos2 - 1 ] == AmbiguousKmer ||
             ( kmers[ pos - 1 ] != kmers2[ pos2 - 1 ] ) ) {
           size_t length = mDB.KmerLength();
 
           size_t cur  = pos + 1;
           size_t cur2 = pos2 + 1;
-          while( cur < kmers.size() &&
-                 cur2 < kmers2count &&
+          while( cur < kmers.size() && cur2 < kmers2count &&
                  kmers[ cur ] != AmbiguousKmer &&
                  kmers2[ cur ] != AmbiguousKmer &&
                  kmers[ cur ] == kmers2[ cur2 ] ) {
@@ -218,7 +220,7 @@ GlobalSearch::HitList GlobalSearch::Query( const Sequence& query ) {
       float identity = alignment.Identity();
       if( identity >= mMinIdentity ) {
         accept = true;
-        hits.push_back( GlobalSearch::Hit{ candidateSeq, alignment } );
+        hits.push_back( { candidateSeq, alignment } );
       }
     }
 

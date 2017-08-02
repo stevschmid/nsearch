@@ -5,45 +5,57 @@
 #include <iostream>
 #include <string>
 
-/**
- *
- * DNA Sequence. Allowed nucleotides:
- * http://www.bioinformatics.org/sms/iupac.html
- *
- */
+struct Dna {
+  typedef char CharType;
+
+  static bool Match( const char nucA, const char nucB ) {
+    return nucA == nucB;
+  }
+
+  static char Complement( const char nuc ) {
+    return nuc;
+  }
+};
+
+template < typename Alphabet >
 class Sequence {
 public:
   Sequence();
-  Sequence( const Sequence& sequence );
-  Sequence( Sequence&& sequence );
-  Sequence& operator=( const Sequence& other );
+  Sequence( const Sequence< Alphabet >& sequence );
+  Sequence( Sequence< Alphabet >&& sequence );
+  Sequence< Alphabet >& operator=( const Sequence< Alphabet >& other );
   Sequence( const std::string& sequence );
   Sequence( const char* sequence );
-  Sequence( const std::string& identifier, const std::string& sequence );
-  Sequence( const std::string& identifier, const std::string& sequence,
-            const std::string& quality );
+  Sequence( const std::string&                                      identifier,
+            const std::basic_string< typename Alphabet::CharType >& sequence );
+  Sequence( const std::string&                                      identifier,
+            const std::basic_string< typename Alphabet::CharType >& sequence,
+            const std::string&                                      quality );
 
   size_t Length() const;
 
-  Sequence Subsequence( const size_t pos,
-                        const size_t len = std::string::npos ) const;
+  Sequence< Alphabet >
+  Subsequence( const size_t pos,
+               const size_t len = std::string::npos ) const;
 
-  Sequence operator+( const Sequence& other ) const;
-  char& operator[]( const size_t index );
-  char operator[]( const size_t index ) const;
-  bool operator==( const Sequence& other ) const;
-  bool operator!=( const Sequence& other ) const;
+  Sequence< Alphabet > operator+( const Sequence< Alphabet >& other ) const;
+  char&                operator[]( const size_t index );
+  char                 operator[]( const size_t index ) const;
+  bool                 operator==( const Sequence< Alphabet >& other ) const;
+  bool                 operator!=( const Sequence< Alphabet >& other ) const;
 
-  Sequence Reverse() const;
-  Sequence Complement() const;
-  Sequence ReverseComplement() const;
+  Sequence< Alphabet > Reverse() const;
+  Sequence< Alphabet > Complement() const;
+  Sequence< Alphabet > ReverseComplement() const;
 
-  std::string sequence;
   std::string identifier;
   std::string quality;
+
+  std::basic_string< typename Alphabet::CharType > sequence;
 };
 
-static std::ostream& operator<<( std::ostream& os, const Sequence& seq ) {
+template < typename Alphabet >
+static std::ostream& operator<<( std::ostream& os, const Sequence< Alphabet >& seq ) {
   if( !seq.identifier.empty() )
     os << ">" << seq.identifier << std::endl;
   if( !seq.sequence.empty() )
@@ -53,31 +65,5 @@ static std::ostream& operator<<( std::ostream& os, const Sequence& seq ) {
   return os;
 }
 
-typedef std::deque< Sequence > SequenceList;
-
-// Hash function (only for unambiguous DNA sequences)
-namespace std
-{
-  template <>
-  struct hash< Sequence > {
-    size_t operator()( const Sequence &seq ) const {
-      size_t key = 0;
-
-      for( int k = 0; k < seq.sequence.size(); k++ ) {
-        int val = 0;
-        switch( seq.sequence[ k ] ) {
-          case 'A': val = 0b00; break;
-          case 'C': val = 0b01; break;
-          case 'U':
-          case 'T': val = 0b10; break;
-          case 'G': val = 0b11; break;
-          default: assert( false ); break;
-        }
-
-        key |= ( val << ( ( k * 2 ) % ( sizeof( size_t ) * 8 ) ) );
-      }
-
-      return key;
-    }
-  };
-}
+template< typename Alphabet >
+using SequenceList = std::deque< Sequence< Alphabet > >;

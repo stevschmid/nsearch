@@ -10,165 +10,165 @@
 
 #include "Common.h"
 
-using QueryWithHits     = std::pair< Sequence, GlobalSearch::HitList >;
-using QueryWithHitsList = std::deque< QueryWithHits >;
+/* using QueryWithHits     = std::pair< Sequence, GlobalSearch::HitList >; */
+/* using QueryWithHitsList = std::deque< QueryWithHits >; */
 
-template <>
-class QueueItemInfo< QueryWithHitsList > {
-public:
-  static size_t Count( const QueryWithHitsList& list ) {
-    return std::accumulate(
-      list.begin(), list.end(), 0,
-      []( int sum, const QueryWithHits& q ) { return sum + q.second.size(); } );
-  }
-};
+/* template <> */
+/* class QueueItemInfo< QueryWithHitsList > { */
+/* public: */
+/*   static size_t Count( const QueryWithHitsList& list ) { */
+/*     return std::accumulate( */
+/*       list.begin(), list.end(), 0, */
+/*       []( int sum, const QueryWithHits& q ) { return sum + q.second.size(); } ); */
+/*   } */
+/* }; */
 
-class SearchResultsWriterWorker {
-public:
-  SearchResultsWriterWorker( const std::string& path ) : mWriter( path ) {}
+/* class SearchResultsWriterWorker { */
+/* public: */
+/*   SearchResultsWriterWorker( const std::string& path ) : mWriter( path ) {} */
 
-  void Process( const QueryWithHitsList& queryWithHitsList ) {
-    for( auto& queryWithHits : queryWithHitsList ) {
-      mWriter << queryWithHits;
-    }
-  }
+/*   void Process( const QueryWithHitsList& queryWithHitsList ) { */
+/*     for( auto& queryWithHits : queryWithHitsList ) { */
+/*       mWriter << queryWithHits; */
+/*     } */
+/*   } */
 
-private:
-  Alnout::Writer mWriter;
-};
-using SearchResultsWriter =
-  WorkerQueue< SearchResultsWriterWorker, QueryWithHitsList,
-               const std::string& >;
+/* private: */
+/*   Alnout::Writer mWriter; */
+/* }; */
+/* using SearchResultsWriter = */
+/*   WorkerQueue< SearchResultsWriterWorker, QueryWithHitsList, */
+/*                const std::string& >; */
 
-template <>
-class QueueItemInfo< SequenceList > {
-public:
-  static size_t Count( const SequenceList& list ) {
-    return list.size();
-  }
-};
+/* template <> */
+/* class QueueItemInfo< SequenceList > { */
+/* public: */
+/*   static size_t Count( const SequenceList& list ) { */
+/*     return list.size(); */
+/*   } */
+/* }; */
 
-class QueryDatabaseSearcherWorker {
-public:
-  QueryDatabaseSearcherWorker( SearchResultsWriter* writer,
-                               const Database*      database,
-                               const float minIdentity, const int maxAccepts,
-                               const int maxRejects )
-      : mWriter( *writer ),
-        mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects ) {}
+/* class QueryDatabaseSearcherWorker { */
+/* public: */
+/*   QueryDatabaseSearcherWorker( SearchResultsWriter* writer, */
+/*                                const Database*      database, */
+/*                                const float minIdentity, const int maxAccepts, */
+/*                                const int maxRejects ) */
+/*       : mWriter( *writer ), */
+/*         mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects ) {} */
 
-  void Process( const SequenceList& queries ) {
-    QueryWithHitsList list;
+/*   void Process( const SequenceList& queries ) { */
+/*     QueryWithHitsList list; */
 
-    for( auto& query : queries ) {
-      auto hits = mGlobalSearch.Query( query );
-      if( hits.empty() )
-        continue;
+/*     for( auto& query : queries ) { */
+/*       auto hits = mGlobalSearch.Query( query ); */
+/*       if( hits.empty() ) */
+/*         continue; */
 
-      list.push_back( { query, hits } );
-    }
+/*       list.push_back( { query, hits } ); */
+/*     } */
 
-    if( !list.empty() ) {
-      mWriter.Enqueue( list );
-    }
-  }
+/*     if( !list.empty() ) { */
+/*       mWriter.Enqueue( list ); */
+/*     } */
+/*   } */
 
-private:
-  GlobalSearch         mGlobalSearch;
-  SearchResultsWriter& mWriter;
-};
-using QueryDatabaseSearcher =
-  WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter*,
-               const Database*, const float, const int, const int >;
+/* private: */
+/*   GlobalSearch         mGlobalSearch; */
+/*   SearchResultsWriter& mWriter; */
+/* }; */
+/* using QueryDatabaseSearcher = */
+/*   WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter*, */
+/*                const Database*, const float, const int, const int >; */
 
 bool Search( const std::string& queryPath, const std::string& databasePath,
              const std::string& outputPath, const float minIdentity,
              const int maxAccepts, const int maxRejects ) {
-  ProgressOutput progress;
+  /* ProgressOutput progress; */
 
-  Sequence     seq;
-  SequenceList sequences;
+  /* Sequence     seq; */
+  /* SequenceList sequences; */
 
-  FASTA::Reader dbReader( databasePath );
+  /* FASTA::Reader dbReader( databasePath ); */
 
-  enum ProgressType {
-    ReadDBFile,
-    StatsDB,
-    IndexDB,
-    ReadQueryFile,
-    SearchDB,
-    WriteHits
-  };
+  /* enum ProgressType { */
+  /*   ReadDBFile, */
+  /*   StatsDB, */
+  /*   IndexDB, */
+  /*   ReadQueryFile, */
+  /*   SearchDB, */
+  /*   WriteHits */
+  /* }; */
 
-  progress.Add( ProgressType::ReadDBFile, "Read database", UnitType::BYTES );
-  progress.Add( ProgressType::StatsDB, "Analyze database" );
-  progress.Add( ProgressType::IndexDB, "Index database" );
-  progress.Add( ProgressType::ReadQueryFile, "Read queries", UnitType::BYTES );
-  progress.Add( ProgressType::SearchDB, "Search database" );
-  progress.Add( ProgressType::WriteHits, "Write hits" );
+  /* progress.Add( ProgressType::ReadDBFile, "Read database", UnitType::BYTES ); */
+  /* progress.Add( ProgressType::StatsDB, "Analyze database" ); */
+  /* progress.Add( ProgressType::IndexDB, "Index database" ); */
+  /* progress.Add( ProgressType::ReadQueryFile, "Read queries", UnitType::BYTES ); */
+  /* progress.Add( ProgressType::SearchDB, "Search database" ); */
+  /* progress.Add( ProgressType::WriteHits, "Write hits" ); */
 
-  // Read DB
-  progress.Activate( ProgressType::ReadDBFile );
-  while( !dbReader.EndOfFile() ) {
-    dbReader >> seq;
-    sequences.push_back( std::move( seq ) );
-    progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(),
-                  dbReader.NumBytesTotal() );
-  }
+  /* // Read DB */
+  /* progress.Activate( ProgressType::ReadDBFile ); */
+  /* while( !dbReader.EndOfFile() ) { */
+  /*   dbReader >> seq; */
+  /*   sequences.push_back( std::move( seq ) ); */
+  /*   progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(), */
+  /*                 dbReader.NumBytesTotal() ); */
+  /* } */
 
-  // Index DB
-  const int wordSize = 8;
-  Database db( wordSize );
-  db.SetProgressCallback( [&]( Database::ProgressType type, size_t num,
-                         size_t total ) {
-    switch( type ) {
-      case Database::ProgressType::StatsCollection:
-        progress.Activate( ProgressType::StatsDB )
-          .Set( ProgressType::StatsDB, num, total );
-        break;
+  /* // Index DB */
+  /* const int wordSize = 8; */
+  /* Database db( wordSize ); */
+  /* db.SetProgressCallback( [&]( Database::ProgressType type, size_t num, */
+  /*                        size_t total ) { */
+  /*   switch( type ) { */
+  /*     case Database::ProgressType::StatsCollection: */
+  /*       progress.Activate( ProgressType::StatsDB ) */
+  /*         .Set( ProgressType::StatsDB, num, total ); */
+  /*       break; */
 
-      case Database::ProgressType::Indexing:
-        progress.Activate( ProgressType::IndexDB )
-          .Set( ProgressType::IndexDB, num, total );
-        break;
+  /*     case Database::ProgressType::Indexing: */
+  /*       progress.Activate( ProgressType::IndexDB ) */
+  /*         .Set( ProgressType::IndexDB, num, total ); */
+  /*       break; */
 
-      default:
-        break;
-    }
-  });
-  db.Initialize( sequences );
+  /*     default: */
+  /*       break; */
+  /*   } */
+  /* }); */
+  /* db.Initialize( sequences ); */
 
-  // Read and process queries
-  const int numQueriesPerWorkItem = 64;
+  /* // Read and process queries */
+  /* const int numQueriesPerWorkItem = 64; */
 
-  SearchResultsWriter   writer( 1, outputPath );
-  QueryDatabaseSearcher searcher( -1, &writer, &db, minIdentity, maxAccepts,
-                                  maxRejects );
+  /* SearchResultsWriter   writer( 1, outputPath ); */
+  /* QueryDatabaseSearcher searcher( -1, &writer, &db, minIdentity, maxAccepts, */
+  /*                                 maxRejects ); */
 
-  searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
-  } );
-  writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
-    progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
-  } );
+  /* searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) { */
+  /*   progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued ); */
+  /* } ); */
+  /* writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) { */
+  /*   progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued ); */
+  /* } ); */
 
-  FASTA::Reader qryReader( queryPath );
+  /* FASTA::Reader qryReader( queryPath ); */
 
-  SequenceList queries;
-  progress.Activate( ProgressType::ReadQueryFile );
-  while( !qryReader.EndOfFile() ) {
-    qryReader.Read( numQueriesPerWorkItem, &queries );
-    searcher.Enqueue( queries );
-    progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(),
-                  qryReader.NumBytesTotal() );
-  }
+  /* SequenceList queries; */
+  /* progress.Activate( ProgressType::ReadQueryFile ); */
+  /* while( !qryReader.EndOfFile() ) { */
+  /*   qryReader.Read( numQueriesPerWorkItem, &queries ); */
+  /*   searcher.Enqueue( queries ); */
+  /*   progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(), */
+  /*                 qryReader.NumBytesTotal() ); */
+  /* } */
 
-  // Search
-  progress.Activate( ProgressType::SearchDB );
-  searcher.WaitTillDone();
+  /* // Search */
+  /* progress.Activate( ProgressType::SearchDB ); */
+  /* searcher.WaitTillDone(); */
 
-  progress.Activate( ProgressType::WriteHits );
-  writer.WaitTillDone();
+  /* progress.Activate( ProgressType::WriteHits ); */
+  /* writer.WaitTillDone(); */
 
   return true;
 }

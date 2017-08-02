@@ -2,23 +2,26 @@
 
 #include "nsearch/Alignment/Cigar.h"
 #include "nsearch/Sequence.h"
+#include "nsearch/Database.h"
 
 #include <deque>
 #include <vector>
 
-class Database;
+template< typename Alphabet >
+struct Hit {
+  Sequence< Alphabet > target;
+  Cigar                alignment;
+};
 
+template< typename Alphabet >
+using HitList = std::deque< Hit< Alphabet > >;
+
+template< typename Alphabet >
 class BaseSearch {
 public:
-  using Hit = struct {
-    Sequence target;
-    Cigar    alignment;
-  };
-  using HitList = std::deque< Hit >;
+  BaseSearch( const Database< Alphabet >& db ) : mDB( db ) {}
+  virtual HitList< Alphabet > Query( const Sequence< Alphabet > & query ) = 0;
 
-  BaseSearch( const Database& db ) : mDB( db ) {}
-  virtual HitList Query( const Sequence& query ) = 0;
-
-private:
-  const Database& mDB;
+protected:
+  const Database< Alphabet >& mDB;
 };

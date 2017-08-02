@@ -1,5 +1,5 @@
-#include "nsearch/FASTQ/QScore.h"
 #include "nsearch/PairedEnd/Merger.h"
+#include "nsearch/FASTQ/QScore.h"
 #include "nsearch/Utils.h"
 
 #include <cassert>
@@ -9,23 +9,26 @@
 using FASTQ::QScore;
 
 namespace PairedEnd {
-Merger::Merger( const int minOverlap, const double minIdentity )
+
+template < typename A >
+Merger< A >::Merger( const int minOverlap, const double minIdentity )
     : mMinOverlap( minOverlap ), mMinIdentity( minIdentity ) {}
 
-bool Merger::Merge( const Sequence& fwd, const Sequence& rev,
-                    Sequence* mergedOut ) const {
+template < typename A >
+bool Merger< A >::Merge( const Sequence< A >& fwd, const Sequence< A >& rev,
+                         Sequence< A >* mergedOut ) const {
   OverlapInfo overlap;
 
   assert( fwd.quality.length() == fwd.sequence.length() );
   assert( rev.quality.length() == rev.sequence.length() );
 
-  Sequence seq1 = fwd;
-  Sequence seq2 = rev.ReverseComplement();
+  Sequence< A > seq1 = fwd;
+  Sequence< A > seq2 = rev.ReverseComplement();
 
   if( !FindBestOverlap( seq1, seq2, &overlap ) )
     return false;
 
-  Sequence merged = seq1.Subsequence( 0, overlap.length );
+  Sequence< A > merged = seq1.Subsequence( 0, overlap.length );
 
   for( int i = 0; i < overlap.length; i++ ) {
     char s1 = seq1.sequence[ overlap.pos1 + i ];
@@ -59,9 +62,10 @@ bool Merger::Merge( const Sequence& fwd, const Sequence& rev,
   //  AAA
   // BBB  -> MM (staggered)
   if( !IsStaggered( overlap ) ) {
-    Sequence leftOverhang  = seq1.Subsequence( 0, overlap.pos1 );
-    Sequence rightOverhang = seq2.Subsequence( overlap.length );
-    merged                 = leftOverhang + merged + rightOverhang;
+    Sequence< A > leftOverhang  = seq1.Subsequence( 0, overlap.pos1 );
+    Sequence< A > rightOverhang = seq2.Subsequence( overlap.length );
+
+    merged = leftOverhang + merged + rightOverhang;
   }
 
   /* std::cout << seq1.identifier << std::endl; */
@@ -75,10 +79,12 @@ bool Merger::Merge( const Sequence& fwd, const Sequence& rev,
   return true;
 }
 
-double Merger::ComputeOverlapScore( const char* sequence1,
-                                    const char* sequence2, const char* quality1,
-                                    const char*  quality2,
-                                    const size_t len ) const {
+template < typename A >
+double Merger< A >::ComputeOverlapScore( const char*  sequence1,
+                                         const char*  sequence2,
+                                         const char*  quality1,
+                                         const char*  quality2,
+                                         const size_t len ) const {
   double score = 0.0;
 
   size_t numMismatches = 0;
@@ -130,7 +136,10 @@ double Merger::ComputeOverlapScore( const char* sequence1,
  * BB
  *
  */
-bool Merger::FindBestOverlap( const Sequence& seq1, const Sequence& seq2, OverlapInfo *overlap ) const {
+template < typename A >
+bool Merger< A >::FindBestOverlap( const Sequence< A >& seq1,
+                                   const Sequence< A >& seq2,
+                                   OverlapInfo*         overlap ) const {
   int len1 = seq1.Length();
   int len2 = seq2.Length();
 
@@ -154,7 +163,7 @@ bool Merger::FindBestOverlap( const Sequence& seq1, const Sequence& seq2, Overla
       seq1.quality.c_str() + pos1, seq2.quality.c_str() + pos2, length );
 
     if( score > bestScore ) {
-      bestScore      = score;
+      bestScore       = score;
       overlap->length = length;
       overlap->pos1   = pos1;
       overlap->pos2   = pos2;
@@ -164,12 +173,15 @@ bool Merger::FindBestOverlap( const Sequence& seq1, const Sequence& seq2, Overla
   return ( bestScore > DBL_MIN );
 }
 
-bool Merger::IsStaggered( const OverlapInfo& overlap ) const {
+template < typename A >
+bool Merger< A >::IsStaggered( const OverlapInfo& overlap ) const {
   return overlap.pos2 > 0;
 }
 
-void Merger::PrintOverlap( const Sequence& seq1, const Sequence& seq2,
-                           const OverlapInfo& overlap ) const {
+template < typename A >
+void Merger< A >::PrintOverlap( const Sequence< A >& seq1,
+                                const Sequence< A >& seq2,
+                                const OverlapInfo&   overlap ) const {
   std::cout << std::string( overlap.pos2, ' ' ) << seq1.quality << std::endl;
   std::cout << std::string( overlap.pos2, ' ' ) << seq1.sequence << std::endl;
   std::cout << std::string( std::max( overlap.pos1, overlap.pos2 ), ' ' );

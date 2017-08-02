@@ -7,20 +7,21 @@
 
 using Counter = unsigned short;
 
-class GlobalSearch : public BaseSearch {
+template < typename Alphabet >
+class GlobalSearch : public BaseSearch< Alphabet > {
 public:
-  GlobalSearch( const Database& db, const float minIdentity,
+  GlobalSearch( const Database< Alphabet >& db, const float minIdentity,
                 const int maxHits = 1, const int maxRejects = 8 );
-  HitList Query( const Sequence& query );
+  HitList< Alphabet > Query( const Sequence< Alphabet >& query );
 
 private:
-  const Database& mDB;
+  using BaseSearch< Alphabet >::mDB;
 
   float mMinIdentity;
   int   mMaxHits;
   int   mMaxRejects;
 
-  std::vector< Counter > mHits;
-  ExtendAlign            mExtendAlign;
-  BandedAlign            mBandedAlign;
+  std::vector< Counter >  mHits;
+  ExtendAlign< Alphabet > mExtendAlign;
+  BandedAlign< Alphabet > mBandedAlign;
 };

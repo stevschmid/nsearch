@@ -20,6 +20,7 @@ typedef struct BandedAlignParams {
   int terminalGapExtendScore = -1;
 } BandedAlignParams;
 
+template < typename Alphabet >
 class BandedAlign {
 private:
   class Gap {
@@ -92,10 +93,11 @@ public:
   BandedAlign( const BandedAlignParams& params = BandedAlignParams() )
       : mParams( params ) {}
 
-  int Align( const Sequence& A, const Sequence& B, Cigar* cigar = NULL,
-             const AlignmentDirection dir = AlignmentDirection::fwd,
-             size_t startA = 0, size_t startB = 0,
-             size_t endA = -1, size_t endB = -1 ) {
+  int Align( const Sequence< Alphabet >& A, const Sequence< Alphabet >& B,
+             Cigar*                   cigar = NULL,
+             const AlignmentDirection dir   = AlignmentDirection::fwd,
+             size_t startA = 0, size_t startB = 0, size_t endA = -1,
+             size_t endB = -1 ) {
     // Calculate matrix width, depending on alignment
     // direction and length of sequences
     // A will be on the X axis (width of matrix)

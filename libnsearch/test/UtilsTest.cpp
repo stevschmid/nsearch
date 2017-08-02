@@ -3,14 +3,6 @@
 #include <nsearch/Utils.h>
 
 TEST_CASE( "Utils" ) {
-  SECTION( "IsBlank" ) {
-    REQUIRE( IsBlank( "" ) == true );
-    REQUIRE( IsBlank( " " ) == true );
-    REQUIRE( IsBlank( "\r\n" ) == true );
-    REQUIRE( IsBlank( "!" ) == false );
-    REQUIRE( IsBlank( "\r\nA" ) == false );
-  }
-
   SECTION( "UpcaseString" ) {
     std::string str = "AcGt";
     UpcaseString( str );

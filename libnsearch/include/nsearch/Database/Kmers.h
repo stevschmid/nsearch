@@ -21,11 +21,12 @@ inline int8_t MapNucleotide( const char base ) {
   }
 }
 
+template< typename Alphabet >
 class Kmers {
 public:
   using Callback = const std::function< void( const Kmer, const size_t ) >;
 
-  Kmers( const Sequence& ref, const size_t length ) : mRef( ref ) {
+  Kmers( const Sequence< Alphabet >& ref, const size_t length ) : mRef( ref ) {
     mLength = std::min( { length, mRef.Length(), sizeof( Kmer ) * 4 } );
   }
 
@@ -75,6 +76,6 @@ public:
   }
 
 private:
-  size_t          mLength;
-  const Sequence& mRef;
+  size_t                      mLength;
+  const Sequence< Alphabet >& mRef;
 };

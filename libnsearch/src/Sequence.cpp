@@ -5,41 +5,56 @@
 #include <ctype.h>
 #include <iostream>
 
-Sequence::Sequence() : Sequence( "", "", "" ) {}
+template < typename A >
+Sequence< A >::Sequence() : Sequence( "", "", "" ) {}
 
-Sequence::Sequence( const Sequence& sequence )
+template < typename A >
+Sequence< A >::Sequence( const Sequence& sequence )
     : sequence( sequence.sequence ), identifier( sequence.identifier ),
       quality( sequence.quality ) {}
 
-Sequence::Sequence( Sequence&& sequence )
+template < typename A >
+Sequence< A >::Sequence( Sequence< A >&& sequence )
     : sequence( std::move( sequence.sequence ) ),
       identifier( std::move( sequence.identifier ) ),
       quality( std::move( sequence.quality ) ) {}
 
-Sequence& Sequence::operator=( const Sequence& other ) {
+template < typename A >
+Sequence< A >& Sequence< A >::operator=( const Sequence< A >& other ) {
   sequence   = other.sequence;
   identifier = other.identifier;
   quality    = other.quality;
   return *this;
 }
 
-Sequence::Sequence( const std::string& sequence )
+template < typename A >
+Sequence< A >::Sequence( const std::string& sequence )
     : Sequence( "", sequence, "" ) {}
 
-Sequence::Sequence( const char* sequence ) : Sequence( "", sequence, "" ) {}
+template < typename A >
+Sequence< A >::Sequence( const char* sequence )
+    : Sequence( "", sequence, "" ) {}
 
-Sequence::Sequence( const std::string& identifier, const std::string& sequence )
+template < typename A >
+Sequence< A >::Sequence(
+  const std::string&                               identifier, const std::basic_string< typename A::CharType >& sequence )
     : Sequence( identifier, sequence, "" ) {}
 
-Sequence::Sequence( const std::string& identifier, const std::string& sequence,
-                    const std::string& quality )
+template < typename A >
+Sequence< A >::Sequence(
+  const std::string&                               identifier,
+  const std::basic_string< typename A::CharType >& sequence,
+  const std::string&                               quality )
     : identifier( identifier ), sequence( sequence ), quality( quality ) {}
 
-size_t Sequence::Length() const {
+template < typename A >
+size_t Sequence< A >::Length() const {
   return sequence.length();
 }
 
-Sequence Sequence::Subsequence( const size_t pos, const size_t len_ ) const {
+template < typename A >
+Sequence< A > Sequence< A >::Subsequence( const size_t pos,
+                                          const size_t len_ ) const {
   size_t len = len_;
   if( len == std::string::npos ) {
     len = Length() - pos;
@@ -50,33 +65,38 @@ Sequence Sequence::Subsequence( const size_t pos, const size_t len_ ) const {
                    pos < quality.length() ? quality.substr( pos, len ) : "" );
 }
 
-Sequence Sequence::operator+( const Sequence& other ) const {
-  return Sequence( identifier, sequence + other.sequence,
-                   quality + other.quality );
+template < typename A >
+Sequence< A > Sequence< A >::operator+( const Sequence< A >& other ) const {
+  return Sequence< A >( identifier, sequence + other.sequence,
+                        quality + other.quality );
 }
 
-char& Sequence::operator[]( const size_t index ) {
+template < typename A >
+char& Sequence< A >::operator[]( const size_t index ) {
   assert( index >= 0 && index < sequence.size() );
   return sequence[ index ];
 }
 
-char Sequence::operator[]( const size_t index ) const {
+template < typename A >
+char Sequence< A >::operator[]( const size_t index ) const {
   assert( index >= 0 && index < sequence.size() );
   return sequence[ index ];
 }
 
-bool Sequence::operator==( const Sequence& other ) const {
+template < typename A >
+bool Sequence< A >::operator==( const Sequence< A >& other ) const {
   return !( *this != other );
 }
 
-bool Sequence::operator!=( const Sequence& other ) const {
+template < typename A >
+bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   if( Length() != other.Length() )
     return true;
 
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( !DoNucleotidesMatch( *tit, *oit ) )
+    if( !A::Match( *tit, *oit ) )
       return true;
 
     ++tit;
@@ -86,7 +106,8 @@ bool Sequence::operator!=( const Sequence& other ) const {
   return false;
 }
 
-Sequence Sequence::Complement() const {
+template < typename A >
+Sequence< A > Sequence< A >::Complement() const {
   Sequence complement = *this;
 
   for( char& ch : complement.sequence ) {
@@ -96,7 +117,8 @@ Sequence Sequence::Complement() const {
   return complement;
 }
 
-Sequence Sequence::Reverse() const {
+template < typename A >
+Sequence< A > Sequence< A >::Reverse() const {
   Sequence rev = *this;
   // Reverse sequence and quality
   std::reverse( rev.sequence.begin(), rev.sequence.end() );
@@ -104,6 +126,7 @@ Sequence Sequence::Reverse() const {
   return rev;
 }
 
-Sequence Sequence::ReverseComplement() const {
+template < typename A >
+Sequence< A > Sequence< A >::ReverseComplement() const {
   return Reverse().Complement();
 }

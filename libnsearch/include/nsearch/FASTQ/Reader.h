@@ -3,11 +3,13 @@
 #include "../SequenceReader.h"
 
 namespace FASTQ {
-class Reader : public SequenceReader {
-public:
-  using SequenceReader::SequenceReader;
 
-  void operator>>( Sequence& seq ) {
+template < typename Alphabet >
+class Reader : public SequenceReader< Alphabet > {
+public:
+  using SequenceReader< Alphabet >::SequenceReader;
+
+  void operator>>( Sequence< Alphabet >& seq ) {
     ( *mTextReader ) >> seq.identifier;
     ( *mTextReader ) >> seq.sequence;
     ( *mTextReader ) >> seq.quality; // skip plusline
@@ -19,5 +21,9 @@ public:
     UpcaseString( seq.sequence ); // atc -> ATC
     UpcaseString( seq.quality );
   }
+
+private:
+  using SequenceReader< Alphabet >::mTextReader;
 };
+
 } // namespace FASTQ

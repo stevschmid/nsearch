@@ -10,52 +10,57 @@
 #include "Stats.h"
 #include "WorkerQueue.h"
 
-template <>
-class QueueItemInfo< SequenceList > {
+template < typename A >
+class QueueItemInfo< SequenceList< A > > {
 public:
-  static size_t Count( const SequenceList& list ) {
+  static size_t Count( const SequenceList< A >& list ) {
     return list.size();
   }
 };
 
+template < typename A >
 class MergedReadWriterWorker {
 public:
   MergedReadWriterWorker( const std::string& path ) : mWriter( path ) {}
 
-  void Process( const SequenceList& queueItem ) {
+  void Process( const SequenceList< A >& queueItem ) {
     for( auto seq : queueItem ) {
       mWriter << seq;
     }
   }
 
 private:
-  FASTQ::Writer mWriter;
+  FASTQ::Writer< A > mWriter;
 };
+
+template < typename A >
 using MergedReadWriter =
-  WorkerQueue< MergedReadWriterWorker, SequenceList, const std::string& >;
+  WorkerQueue< MergedReadWriterWorker< A >, SequenceList< A >, const std::string& >;
 
-using PairedReads = std::pair< SequenceList, SequenceList >;
+template < typename A >
+using PairedReads = std::pair< SequenceList< A >, SequenceList< A > >;
 
-template <>
-class QueueItemInfo< PairedReads > {
+template < typename A >
+class QueueItemInfo< PairedReads< A > > {
 public:
-  static size_t Count( const PairedReads& list ) {
+  static size_t Count( const PairedReads< A >& list ) {
     return list.first.size();
   }
 };
 
+template < typename A >
 class ReadMergerWorker {
 public:
-  ReadMergerWorker( MergedReadWriter* writer ) : mWriter( *writer ) {}
+  ReadMergerWorker( MergedReadWriter< A >* writer ) : mWriter( *writer ) {}
 
-  void Process( const PairedReads& queueItem ) {
-    const SequenceList& fwd = queueItem.first;
-    const SequenceList& rev = queueItem.second;
+  void Process( const PairedReads< A >& queueItem ) {
+    const SequenceList< A >& fwd = queueItem.first;
+    const SequenceList< A >& rev = queueItem.second;
 
-    const PairedEnd::Merger& merger = mMerger;
+    const PairedEnd::Merger< A >& merger = mMerger;
 
-    Sequence     mergedRead;
-    SequenceList mergedReads;
+    Sequence< A >     mergedRead;
+    SequenceList< A > mergedReads;
 
     auto fit = fwd.begin();
     auto rit = rev.begin();
@@ -77,22 +82,23 @@ public:
   }
 
 private:
-  MergedReadWriter& mWriter;
-  PairedEnd::Merger mMerger;
+  MergedReadWriter< A >& mWriter;
+  PairedEnd::Merger< A > mMerger;
 };
-using ReadMerger =
-  WorkerQueue< ReadMergerWorker, PairedReads, MergedReadWriter* >;
+
+template < typename A >
+using ReadMerger = WorkerQueue< ReadMergerWorker< A >, PairedReads< A >,
+                                MergedReadWriter< A >* >;
 
 bool Merge( const std::string& fwdPath, const std::string& revPath,
             const std::string& mergedPath ) {
   const int numReadsPerWorkItem = 512;
 
-  PairedEnd::Reader reader( fwdPath, revPath );
+  PairedEnd::Reader< Dna > reader( fwdPath, revPath );
+  MergedReadWriter< Dna >  writer( 1, mergedPath );
+  ReadMerger< Dna >        merger( -1, &writer );
 
-  MergedReadWriter writer( 1, mergedPath );
-  ReadMerger       merger( -1, &writer );
-
-  SequenceList fwdReads, revReads;
+  SequenceList< Dna > fwdReads, revReads;
 
   enum ProgressType { ReadFile, MergeReads, WriteReads };
 
@@ -101,18 +107,20 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
   progress.Add( ProgressType::MergeReads, "Merge reads" );
   progress.Add( ProgressType::WriteReads, "Write merged reads" );
 
-  merger.OnProcessed( [&]( const size_t numProcessed, const size_t numEnqueued ) {
-    progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
-  } );
+  merger.OnProcessed(
+    [&]( const size_t numProcessed, const size_t numEnqueued ) {
+      progress.Set( ProgressType::MergeReads, numProcessed, numEnqueued );
+    } );
 
-  writer.OnProcessed( [&]( const size_t numProcessed, const size_t numEnqueued ) {
-    progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
-  } );
+  writer.OnProcessed(
+    [&]( const size_t numProcessed, const size_t numEnqueued ) {
+      progress.Set( ProgressType::WriteReads, numProcessed, numEnqueued );
+    } );
 
   progress.Activate( ProgressType::ReadFile );
   while( !reader.EndOfFile() ) {
     reader.Read( numReadsPerWorkItem, &fwdReads, &revReads );
-    auto pair = std::pair< SequenceList, SequenceList >(
+    auto pair = std::pair< SequenceList< Dna >, SequenceList< Dna > >(
       std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
     progress.Set( ProgressType::ReadFile, reader.NumBytesRead(),
