@@ -54,30 +54,3 @@ static std::ostream& operator<<( std::ostream& os, const Sequence& seq ) {
 }
 
 typedef std::deque< Sequence > SequenceList;
-
-// Hash function (only for unambiguous DNA sequences)
-namespace std
-{
-  template <>
-  struct hash< Sequence > {
-    size_t operator()( const Sequence &seq ) const {
-      size_t key = 0;
-
-      for( int k = 0; k < seq.sequence.size(); k++ ) {
-        int val = 0;
-        switch( seq.sequence[ k ] ) {
-          case 'A': val = 0b00; break;
-          case 'C': val = 0b01; break;
-          case 'U':
-          case 'T': val = 0b10; break;
-          case 'G': val = 0b11; break;
-          default: assert( false ); break;
-        }
-
-        key |= ( val << ( ( k * 2 ) % ( sizeof( size_t ) * 8 ) ) );
-      }
-
-      return key;
-    }
-  };
-}
