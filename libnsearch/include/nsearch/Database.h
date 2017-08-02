@@ -51,3 +51,6 @@ private:
 
   OnProgressCallback mProgressCallback;
 };
+
+#include "../../src/Database.cpp"
+

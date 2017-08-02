@@ -25,3 +25,6 @@ private:
   ExtendAlign< Alphabet > mExtendAlign;
   BandedAlign< Alphabet > mBandedAlign;
 };
+
+
+#include "../../../src/Database/GlobalSearch.cpp"

@@ -67,3 +67,5 @@ static std::ostream& operator<<( std::ostream& os, const Sequence< Alphabet >& s
 
 template< typename Alphabet >
 using SequenceList = std::deque< Sequence< Alphabet > >;
+
+#include "../../src/Sequence.cpp"

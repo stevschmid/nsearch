@@ -1,4 +1,3 @@
-#include "nsearch/Sequence.h"
 #include "nsearch/Utils.h"
 
 #include <cassert>

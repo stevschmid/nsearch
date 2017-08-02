@@ -1,4 +1,3 @@
-#include "nsearch/PairedEnd/Merger.h"
 #include "nsearch/FASTQ/QScore.h"
 #include "nsearch/Utils.h"
 
@@ -197,4 +196,5 @@ void Merger< A >::PrintOverlap( const Sequence< A >& seq1,
   std::cout << std::string( overlap.pos1, ' ' ) << seq2.sequence << std::endl;
   std::cout << std::string( overlap.pos1, ' ' ) << seq2.quality << std::endl;
 }
+
 } // namespace PairedEnd

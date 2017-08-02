@@ -1,5 +1,3 @@
-#include "nsearch/Database/GlobalSearch.h"
-
 #include "nsearch/Database.h"
 #include "nsearch/Database/HSP.h"
 #include "nsearch/Sequence.h"

@@ -36,4 +36,8 @@ private:
                        const Sequence< Alphabet >& seq2,
                        const OverlapInfo&          overlap ) const;
 };
+
 } // namespace PairedEnd
+
+#include "../../../src/PairedEnd/Merger.cpp"
+

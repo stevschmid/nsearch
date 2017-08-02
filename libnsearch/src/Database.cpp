@@ -1,5 +1,3 @@
-#include "nsearch/Database.h"
-
 template < typename A >
 Database< A >::Database( const size_t kmerLength )
     : mKmerLength( kmerLength ),
