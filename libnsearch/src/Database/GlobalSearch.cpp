@@ -145,7 +145,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
         Cigar middleCigar;
         int   middleScore = 0;
         for( size_t a = sp.a1, b = sp.b1; a <= sp.a2 && b <= sp.b2; a++, b++ ) {
-          bool match = DoNucleotidesMatch( query[ a ], candidateSeq[ b ] );
+          bool match = A::Match( query[ a ], candidateSeq[ b ] );
           middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
           middleScore += match ? mExtendAlign.AP().matchScore
                                : mExtendAlign.AP().mismatchScore;

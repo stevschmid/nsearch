@@ -36,7 +36,8 @@ Sequence< A >::Sequence( const char* sequence )
 
 template < typename A >
 Sequence< A >::Sequence(
-  const std::string&                               identifier, const std::basic_string< typename A::CharType >& sequence )
+  const std::string&                               identifier,
+  const std::basic_string< typename A::CharType >& sequence )
     : Sequence( identifier, sequence, "" ) {}
 
 template < typename A >
@@ -110,7 +111,7 @@ Sequence< A > Sequence< A >::Complement() const {
   Sequence complement = *this;
 
   for( char& ch : complement.sequence ) {
-    ch = NucleotideComplement( ch );
+    ch = A::Complement( ch );
   }
 
   return complement;

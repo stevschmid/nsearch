@@ -94,11 +94,11 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
             const std::string& mergedPath ) {
   const int numReadsPerWorkItem = 512;
 
-  PairedEnd::Reader< Dna > reader( fwdPath, revPath );
-  MergedReadWriter< Dna >  writer( 1, mergedPath );
-  ReadMerger< Dna >        merger( -1, &writer );
+  PairedEnd::Reader< DNA > reader( fwdPath, revPath );
+  MergedReadWriter< DNA >  writer( 1, mergedPath );
+  ReadMerger< DNA >        merger( -1, &writer );
 
-  SequenceList< Dna > fwdReads, revReads;
+  SequenceList< DNA > fwdReads, revReads;
 
   enum ProgressType { ReadFile, MergeReads, WriteReads };
 
@@ -120,7 +120,7 @@ bool Merge( const std::string& fwdPath, const std::string& revPath,
   progress.Activate( ProgressType::ReadFile );
   while( !reader.EndOfFile() ) {
     reader.Read( numReadsPerWorkItem, &fwdReads, &revReads );
-    auto pair = std::pair< SequenceList< Dna >, SequenceList< Dna > >(
+    auto pair = std::pair< SequenceList< DNA >, SequenceList< DNA > >(
       std::move( fwdReads ), std::move( revReads ) );
     merger.Enqueue( pair );
     progress.Set( ProgressType::ReadFile, reader.NumBytesRead(),

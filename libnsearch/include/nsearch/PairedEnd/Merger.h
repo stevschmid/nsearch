@@ -7,7 +7,7 @@ namespace PairedEnd {
 static const int    MERGER_DEFAULT_MIN_OVERLAP  = 16; // bases
 static const double MERGER_DEFAULT_MIN_IDENTITY = 0.9;
 
-template< typename Alphabet >
+template < typename Alphabet >
 class Merger {
 public:
   Merger( const int    minOverlap  = MERGER_DEFAULT_MIN_OVERLAP,
@@ -28,16 +28,15 @@ private:
   double ComputeOverlapScore( const char* sequence1, const char* sequence2,
                               const char* quality1, const char* quality2,
                               const size_t len ) const;
-  bool   FindBestOverlap( const Sequence< Alphabet >& sequence1,
-                          const Sequence< Alphabet >& sequence2,
-                          OverlapInfo*                overlap ) const;
+  bool FindBestOverlap( const Sequence< Alphabet >& sequence1,
+                        const Sequence< Alphabet >& sequence2,
+                        OverlapInfo*                overlap ) const;
   bool IsStaggered( const OverlapInfo& overlap ) const;
-  void   PrintOverlap( const Sequence< Alphabet >& seq1,
-                       const Sequence< Alphabet >& seq2,
-                       const OverlapInfo&          overlap ) const;
+  void PrintOverlap( const Sequence< Alphabet >& seq1,
+                     const Sequence< Alphabet >& seq2,
+                     const OverlapInfo&          overlap ) const;
 };
 
 } // namespace PairedEnd
 
 #include "../../../src/PairedEnd/Merger.cpp"
-

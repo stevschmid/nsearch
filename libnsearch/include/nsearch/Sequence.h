@@ -5,17 +5,20 @@
 #include <iostream>
 #include <string>
 
-struct Dna {
+#include "Utils.h"
+
+struct DNA {
   typedef char CharType;
 
   static bool Match( const char nucA, const char nucB ) {
-    return nucA == nucB;
+    return DoNucleotidesMatch( nucA, nucB );
   }
 
   static char Complement( const char nuc ) {
-    return nuc;
+    return NucleotideComplement( nuc );
   }
 };
+using RNA = DNA;
 
 template < typename Alphabet >
 class Sequence {

@@ -22,7 +22,7 @@ public:
   Database( const size_t kmerLength );
 
   void SetProgressCallback( const OnProgressCallback& progressCallback );
-  void Initialize( const SequenceList< Alphabet >& sequences ) const;
+  void Initialize( const SequenceList< Alphabet >& sequences );
 
   size_t NumSequences() const;
   size_t MaxUniqueKmers() const;

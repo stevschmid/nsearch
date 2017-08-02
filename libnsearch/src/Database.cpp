@@ -12,7 +12,7 @@ void Database< A >::SetProgressCallback(
 }
 
 template < typename A >
-void Database< A >::Initialize( const SequenceList< A >& sequences ) const {
+void Database< A >::Initialize( const SequenceList< A >& sequences ) {
   mSequences = sequences;
 
   size_t totalEntries       = 0;
