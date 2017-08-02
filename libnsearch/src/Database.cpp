@@ -1,10 +1,18 @@
 #include "nsearch/Database.h"
 
-Database::Database( const SequenceList& sequences, const size_t kmerLength,
-                    const OnProgressCallback& progressCallback )
-    : mSequences( sequences ), mKmerLength( kmerLength ),
-      mProgressCallback( progressCallback ) {
-  mMaxUniqueKmers = 1 << ( 2 * mKmerLength ); // 2 bits per nt
+Database::Database( const size_t kmerLength )
+    : mKmerLength( kmerLength ),
+      mProgressCallback( []( ProgressType, const size_t, const size_t ) {} ),
+      mMaxUniqueKmers( 1 << ( 2 * mKmerLength ) ) // 2 bits per nt
+{}
+
+void Database::SetProgressCallback(
+  const OnProgressCallback& progressCallback ) {
+  mProgressCallback = progressCallback;
+}
+
+void Database::Initialize( const SequenceList& sequences ) {
+  mSequences = sequences;
 
   size_t totalEntries       = 0;
   size_t totalUniqueEntries = 0;
@@ -115,7 +123,7 @@ bool Database::GetKmersForSequenceId( const SequenceId& seqId,
 
   *kmers    = &mKmers[ offset ];
   *numKmers = count;
-  return true;
+  return count > 0;
 }
 
 bool Database::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
@@ -129,5 +137,5 @@ bool Database::GetSequenceIdsIncludingKmer( const Kmer&        kmer,
 
   *seqIds    = &mSequenceIds[ offset ];
   *numSeqIds = count;
-  return true;
+  return count > 0;
 }

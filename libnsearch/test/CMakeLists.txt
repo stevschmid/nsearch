@@ -7,17 +7,18 @@ add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
 add_executable(testnsearch EXCLUDE_FROM_ALL
-  Test.cpp
-  SequenceTest.cpp
-  TextReaderTest.cpp
-  FASTQTest.cpp
-  FASTATest.cpp
-  PairedEndTest.cpp
-  UtilsTest.cpp
-  Alignment/ExtendAlignTest.cpp
   Alignment/BandedAlignTest.cpp
-  Database/KmersTest.cpp
+  Alignment/ExtendAlignTest.cpp
+  DatabaseTest.cpp
   Database/HSPTest.cpp
+  Database/KmersTest.cpp
+  FASTATest.cpp
+  FASTQTest.cpp
+  PairedEndTest.cpp
+  SequenceTest.cpp
+  Test.cpp
+  TextReaderTest.cpp
+  UtilsTest.cpp
   )
 
 add_dependencies(check testnsearch)

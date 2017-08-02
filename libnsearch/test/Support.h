@@ -3,7 +3,7 @@
 #include <nsearch/Database/Kmers.h>
 #include <string>
 
-Kmer Kmerify( const std::string& a ) {
+static Kmer Kmerify( const std::string& a ) {
   Kmer kmer = 0;
   size_t counter = 0;
   for( auto &ch : a ) {

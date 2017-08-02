@@ -117,7 +117,9 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   }
 
   // Index DB
-  auto dbCallback = [&]( Database::ProgressType type, size_t num,
+  const int wordSize = 8;
+  Database db( wordSize );
+  db.SetProgressCallback( [&]( Database::ProgressType type, size_t num,
                          size_t total ) {
     switch( type ) {
       case Database::ProgressType::StatsCollection:
@@ -133,11 +135,11 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
       default:
         break;
     }
-  };
-  Database db( sequences, 8, dbCallback );
+  });
+  db.Initialize( sequences );
 
   // Read and process queries
-  const int numQueriesPerWorkItem = 50;
+  const int numQueriesPerWorkItem = 64;
 
   SearchResultsWriter   writer( 1, outputPath );
   QueryDatabaseSearcher searcher( -1, &writer, &db, minIdentity, maxAccepts,
@@ -146,7 +148,6 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
   } );
-
   writer.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
   } );

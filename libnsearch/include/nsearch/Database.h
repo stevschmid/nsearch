@@ -18,9 +18,10 @@ public:
   using OnProgressCallback =
     std::function< void( ProgressType, const size_t, const size_t ) >;
 
-  Database( const SequenceList& sequences, const size_t kmerLength,
-            const OnProgressCallback& progressCallback =
-              []( ProgressType, const size_t, const size_t ) {} );
+  Database( const size_t kmerLength );
+
+  void SetProgressCallback( const OnProgressCallback& progressCallback );
+  void Initialize( const SequenceList& sequences );
 
   size_t NumSequences() const;
   size_t MaxUniqueKmers() const;
