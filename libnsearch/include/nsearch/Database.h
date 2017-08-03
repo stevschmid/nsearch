@@ -59,7 +59,7 @@ template < typename A >
 Database< A >::Database( const size_t kmerLength )
     : mKmerLength( kmerLength ),
       mProgressCallback( []( ProgressType, const size_t, const size_t ) {} ),
-      mMaxUniqueKmers( 1 << ( 2 * mKmerLength ) ) // 2 bits per nt
+      mMaxUniqueKmers( 1 << ( BitMapPolicy< A >::NumBits * mKmerLength ) ) // 2 bits per nt
 {}
 
 template < typename A >

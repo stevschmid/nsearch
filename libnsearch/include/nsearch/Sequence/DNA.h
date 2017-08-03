@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Sequence.h"
-#include "../Utils.h"
 
 struct DNA {
   typedef char CharType;
