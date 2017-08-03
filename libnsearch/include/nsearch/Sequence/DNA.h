@@ -54,8 +54,8 @@ struct ComplementPolicy< DNA > {
 };
 
 template <>
-struct MatchPolicy< DNA > {
-  inline static bool Match( const char nucA, const char nucB ) {
+struct ComparePolicy< DNA > {
+  inline static bool Compare( const char nucA, const char nucB ) {
     static const int MatchMatrixSize = 26; // 'A'...'Z', waste some space for faster lookup
     static const int8_t MatchMatrix[ MatchMatrixSize ][ MatchMatrixSize ] = {
       {  1, -1, -1,  1,  0,  0, -1,  1,  0,  0, -1,  0,  1,  1,  0,  0,  0,  1, -1, -1, -1,  1,  1,  0, -1,  0 },
@@ -89,4 +89,3 @@ struct MatchPolicy< DNA > {
     return MatchMatrix[ nucA ][ nucB ];
   }
 };
-

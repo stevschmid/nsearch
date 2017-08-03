@@ -84,7 +84,7 @@ bool Merger< A >::Merge( const Sequence< A >& fwd, const Sequence< A >& rev,
       merged.sequence[ i ] = s2;
     }
 
-    if( MatchPolicy< A >::Match( s1, s2 ) ) {
+    if( ComparePolicy< A >::Compare( s1, s2 ) ) {
       merged.quality[ i ] =
         FASTQ::Q_MIN_ASCII_BASE +
         QScore::Instance().CalculatePosteriorScoreForMatch( q1, q2 );
@@ -132,7 +132,7 @@ double Merger< A >::ComputeOverlapScore( const char*  sequence1,
   size_t maxMismatches = len - size_t( len * mMinIdentity );
 
   for( int i = 0; i < len; i++ ) {
-    if( MatchPolicy< A >::Match( sequence1[ i ], sequence2[ i ] ) ) {
+    if( ComparePolicy< A >::Compare( sequence1[ i ], sequence2[ i ] ) ) {
       score +=
         ( 1.0 - QScore::Instance().CalculatePosteriorErrorProbabilityForMatch(
                   quality1[ i ], quality2[ i ] ) );
