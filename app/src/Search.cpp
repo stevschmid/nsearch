@@ -5,6 +5,7 @@
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
+#include <nsearch/Sequence/DNA.h>
 
 #include "WorkerQueue.h"
 

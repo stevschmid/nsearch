@@ -168,7 +168,7 @@ private:
             line.q += query[ qcount++ ];
             line.t += target[ tcount++ ];
             {
-              bool match = Alphabet::Match( line.q.back(), line.t.back() );
+              bool match = MatchPolicy< Alphabet >::Match( line.q.back(), line.t.back() );
               if( !match ) {
                 correct = false;
 

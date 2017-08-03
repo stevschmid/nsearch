@@ -11,18 +11,19 @@
 #include <ctype.h>
 #include <iostream>
 
-struct DNA {
-  typedef char CharType;
-
-  static bool Match( const char nucA, const char nucB ) {
-    return DoNucleotidesMatch( nucA, nucB );
-  }
-
-  static char Complement( const char nuc ) {
-    return NucleotideComplement( nuc );
+template < typename Alphabet >
+struct ComplementPolicy {
+  inline static char Complement( const char ch ) {
+    return ch;
   }
 };
-using RNA = DNA;
+
+template < typename Alphabet >
+struct MatchPolicy {
+  inline static bool Match( const char chA, const char chB ) {
+    return chA == chB;
+  }
+};
 
 template < typename Alphabet >
 class Sequence {
@@ -51,9 +52,8 @@ public:
   bool                 operator==( const Sequence< Alphabet >& other ) const;
   bool                 operator!=( const Sequence< Alphabet >& other ) const;
 
-  Sequence< Alphabet > Reverse() const;
   Sequence< Alphabet > Complement() const;
-  Sequence< Alphabet > ReverseComplement() const;
+  Sequence< Alphabet > Reverse() const;
 
   std::string identifier;
   std::string quality;
@@ -62,7 +62,8 @@ public:
 };
 
 template < typename Alphabet >
-static std::ostream& operator<<( std::ostream& os, const Sequence< Alphabet >& seq ) {
+static std::ostream& operator<<( std::ostream&               os,
+                                 const Sequence< Alphabet >& seq ) {
   if( !seq.identifier.empty() )
     os << ">" << seq.identifier << std::endl;
   if( !seq.sequence.empty() )
@@ -72,7 +73,7 @@ static std::ostream& operator<<( std::ostream& os, const Sequence< Alphabet >& s
   return os;
 }
 
-template< typename Alphabet >
+template < typename Alphabet >
 using SequenceList = std::deque< Sequence< Alphabet > >;
 
 /*
@@ -170,7 +171,7 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( !A::Match( *tit, *oit ) )
+    if( MatchPolicy< A >::Match( *tit, *oit ) )
       return true;
 
     ++tit;
@@ -178,17 +179,6 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   }
 
   return false;
-}
-
-template < typename A >
-Sequence< A > Sequence< A >::Complement() const {
-  Sequence complement = *this;
-
-  for( char& ch : complement.sequence ) {
-    ch = A::Complement( ch );
-  }
-
-  return complement;
 }
 
 template < typename A >
@@ -201,7 +191,12 @@ Sequence< A > Sequence< A >::Reverse() const {
 }
 
 template < typename A >
-Sequence< A > Sequence< A >::ReverseComplement() const {
-  return Reverse().Complement();
-}
+Sequence< A > Sequence< A >::Complement() const {
+  Sequence complement = *this;
 
+  for( char& ch : complement.sequence ) {
+    ch = ComplementPolicy< A >::Complement( ch );
+  }
+
+  return complement;
+}

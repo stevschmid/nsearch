@@ -137,7 +137,7 @@ public:
           }
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
-          match = Alphabet::Match( A[ aIdx ], B[ bIdx ] );
+          match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ( match ? mAP.matchScore : mAP.mismatchScore );
         }
 

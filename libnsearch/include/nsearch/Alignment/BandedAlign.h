@@ -209,7 +209,7 @@ public:
           bIdx =
             ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
-          match = Alphabet::Match( A[ aIdx ], B[ bIdx ] );
+          match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
           score =
             diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
         }
