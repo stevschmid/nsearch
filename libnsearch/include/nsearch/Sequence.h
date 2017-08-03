@@ -12,6 +12,14 @@
 #include <iostream>
 
 template < typename Alphabet >
+struct BitMapPolicy {
+  static const size_t NumBits = 0;
+  inline static int8_t BitMap( const char ch ) {
+    return -1;
+  }
+};
+
+template < typename Alphabet >
 struct ComplementPolicy {
   inline static char Complement( const char ch ) {
     return ch;

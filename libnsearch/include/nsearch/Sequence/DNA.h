@@ -10,6 +10,22 @@ struct DNA {
 using RNA = DNA;
 
 template <>
+struct BitMapPolicy< DNA > {
+  static const size_t NumBits = 2;
+
+  inline static int8_t BitMap( const char base ) {
+    switch( base ) {
+      case 'A': return 0b00;
+      case 'C': return 0b01;
+      case 'U':
+      case 'T': return 0b10;
+      case 'G': return 0b11;
+      default: return -1;
+    }
+  }
+};
+
+template <>
 struct ComplementPolicy< DNA > {
   inline static char Complement( const char nuc ) {
     switch( nuc ) {
@@ -43,3 +59,4 @@ struct MatchPolicy< DNA > {
     return DoNucleotidesMatch( nucA, nucB );
   }
 };
+
