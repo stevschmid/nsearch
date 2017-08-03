@@ -47,10 +47,19 @@ public:
                const size_t len = std::string::npos ) const;
 
   Sequence< Alphabet > operator+( const Sequence< Alphabet >& other ) const;
-  char&                operator[]( const size_t index );
-  char                 operator[]( const size_t index ) const;
   bool                 operator==( const Sequence< Alphabet >& other ) const;
   bool                 operator!=( const Sequence< Alphabet >& other ) const;
+
+  // Inline for faster lookup
+  inline char& operator[]( const size_t index ) {
+    assert( index >= 0 && index < sequence.size() );
+    return sequence[ index ];
+  }
+
+  inline char operator[]( const size_t index ) const {
+    assert( index >= 0 && index < sequence.size() );
+    return sequence[ index ];
+  }
 
   Sequence< Alphabet > Complement() const;
   Sequence< Alphabet > Reverse() const;
@@ -144,18 +153,6 @@ template < typename A >
 Sequence< A > Sequence< A >::operator+( const Sequence< A >& other ) const {
   return Sequence< A >( identifier, sequence + other.sequence,
                         quality + other.quality );
-}
-
-template < typename A >
-char& Sequence< A >::operator[]( const size_t index ) {
-  assert( index >= 0 && index < sequence.size() );
-  return sequence[ index ];
-}
-
-template < typename A >
-char Sequence< A >::operator[]( const size_t index ) const {
-  assert( index >= 0 && index < sequence.size() );
-  return sequence[ index ];
 }
 
 template < typename A >
