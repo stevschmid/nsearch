@@ -9,10 +9,6 @@
 
 typedef struct {
   int xDrop = 32;
-
-  int matchScore    = 2;
-  int mismatchScore = -4;
-
   int gapOpenScore   = -20;
   int gapExtendScore = -2;
 } ExtendAlignParams;
@@ -137,8 +133,8 @@ public:
           }
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
-          match = ComparePolicy< Alphabet >::Compare( A[ aIdx ], B[ bIdx ] );
-          score = diagScore + ( match ? mAP.matchScore : mAP.mismatchScore );
+          match = ScorePolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
+          score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
         }
 
         // select highest score

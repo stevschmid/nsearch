@@ -10,9 +10,6 @@
 typedef struct BandedAlignParams {
   size_t bandwidth = 16;
 
-  int matchScore    = 2;
-  int mismatchScore = -4;
-
   int interiorGapOpenScore   = -20;
   int interiorGapExtendScore = -2;
 
@@ -209,9 +206,8 @@ public:
           bIdx =
             ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
-          match = ComparePolicy< Alphabet >::Compare( A[ aIdx ], B[ bIdx ] );
-          score =
-            diagScore + ( match ? mParams.matchScore : mParams.mismatchScore );
+          match = ScorePolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
+          score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
         }
 
         // Select highest score

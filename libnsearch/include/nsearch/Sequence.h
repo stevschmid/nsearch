@@ -27,9 +27,17 @@ struct ComplementPolicy {
 };
 
 template < typename Alphabet >
-struct ComparePolicy {
-  inline static bool Compare( const char chA, const char chB ) {
-    return chA == chB;
+struct ScorePolicy {
+  inline static int8_t Match( const char chA, const char chB ) {
+    return chA == chB ? 1 : -1;
+  }
+
+  inline static int8_t Score( const char chA, const char chB ) {
+    return Match( chA, chB ) ? 1 : -1;
+  }
+
+  inline static char Symbol( const char chA, const char chB ) {
+    return Match( chA, chB ) ? '|' : ' ';
   }
 };
 
@@ -176,7 +184,7 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( ComparePolicy< A >::Compare( *tit, *oit ) )
+    if( ScorePolicy< A >::Match( *tit, *oit ) )
       return true;
 
     ++tit;

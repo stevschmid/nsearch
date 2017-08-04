@@ -1156,30 +1156,30 @@ namespace Matchers {
     // This allows the types to be inferred
     // - deprecated: prefer ||, && and !
     template<typename T>
-    inline Impl::CompareNotOf<T> Not( Impl::CompareerBase<T> const& underlyingMatcher ) {
-        return Impl::CompareNotOf<T>( underlyingMatcher );
+    inline Impl::MatchNotOf<T> Not( Impl::MatcherBase<T> const& underlyingMatcher ) {
+        return Impl::MatchNotOf<T>( underlyingMatcher );
     }
     template<typename T>
-    inline Impl::CompareAllOf<T> AllOf( Impl::CompareerBase<T> const& m1, Impl::CompareerBase<T> const& m2 ) {
-        return Impl::CompareAllOf<T>() && m1 && m2;
+    inline Impl::MatchAllOf<T> AllOf( Impl::MatcherBase<T> const& m1, Impl::MatcherBase<T> const& m2 ) {
+        return Impl::MatchAllOf<T>() && m1 && m2;
     }
     template<typename T>
-    inline Impl::CompareAllOf<T> AllOf( Impl::CompareerBase<T> const& m1, Impl::CompareerBase<T> const& m2, Impl::CompareerBase<T> const& m3 ) {
-        return Impl::CompareAllOf<T>() && m1 && m2 && m3;
+    inline Impl::MatchAllOf<T> AllOf( Impl::MatcherBase<T> const& m1, Impl::MatcherBase<T> const& m2, Impl::MatcherBase<T> const& m3 ) {
+        return Impl::MatchAllOf<T>() && m1 && m2 && m3;
     }
     template<typename T>
-    inline Impl::CompareAnyOf<T> AnyOf( Impl::CompareerBase<T> const& m1, Impl::CompareerBase<T> const& m2 ) {
-        return Impl::CompareAnyOf<T>() || m1 || m2;
+    inline Impl::MatchAnyOf<T> AnyOf( Impl::MatcherBase<T> const& m1, Impl::MatcherBase<T> const& m2 ) {
+        return Impl::MatchAnyOf<T>() || m1 || m2;
     }
     template<typename T>
-    inline Impl::CompareAnyOf<T> AnyOf( Impl::CompareerBase<T> const& m1, Impl::CompareerBase<T> const& m2, Impl::CompareerBase<T> const& m3 ) {
-        return Impl::CompareAnyOf<T>() || m1 || m2 || m3;
+    inline Impl::MatchAnyOf<T> AnyOf( Impl::MatcherBase<T> const& m1, Impl::MatcherBase<T> const& m2, Impl::MatcherBase<T> const& m3 ) {
+        return Impl::MatchAnyOf<T>() || m1 || m2 || m3;
     }
 
 } // namespace Matchers
 
 using namespace Matchers;
-using Matchers::Impl::CompareerBase;
+using Matchers::Impl::MatcherBase;
 
 } // namespace Catch
 
@@ -1235,7 +1235,7 @@ namespace Catch {
         void captureResult( ResultWas::OfType resultType );
         void captureExpression();
         void captureExpectedException( std::string const& expectedMessage );
-        void captureExpectedException( Matchers::Impl::CompareerBase<std::string> const& matcher );
+        void captureExpectedException( Matchers::Impl::MatcherBase<std::string> const& matcher );
         void handleResult( AssertionResult const& result );
         void react();
         bool shouldDebugBreak() const;
@@ -9055,12 +9055,12 @@ namespace Catch {
 
     void ResultBuilder::captureExpectedException( std::string const& expectedMessage ) {
         if( expectedMessage.empty() )
-            captureExpectedException( Matchers::Impl::CompareAllOf<std::string>() );
+            captureExpectedException( Matchers::Impl::MatchAllOf<std::string>() );
         else
             captureExpectedException( Matchers::Equals( expectedMessage ) );
     }
 
-    void ResultBuilder::captureExpectedException( Matchers::Impl::CompareerBase<std::string> const& matcher ) {
+    void ResultBuilder::captureExpectedException( Matchers::Impl::MatcherBase<std::string> const& matcher ) {
 
         assert( !isFalseTest( m_assertionInfo.resultDisposition ) );
         AssertionResultData data = m_data;
@@ -11271,7 +11271,7 @@ namespace Catch {
     TestSpec::NamePattern::~NamePattern() {}
     TestSpec::TagPattern::~TagPattern() {}
     TestSpec::ExcludedPattern::~ExcludedPattern() {}
-    Matchers::Impl::CompareerUntypedBase::~MatcherUntypedBase() {}
+    Matchers::Impl::MatcherUntypedBase::~MatcherUntypedBase() {}
 
     void Config::dummy() {}
 

@@ -5,7 +5,7 @@
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
-#include <nsearch/Sequence/Protein.h>
+#include <nsearch/Sequence/DNA.h>
 
 #include "WorkerQueue.h"
 
@@ -97,10 +97,10 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
              const int maxAccepts, const int maxRejects ) {
   ProgressOutput progress;
 
-  Sequence< Protein >     seq;
-  SequenceList< Protein > sequences;
+  Sequence< DNA >     seq;
+  SequenceList< DNA > sequences;
 
-  FASTA::Reader< Protein > dbReader( databasePath );
+  FASTA::Reader< DNA > dbReader( databasePath );
 
   enum ProgressType {
     ReadDBFile,
@@ -128,17 +128,17 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   }
 
   // Index DB
-  const int wordSize = 5;
-  Database< Protein > db( wordSize );
-  db.SetProgressCallback( [&]( Database< Protein >::ProgressType type, size_t num,
+  const int wordSize = 8;
+  Database< DNA > db( wordSize );
+  db.SetProgressCallback( [&]( Database< DNA >::ProgressType type, size_t num,
                          size_t total ) {
     switch( type ) {
-      case Database< Protein >::ProgressType::StatsCollection:
+      case Database< DNA >::ProgressType::StatsCollection:
         progress.Activate( ProgressType::StatsDB )
           .Set( ProgressType::StatsDB, num, total );
         break;
 
-      case Database< Protein >::ProgressType::Indexing:
+      case Database< DNA >::ProgressType::Indexing:
         progress.Activate( ProgressType::IndexDB )
           .Set( ProgressType::IndexDB, num, total );
         break;
@@ -152,9 +152,9 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   // Read and process queries
   const int numQueriesPerWorkItem = 64;
 
-  SearchResultsWriter< Protein >   writer( 1, outputPath );
-  QueryDatabaseSearcher< Protein > searcher( -1, &writer, &db, minIdentity,
-                                             maxAccepts, maxRejects );
+  SearchResultsWriter< DNA >   writer( 1, outputPath );
+  QueryDatabaseSearcher< DNA > searcher( -1, &writer, &db, minIdentity, maxAccepts,
+                                  maxRejects );
 
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
@@ -163,9 +163,9 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
     progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
   } );
 
-  FASTA::Reader< Protein > qryReader( queryPath );
+  FASTA::Reader< DNA > qryReader( queryPath );
 
-  SequenceList< Protein > queries;
+  SequenceList< DNA > queries;
   progress.Activate( ProgressType::ReadQueryFile );
   while( !qryReader.EndOfFile() ) {
     qryReader.Read( numQueriesPerWorkItem, &queries );

@@ -168,13 +168,14 @@ private:
             line.q += query[ qcount++ ];
             line.t += target[ tcount++ ];
             {
-              bool match = ComparePolicy< Alphabet >::Compare( line.q.back(), line.t.back() );
+              const char a = line.q.back(), b = line.t.back();
+
+              bool match = ( ScorePolicy< Alphabet >::Score( a, b ) > 0 );
               if( !match ) {
                 correct = false;
-
                 line.a += 'X';
               } else {
-                line.a += '|';
+                line.a += ScorePolicy< Alphabet >::Symbol( a, b );
               }
             }
             break;
