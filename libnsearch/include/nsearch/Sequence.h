@@ -159,7 +159,7 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( *tit == *oit ) // exact matches
+    if( MatchPolicy< A >::Match( *tit, *oit ) )
       return true;
 
     ++tit;
