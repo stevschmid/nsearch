@@ -195,6 +195,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   return true;
 }
 
+// Explicit instantiation
 template bool Search< DNA >( const std::string&, const std::string&,
                              const std::string&, const float, const int,
                              const int );
