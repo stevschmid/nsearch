@@ -11,7 +11,7 @@ public:
   using Callback = const std::function< void( const Kmer, const size_t ) >;
 
   Kmers( const Sequence< Alphabet >& ref, const size_t length ) : mRef( ref ) {
-    mLength = std::min( { length, mRef.Length(), sizeof( Kmer ) * 4 } );
+    mLength = std::min( { length, mRef.Length(), sizeof( Kmer ) * 8 / BitMapPolicy< Alphabet >::NumBits } );
   }
 
   void ForEach( const Callback& block ) const {
@@ -47,7 +47,7 @@ public:
     // For each consecutive kmer, shift window by one
     size_t maxFrame = mRef.Length() - mLength;
     for( size_t frame = 1; frame <= maxFrame; frame++, ptr++ ) {
-      kmer >>= 2;
+      kmer >>= BitMapPolicy< Alphabet >::NumBits;
       int8_t val = bitMapNucleotide( *ptr );
       if( val < 0 ) {
         lastAmbigIndex = frame + mLength - 1;

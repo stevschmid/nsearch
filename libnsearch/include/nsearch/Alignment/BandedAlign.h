@@ -206,7 +206,7 @@ public:
           bIdx =
             ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
-          match = ScorePolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
+          match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
         }
 

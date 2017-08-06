@@ -137,7 +137,6 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
     // Sort by length
     // Try to find best chain
     // Fill space between with banded align
-
     std::set< HSP > hsps;
     for( auto& sp : sps ) {
       size_t queryPos, candidatePos;
@@ -169,8 +168,9 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
         Cigar middleCigar;
         int   middleScore = 0;
         for( size_t a = sp.a1, b = sp.b1; a <= sp.a2 && b <= sp.b2; a++, b++ ) {
-          bool match = ScorePolicy< A >::Match( query[ a ], candidateSeq[ b ] );
-          bool score = ScorePolicy< A >::Score( query[ a ], candidateSeq[ b ] );
+          auto chA = query[ a ], chB = candidateSeq[ b ];
+          bool match = MatchPolicy< A >::Match( chA, chB );
+          int8_t score = ScorePolicy< A >::Score( chA, chB );
           middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
           middleScore += score;
         }

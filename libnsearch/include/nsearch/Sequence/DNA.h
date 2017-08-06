@@ -19,7 +19,7 @@ struct BitMapPolicy< DNA > {
       case 'U':
       case 'T': return 0b10;
       case 'G': return 0b11;
-      default: return -1;
+      default: return -1; // ambiguity
     }
   }
 };
@@ -87,8 +87,11 @@ struct ScorePolicy< DNA > {
 
     return ScoreMatrix[ nucA - 'A' ][ nucB - 'A' ];
   }
+};
 
+template <>
+struct MatchPolicy < DNA > {
   inline static int8_t Match( const char nucA, const char nucB ) {
-    return Score( nucA, nucB ) > 0;
+    return ScorePolicy< DNA >::Score( nucA, nucB ) > 0;
   }
 };

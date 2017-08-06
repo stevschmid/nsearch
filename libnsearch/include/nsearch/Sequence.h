@@ -27,17 +27,16 @@ struct ComplementPolicy {
 };
 
 template < typename Alphabet >
+struct MatchPolicy {
+  inline static bool Match( const char chA, const char chB ) {
+    return chA == chB;
+  }
+};
+
+template < typename Alphabet >
 struct ScorePolicy {
-  inline static int8_t Match( const char chA, const char chB ) {
-    return chA == chB ? 1 : -1;
-  }
-
   inline static int8_t Score( const char chA, const char chB ) {
-    return Match( chA, chB ) ? 1 : -1;
-  }
-
-  inline static char Symbol( const char chA, const char chB ) {
-    return Match( chA, chB ) ? '|' : ' ';
+    return MatchPolicy< Alphabet >::Match( chA, chB ) ? 1 : -1;
   }
 };
 
@@ -181,10 +180,13 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   if( Length() != other.Length() )
     return true;
 
+  if( identifier != other.identifier )
+    return true;
+
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( ScorePolicy< A >::Match( *tit, *oit ) )
+    if( *tit == *oit ) // exact matches
       return true;
 
     ++tit;

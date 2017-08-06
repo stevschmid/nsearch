@@ -133,7 +133,7 @@ public:
           }
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
-          match = ScorePolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
+          match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
         }
 

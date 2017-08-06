@@ -2,6 +2,7 @@
 
 #include "../Database/GlobalSearch.h"
 #include "../Sequence.h"
+#include "../Sequence/Protein.h"
 
 #include <fstream>
 
@@ -14,6 +15,10 @@ class Writer {
 private:
   std::ofstream mFile;
   std::ostream& mOutput;
+
+  static inline char MatchSymbol( const char A, const char B ) {
+    return 'A';
+  }
 
 public:
   Writer( std::ostream& output ) : mOutput( output ) {}
@@ -170,12 +175,12 @@ private:
             {
               const char a = line.q.back(), b = line.t.back();
 
-              bool match = ScorePolicy< Alphabet >::Match( a, b );
+              bool match = MatchPolicy< Alphabet >::Match( a, b );
               if( !match ) {
                 correct = false;
                 line.a += 'X';
               } else {
-                line.a += ScorePolicy< Alphabet >::Symbol( a, b ); // TODO
+                line.a += MatchSymbol( a, b );
               }
             }
             break;
@@ -229,5 +234,15 @@ private:
   }
 
 }; // Writer
+
+template<>
+inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
+  if( A == B )
+    return '|';
+
+  auto score = ScorePolicy< Protein >::Score( A, B );
+  std::cout << A << " " << B << " " << (int)score << std::endl;
+  return score < 2 ? '.' : ':';
+}
 
 } // namespace Alnout
