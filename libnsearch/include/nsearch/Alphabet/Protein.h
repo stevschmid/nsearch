@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Sequence.h"
+#include "../Alphabet.h"
 
 struct Protein {
   typedef char CharType;
@@ -50,6 +50,7 @@ struct BitMapPolicy< Protein > {
   }
 };
 
+// BLOSUM62
 template <>
 struct ScorePolicy< Protein > {
   inline static int8_t Score( const char aaA, const char aaB ) {
@@ -91,6 +92,6 @@ struct ScorePolicy< Protein > {
 template <>
 struct MatchPolicy< Protein > {
   inline static bool Match( const char aaA, const char aaB ) {
-    return ScorePolicy< Protein >::Score( aaA, aaB ) >= 2;
+    return ScorePolicy< Protein >::Score( aaA, aaB ) > 0;
   }
 };

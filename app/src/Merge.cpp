@@ -5,7 +5,7 @@
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
 #include <nsearch/Sequence.h>
-#include <nsearch/Sequence/DNA.h>
+#include <nsearch/Alphabet/DNA.h>
 
 #include "Common.h"
 #include "Stats.h"

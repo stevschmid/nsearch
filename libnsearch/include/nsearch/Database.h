@@ -10,6 +10,8 @@
 #include "Database/Highscore.h"
 #include "Database/Kmers.h"
 
+#include "Alphabet.h"
+
 using SequenceId = uint32_t; // SequenceId
 
 template < typename Alphabet >

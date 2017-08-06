@@ -5,7 +5,8 @@
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
-#include <nsearch/Sequence/Protein.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Alphabet/Protein.h>
 
 #include "WorkerQueue.h"
 
@@ -92,15 +93,26 @@ using QueryDatabaseSearcher =
                SearchResultsWriter< A >*, const Database< A >*, const float,
                const int, const int >;
 
+template < typename A >
+struct WordSize {
+  static const int VALUE = 8; // DNA, default
+};
+
+template <>
+struct WordSize< Protein > {
+  static const int VALUE = 5;
+};
+
+template < typename A >
 bool Search( const std::string& queryPath, const std::string& databasePath,
              const std::string& outputPath, const float minIdentity,
              const int maxAccepts, const int maxRejects ) {
   ProgressOutput progress;
 
-  Sequence< Protein >     seq;
-  SequenceList< Protein > sequences;
+  Sequence< A >     seq;
+  SequenceList< A > sequences;
 
-  FASTA::Reader< Protein > dbReader( databasePath );
+  FASTA::Reader< A > dbReader( databasePath );
 
   enum ProgressType {
     ReadDBFile,
@@ -114,7 +126,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   progress.Add( ProgressType::ReadDBFile, "Read database", UnitType::BYTES );
   progress.Add( ProgressType::StatsDB, "Analyze database" );
   progress.Add( ProgressType::IndexDB, "Index database" );
-  progress.Add( ProgressType::ReadQueryFile, "Read queries", UnitType::BYTES);
+  progress.Add( ProgressType::ReadQueryFile, "Read queries", UnitType::BYTES );
   progress.Add( ProgressType::SearchDB, "Search database" );
   progress.Add( ProgressType::WriteHits, "Write hits" );
 
@@ -128,33 +140,32 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   }
 
   // Index DB
-  const int wordSize = 5;
-  Database< Protein > db( wordSize );
-  db.SetProgressCallback( [&]( Database< Protein >::ProgressType type, size_t num,
-                         size_t total ) {
-    switch( type ) {
-      case Database< Protein >::ProgressType::StatsCollection:
-        progress.Activate( ProgressType::StatsDB )
-          .Set( ProgressType::StatsDB, num, total );
-        break;
+  Database< A > db( WordSize< A >::VALUE );
+  db.SetProgressCallback(
+    [&]( typename Database< A >::ProgressType type, size_t num, size_t total ) {
+      switch( type ) {
+        case Database< A >::ProgressType::StatsCollection:
+          progress.Activate( ProgressType::StatsDB )
+            .Set( ProgressType::StatsDB, num, total );
+          break;
 
-      case Database< Protein >::ProgressType::Indexing:
-        progress.Activate( ProgressType::IndexDB )
-          .Set( ProgressType::IndexDB, num, total );
-        break;
+        case Database< A >::ProgressType::Indexing:
+          progress.Activate( ProgressType::IndexDB )
+            .Set( ProgressType::IndexDB, num, total );
+          break;
 
-      default:
-        break;
-    }
-  });
+        default:
+          break;
+      }
+    } );
   db.Initialize( sequences );
 
   // Read and process queries
   const int numQueriesPerWorkItem = 64;
 
-  SearchResultsWriter< Protein >   writer( 1, outputPath );
-  QueryDatabaseSearcher< Protein > searcher( -1, &writer, &db, minIdentity, maxAccepts,
-                                  maxRejects );
+  SearchResultsWriter< A >   writer( 1, outputPath );
+  QueryDatabaseSearcher< A > searcher( -1, &writer, &db, minIdentity,
+                                       maxAccepts, maxRejects );
 
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
@@ -163,9 +174,9 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
     progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
   } );
 
-  FASTA::Reader< Protein > qryReader( queryPath );
+  FASTA::Reader< A > qryReader( queryPath );
 
-  SequenceList< Protein > queries;
+  SequenceList< A > queries;
   progress.Activate( ProgressType::ReadQueryFile );
   while( !qryReader.EndOfFile() ) {
     qryReader.Read( numQueriesPerWorkItem, &queries );
@@ -183,3 +194,10 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 
   return true;
 }
+
+template bool Search< DNA >( const std::string&, const std::string&,
+                             const std::string&, const float, const int,
+                             const int );
+template bool Search< Protein >( const std::string&, const std::string&,
+                                 const std::string&, const float, const int,
+                                 const int );

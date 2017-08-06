@@ -2,6 +2,7 @@
 
 #include <string>
 
+template < typename Alphabet >
 extern bool Search( const std::string& queryPath,
                     const std::string& databasePath,
                     const std::string& outputPath, const float minIdentity,

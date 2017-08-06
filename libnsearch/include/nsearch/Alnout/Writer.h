@@ -2,7 +2,7 @@
 
 #include "../Database/GlobalSearch.h"
 #include "../Sequence.h"
-#include "../Sequence/Protein.h"
+#include "../Alphabet/Protein.h"
 
 #include <fstream>
 
@@ -241,7 +241,6 @@ inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
     return '|';
 
   auto score = ScorePolicy< Protein >::Score( A, B );
-  std::cout << A << " " << B << " " << (int)score << std::endl;
   return score < 2 ? '.' : ':';
 }
 
