@@ -54,7 +54,6 @@ struct ComplementPolicy< DNA > {
 
 template <>
 struct ScorePolicy< DNA > {
-
   inline static int8_t Score( const char nucA, const char nucB ) {
     static const int ScoreMatrixSize = 26; // 'A'...'Z', waste some space for faster lookup
     static const int8_t ScoreMatrix[ ScoreMatrixSize ][ ScoreMatrixSize ] = {
@@ -91,9 +90,5 @@ struct ScorePolicy< DNA > {
 
   inline static int8_t Match( const char nucA, const char nucB ) {
     return Score( nucA, nucB ) > 0;
-  }
-
-  inline static char Symbol( const char nucA, const char nucB ) {
-    return Match( nucA, nucB ) ? '|' : ' ';
   }
 };

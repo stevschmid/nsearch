@@ -170,12 +170,12 @@ private:
             {
               const char a = line.q.back(), b = line.t.back();
 
-              bool match = ( ScorePolicy< Alphabet >::Score( a, b ) > 0 );
+              bool match = ScorePolicy< Alphabet >::Match( a, b );
               if( !match ) {
                 correct = false;
                 line.a += 'X';
               } else {
-                line.a += ScorePolicy< Alphabet >::Symbol( a, b );
+                line.a += ScorePolicy< Alphabet >::Symbol( a, b ); // TODO
               }
             }
             break;
