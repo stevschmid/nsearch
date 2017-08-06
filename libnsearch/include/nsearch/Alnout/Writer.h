@@ -2,6 +2,8 @@
 
 #include "../Database/GlobalSearch.h"
 #include "../Sequence.h"
+
+#include "../Alphabet/DNA.h"
 #include "../Alphabet/Protein.h"
 
 #include <fstream>
@@ -16,9 +18,8 @@ private:
   std::ofstream mFile;
   std::ostream& mOutput;
 
-  static inline char MatchSymbol( const char A, const char B ) {
-    return 'A';
-  }
+  static inline char MatchSymbol( const char A, const char B );
+  static inline std::string Unit();
 
 public:
   Writer( std::ostream& output ) : mOutput( output ) {}
@@ -51,10 +52,10 @@ public:
       auto maxLen    = std::max( queryLen.size(), targetLen.size() );
 
       mOutput << " Query" << std::setw( maxLen + 1 )
-              << std::to_string( query.Length() ) << "nt"
+              << std::to_string( query.Length() ) << Unit()
               << " >" << query.identifier << std::endl;
       mOutput << "Target" << std::setw( maxLen + 1 )
-              << std::to_string( hit.target.Length() ) << "nt"
+              << std::to_string( hit.target.Length() ) << Unit()
               << " >" << hit.target.identifier << std::endl;
 
       size_t numCols, numMatches, numGaps;
@@ -143,8 +144,6 @@ private:
     size_t qcount = queryStart;
     size_t tcount = targetStart;
 
-    bool correct = true;
-
     AlignmentLine line;
     line.qs = queryStart + 1;
     line.ts = targetStart + 1;
@@ -168,27 +167,15 @@ private:
             numGaps++;
             break;
 
-          case CigarOp::MATCH:
+          case CigarOp::MATCH: // specific for match
             numMatches++;
+          case CigarOp::MISMATCH: // match and mismatch
             line.q += query[ qcount++ ];
             line.t += target[ tcount++ ];
             {
               const char a = line.q.back(), b = line.t.back();
-
-              bool match = MatchPolicy< Alphabet >::Match( a, b );
-              if( !match ) {
-                correct = false;
-                line.a += 'X';
-              } else {
-                line.a += MatchSymbol( a, b );
-              }
+              line.a += MatchSymbol( a, b );
             }
-            break;
-
-          case CigarOp::MISMATCH:
-            line.a += ' ';
-            line.q += query[ qcount++ ];
-            line.t += target[ tcount++ ];
             break;
 
           default:
@@ -224,24 +211,36 @@ private:
     if( outNumGaps )
       *outNumGaps = numGaps;
 
-    if( !correct ) {
-      std::cerr << "[DEBUG] INVALID ALIGNMENT " << std::endl
-                << query.identifier << std::endl
-                << target.identifier << std::endl;
-    }
-
     return lines;
   }
 
 }; // Writer
 
 template<>
-inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
-  if( A == B )
-    return '|';
+inline char Writer< DNA >::MatchSymbol( const char A, const char B ) {
+  return MatchPolicy< DNA >::Match( A, B ) ? '|' : ' ';
+}
 
+template<>
+inline std::string Writer< DNA >::Unit() {
+  return "nt";
+}
+
+template<>
+inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
   auto score = ScorePolicy< Protein >::Score( A, B );
-  return score < 2 ? '.' : ':';
+  if( score >= 4 )
+    return '|';
+  if( score >= 2 )
+    return ':';
+  if( score > 0 )
+    return '.';
+  return ' ';
+}
+
+template<>
+inline std::string Writer< Protein >::Unit() {
+  return "aa";
 }
 
 } // namespace Alnout

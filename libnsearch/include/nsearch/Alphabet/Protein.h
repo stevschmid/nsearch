@@ -92,6 +92,6 @@ struct ScorePolicy< Protein > {
 template <>
 struct MatchPolicy< Protein > {
   inline static bool Match( const char aaA, const char aaB ) {
-    return ScorePolicy< Protein >::Score( aaA, aaB ) > 0;
+    return ScorePolicy< Protein >::Score( aaA, aaB ) >= 4;
   }
 };
