@@ -9,9 +9,11 @@ ToDo
 - [ ] Allow WorkerQueue Enqueue with rvalues
 - [ ] Global Search Tests
 - [X] Alnout Tests
-- [ ] Namespacing (after final name was determined)
 - [ ] Masking of low-quality sequence regions (e.g. ATATATATATA)
 - [ ] Try out vector instead of deque
+- [ ] Find final name
+- [ ] Namespacing (after final name was determined)
+- [ ] Pick OS license
 
 Wishlist
 ---
