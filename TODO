@@ -7,7 +7,7 @@ ToDo
 - [ ] README (compiling, clang format, run tests)
 - [X] Alphabet tests
 - [ ] Allow WorkerQueue Enqueue with rvalues
-- [ ] Database tests
+- [ ] Global Search Tests
 - [X] Alnout Tests
 - [ ] Namespacing (after final name was determined)
 - [ ] Masking of low-quality sequence regions (e.g. ATATATATATA)

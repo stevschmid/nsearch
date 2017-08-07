@@ -18,7 +18,7 @@
 Stats gStats;
 
 static const char USAGE[] = R"(
-  Process and search sequences.
+  Metagenomics tool for the rest of us.
 
   Usage:
     nsearch search (dna|protein) --query=<queryfile> --database=<databasefile>
