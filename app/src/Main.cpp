@@ -10,6 +10,7 @@
 #include <nsearch/Alphabet/Protein.h>
 
 #include "Common.h"
+#include "Filter.h"
 #include "Merge.h"
 #include "Search.h"
 #include "Stats.h"
@@ -21,13 +22,15 @@ static const char USAGE[] = R"(
 
   Usage:
     nsearch search (dna|protein) --query=<queryfile> --database=<databasefile>
-      --out=<outputfile> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
+    nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
   Options:
-    --minidentity=<minidentity>    Minimum identity threshold (e.g. 0.8).
-    --maxaccepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
-    --maxrejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
+    --min-identity=<minidentity>    Minimum identity threshold (e.g. 0.8).
+    --max-accepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
+    --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
+    --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
 )";
 
 void PrintSummaryHeader() {
@@ -65,9 +68,9 @@ int main( int argc, const char** argv ) {
     auto query      = args[ "--query" ].asString();
     auto db         = args[ "--database" ].asString();
     auto out        = args[ "--out" ].asString();
-    auto minid      = std::stof( args[ "--minidentity" ].asString() );
-    auto maxaccepts = args[ "--maxaccepts" ].asLong();
-    auto maxrejects = args[ "--maxrejects" ].asLong();
+    auto minid      = std::stof( args[ "--min-identity" ].asString() );
+    auto maxaccepts = args[ "--max-accepts" ].asLong();
+    auto maxrejects = args[ "--max-rejects" ].asLong();
 
     if( args[ "dna" ].asBool() ) {
       Search< DNA >( query, db, out, minid, maxaccepts, maxrejects );
@@ -97,6 +100,22 @@ int main( int argc, const char** argv ) {
     PrintSummaryLine( gStats.numProcessed, "Pairs" );
     PrintSummaryLine( gStats.numMerged, "Merged", gStats.numProcessed );
     PrintSummaryLine( gStats.MeanMergedLength(), "Mean merged length" );
+  }
+
+  // Filter
+  if( args[ "filter" ].asBool() ) {
+    gStats.StartTimer();
+
+    auto in    = args[ "--in" ].asString();
+    auto out   = args[ "--out" ].asString();
+    auto maxee = std::stof( args[ "--max-expected-errors" ].asString() );
+
+    Filter( in, out, maxee );
+
+    gStats.StopTimer();
+
+    PrintSummaryHeader();
+    PrintSummaryLine( gStats.ElapsedMillis() / 1000.0, "Seconds" );
   }
 
   return 0;

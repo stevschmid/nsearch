@@ -10,6 +10,14 @@ static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'J'
 // Calculate of posterior Q Scores as outlined by Edgar & Flyvbjerg (2015)
 class QScore {
 public:
+  double AsciiToProbability( const char ascii ) const {
+    if( ascii < Q_MIN_ASCII_BASE )
+      return 1.0;
+    if( ascii > Q_MAX_ASCII_BASE )
+      return 0.0f;
+    return ScoreToProbability( ascii - Q_MIN_ASCII_BASE );
+  };
+
   double ScoreToProbability( const int q ) const {
     return pow( 10.0, -double( q ) / 10.0 );
   }

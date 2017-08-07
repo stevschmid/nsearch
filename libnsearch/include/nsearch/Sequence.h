@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "Alphabet.h"
+#include "FASTQ/QScore.h"
 
 template < typename Alphabet >
 class Sequence {
@@ -51,6 +52,8 @@ public:
 
   Sequence< Alphabet > Complement() const;
   Sequence< Alphabet > Reverse() const;
+
+  float NumExpectedErrors() const;
 
   std::string identifier;
   std::string quality;
@@ -184,4 +187,16 @@ Sequence< A > Sequence< A >::Complement() const {
   }
 
   return complement;
+}
+
+template < typename A >
+float Sequence< A >::NumExpectedErrors() const {
+  if( quality.empty() )
+    return 0.0f;
+
+  float numExpectedErrors = 0.0f;
+  for( auto &q : quality ) {
+    numExpectedErrors += FASTQ::QScore::Instance().AsciiToProbability( q );
+  }
+  return numExpectedErrors;
 }

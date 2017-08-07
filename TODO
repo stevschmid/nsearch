@@ -1,7 +1,8 @@
 ToDo
 ---
 
-- [ ] Filtering
+- [X] Filtering
+- [ ] Filtering tests
 - [ ] README (compiling, clang format)
 - [ ] Proper docs (API etc.)
 - [ ] Alphabet tests
