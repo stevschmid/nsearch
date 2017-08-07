@@ -71,11 +71,11 @@ TEST_CASE( "BandedAlign" ) {
   SECTION( "Offsets" ) {
     BandedAlign< DNA > ba;
     SECTION( "Going forward" ) {
-      ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::fwd, 0,
+      ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::Forward, 0,
                 0 );
       REQUIRE( cigar.ToString() == "4I2X6M" );
 
-      ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::fwd, 4,
+      ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::Forward, 4,
                 2 );
       REQUIRE( cigar.ToString() == "2I6M" );
     }
@@ -83,12 +83,12 @@ TEST_CASE( "BandedAlign" ) {
     SECTION( "Going backwards" ) {
       // GGATGA-
       // --ATGAA
-      ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::rev, 6, 5 );
+      ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::Reverse, 6, 5 );
       REQUIRE( cigar.ToString() == "2I4M1D" );
 
       // GGATGA
       // --ATG-
-      ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::rev, 6, 3 );
+      ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::Reverse, 6, 3 );
       REQUIRE( cigar.ToString() == "2I3M1I" );
     }
   }
@@ -114,7 +114,7 @@ TEST_CASE( "BandedAlign" ) {
     Sequence< DNA >    B = "TTTATGCC";
     BandedAlign< DNA > ba;
 
-    ba.Align( A, B, &cigar, AlignmentDirection::fwd, 6, 3 );
+    ba.Align( A, B, &cigar, AlignmentDirection::Forward, 6, 3 );
     REQUIRE( cigar.ToString() == "5D" );
   }
 
@@ -124,16 +124,16 @@ TEST_CASE( "BandedAlign" ) {
 
     // Align first with fresh alignment cache
     int score1 =
-      ba.Align( "ATGCC", "TTTTAGCC", &cigar1, AlignmentDirection::fwd, 1, 1 );
+      ba.Align( "ATGCC", "TTTTAGCC", &cigar1, AlignmentDirection::Forward, 1, 1 );
     REQUIRE( cigar1.ToString() == "1M3X3D" );
 
     // This alignment will set mVerticalGaps[0] to a low value, which will be
     // extended upon subsequently if we don't reset
-    ba.Align( "ATGCC", "A", &cigar, AlignmentDirection::fwd );
+    ba.Align( "ATGCC", "A", &cigar, AlignmentDirection::Forward );
 
     // Test with the "leaky" vgap
     int score2 =
-      ba.Align( "ATGCC", "TTTTAGCC", &cigar2, AlignmentDirection::fwd, 1, 1 );
+      ba.Align( "ATGCC", "TTTTAGCC", &cigar2, AlignmentDirection::Forward, 1, 1 );
 
     REQUIRE( cigar1.ToString() == cigar2.ToString() );
     REQUIRE( score1 == score2 );

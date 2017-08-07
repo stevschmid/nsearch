@@ -9,25 +9,62 @@
 #include <vector>
 
 enum class CigarOp : char {
-  UNKNOWN   = ' ',
-  MATCH     = 'M',
-  MISMATCH  = 'X',
-  DELETION  = 'D',
-  INSERTION = 'I',
+  Unknown   = ' ',
+  Match     = 'M',
+  Mismatch  = 'X',
+  Deletion  = 'D',
+  Insertion = 'I',
 };
 using CigarOps = std::vector< CigarOp >;
 
 class CigarEntry {
 public:
   int     count = 0;
-  CigarOp op    = CigarOp::UNKNOWN;
+  CigarOp op    = CigarOp::Unknown;
 
   CigarEntry() {}
   CigarEntry( const int count, const CigarOp op ) : count( count ), op( op ) {}
+
+  bool operator==( const CigarEntry& other ) const {
+    return count == other.count && op == other.op;
+  }
 };
 
 class Cigar : public std::deque< CigarEntry > {
 public:
+  Cigar() {}
+
+  Cigar( const char* str ) : Cigar( std::string( str ) ) {}
+
+  Cigar( const std::string& str ) {
+    // Separate "3M11C" into "3 M 11 M";
+    std::string sep;
+    bool        lastNumeric = true;
+    for( auto ch : str ) {
+      bool isNumeric = ch >= '0' && ch <= '9';
+      if( isNumeric != lastNumeric ) {
+        sep += ' ';
+      }
+      sep += ch;
+      lastNumeric = isNumeric;
+    }
+
+    // Now parse separated str
+    std::istringstream iss( sep );
+    char               op;
+    int                count;
+
+    while( 1 ) {
+      iss >> count;
+      iss >> op;
+
+      if( iss.eof() )
+        break;
+
+      Add( { count, ( CigarOp ) op } );
+    }
+  }
+
   Cigar operator+( const Cigar& other ) const {
     Cigar ce = *this;
     for( auto& c : other )
@@ -57,7 +94,7 @@ public:
     if( entry.count == 0 )
       return;
 
-    if( entry.op == CigarOp::UNKNOWN )
+    if( entry.op == CigarOp::Unknown )
       return;
 
     if( empty() ) {
@@ -80,14 +117,14 @@ public:
     for( const CigarEntry& c : *this ) {
       // Don't count terminal gaps towards identity calculation
       if( &c == &( *this->cbegin() ) &&
-          ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+          ( c.op == CigarOp::Insertion || c.op == CigarOp::Deletion ) )
         continue;
       if( &c == &( *this->crbegin() ) &&
-          ( c.op == CigarOp::INSERTION || c.op == CigarOp::DELETION ) )
+          ( c.op == CigarOp::Insertion || c.op == CigarOp::Deletion ) )
         continue;
 
       cols += c.count;
-      if( c.op == CigarOp::MATCH )
+      if( c.op == CigarOp::Match )
         matches += c.count;
     }
 

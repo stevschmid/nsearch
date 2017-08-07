@@ -9,4 +9,4 @@
 #define MAXINT INT_MAX / 2  // prevent overflow
 #define MININT -INT_MIN / 2 // prevent underflow
 
-enum class AlignmentDirection { fwd, rev };
+enum class AlignmentDirection { Forward, Reverse };

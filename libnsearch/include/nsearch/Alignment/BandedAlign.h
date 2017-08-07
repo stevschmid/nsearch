@@ -92,7 +92,7 @@ public:
 
   int Align( const Sequence< Alphabet >& A, const Sequence< Alphabet >& B,
              Cigar*                   cigar = NULL,
-             const AlignmentDirection dir   = AlignmentDirection::fwd,
+             const AlignmentDirection dir   = AlignmentDirection::Forward,
              size_t startA = 0, size_t startB = 0, size_t endA = -1,
              size_t endB = -1 ) {
     // Calculate matrix width, depending on alignment
@@ -105,11 +105,11 @@ public:
     size_t lenB = B.Length();
 
     if( endA == ( size_t ) -1 ) {
-      endA = ( dir == AlignmentDirection::fwd ? lenA : 0 );
+      endA = ( dir == AlignmentDirection::Forward ? lenA : 0 );
     }
 
     if( endB == ( size_t ) -1 ) {
-      endB = ( dir == AlignmentDirection::fwd ? lenB : 0 );
+      endB = ( dir == AlignmentDirection::Forward ? lenB : 0 );
     }
 
     if( startA > lenA )
@@ -160,7 +160,7 @@ public:
 
       horizontalGap.OpenOrExtend( mScores[ x - 1 ], fromBeginningA );
       mScores[ x ]     = horizontalGap.Score();
-      mOperations[ x ] = CigarOp::INSERTION;
+      mOperations[ x ] = CigarOp::Insertion;
       mVerticalGaps[ x ].Reset();
     }
     if( x < width ) {
@@ -202,9 +202,9 @@ public:
         bool   match;
         if( x > 0 ) {
           aIdx =
-            ( dir == AlignmentDirection::fwd ) ? startA + x - 1 : startA - x;
+            ( dir == AlignmentDirection::Forward ) ? startA + x - 1 : startA - x;
           bIdx =
-            ( dir == AlignmentDirection::fwd ) ? startB + y - 1 : startB - y;
+            ( dir == AlignmentDirection::Forward ) ? startB + y - 1 : startB - y;
           // diagScore: score at col-1, row-1
           match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
           score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
@@ -230,11 +230,11 @@ public:
 
         CigarOp op;
         if( score == horizontalGap.Score() ) {
-          op = CigarOp::INSERTION;
+          op = CigarOp::Insertion;
         } else if( score == verticalGap.Score() ) {
-          op = CigarOp::DELETION;
+          op = CigarOp::Deletion;
         } else {
-          op = match ? CigarOp::MATCH : CigarOp::MISMATCH;
+          op = match ? CigarOp::Match : CigarOp::Mismatch;
         }
         mOperations[ y * width + x ] = op;
 
@@ -271,17 +271,17 @@ public:
         cigar->Add( op );
 
         switch( op ) {
-          case CigarOp::INSERTION:
+          case CigarOp::Insertion:
             bx--;
             break;
-          case CigarOp::DELETION:
+          case CigarOp::Deletion:
             by--;
             break;
-          case CigarOp::MATCH:
+          case CigarOp::Match:
             bx--;
             by--;
             break;
-          case CigarOp::MISMATCH:
+          case CigarOp::Mismatch:
             bx--;
             by--;
             break;
@@ -305,7 +305,7 @@ public:
 
       // Add tails to backtrack info
       if( cigar && remainingB ) {
-        cigar->Add( CigarEntry( remainingB, CigarOp::DELETION ) );
+        cigar->Add( CigarEntry( remainingB, CigarOp::Deletion ) );
       }
     } else if( y == height ) {
       // We reached the end of B, emulate going down on A (horizontal gaps)
@@ -316,11 +316,11 @@ public:
 
       // Add tails to backtrack info
       if( cigar && remainingA ) {
-        cigar->Add( CigarEntry( remainingA, CigarOp::INSERTION ) );
+        cigar->Add( CigarEntry( remainingA, CigarOp::Insertion ) );
       }
     }
 
-    if( cigar && dir == AlignmentDirection::rev ) {
+    if( cigar && dir == AlignmentDirection::Reverse ) {
       cigar->Reverse();
     }
 

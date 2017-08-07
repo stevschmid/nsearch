@@ -5,11 +5,13 @@ ToDo
 - [X] Filtering tests
 - [ ] Proper docs (API etc.)
 - [ ] README (compiling, clang format, run tests)
-- [ ] Alphabet tests
+- [X] Alphabet tests
 - [ ] Allow WorkerQueue Enqueue with rvalues
 - [ ] Database tests
+- [X] Alnout Tests
 - [ ] Namespacing (after final name was determined)
 - [ ] Masking of low-quality sequence regions (e.g. ATATATATATA)
+- [ ] Try out vector instead of deque
 
 Wishlist
 ---

@@ -146,7 +146,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
       Cigar leftCigar;
       int   leftScore =
         mExtendAlign.Extend( query, candidateSeq, &queryPos, &candidatePos,
-                             &leftCigar, AlignmentDirection::rev, a1, b1 );
+                             &leftCigar, AlignmentDirection::Reverse, a1, b1 );
       if( !leftCigar.empty() ) {
         a1 = queryPos;
         b1 = candidatePos;
@@ -156,7 +156,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
       size_t rightQuery, rightCandidate;
       int    rightScore = mExtendAlign.Extend(
         query, candidateSeq, &queryPos, &candidatePos, &rightCigar,
-        AlignmentDirection::fwd, a2 + 1, b2 + 1 );
+        AlignmentDirection::Forward, a2 + 1, b2 + 1 );
       if( !rightCigar.empty() ) {
         a2 = queryPos;
         b2 = candidatePos;
@@ -171,7 +171,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
           auto chA = query[ a ], chB = candidateSeq[ b ];
           bool match = MatchPolicy< A >::Match( chA, chB );
           int8_t score = ScorePolicy< A >::Score( chA, chB );
-          middleCigar.Add( match ? CigarOp::MATCH : CigarOp::MISMATCH );
+          middleCigar.Add( match ? CigarOp::Match : CigarOp::Mismatch );
           middleScore += score;
         }
         hsp.score = leftScore + middleScore + rightScore;
@@ -215,7 +215,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
 
       // Align first HSP's start to whole sequences begin
       auto& first = *chain.cbegin();
-      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::rev,
+      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::Reverse,
                           first.a1, first.b1 );
       alignment += cigar;
 
@@ -227,7 +227,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
 
         alignment += current.cigar;
         mBandedAlign.Align( query, candidateSeq, &cigar,
-                            AlignmentDirection::fwd, current.a2 + 1,
+                            AlignmentDirection::Forward, current.a2 + 1,
                             current.b2 + 1, next.a1, next.b1 );
         alignment += cigar;
       }
@@ -235,7 +235,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
       // Align last HSP's end to whole sequences end
       auto& last = *chain.crbegin();
       alignment += last.cigar;
-      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::fwd,
+      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::Forward,
                           last.a2 + 1, last.b2 + 1 );
       alignment += cigar;
 

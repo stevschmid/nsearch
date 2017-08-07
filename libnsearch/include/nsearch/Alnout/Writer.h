@@ -117,10 +117,10 @@ private:
     // Dont take left terminal gap into account
     if( !cigar.empty() ) {
       const auto& fce = cigar.front();
-      if( fce.op == CigarOp::DELETION ) {
+      if( fce.op == CigarOp::Deletion ) {
         targetStart = fce.count;
         cigar.pop_front();
-      } else if( fce.op == CigarOp::INSERTION ) {
+      } else if( fce.op == CigarOp::Insertion ) {
         queryStart = fce.count;
         cigar.pop_front();
       }
@@ -129,9 +129,9 @@ private:
     // Don't take right terminal gap into account
     if( !cigar.empty() ) {
       const auto& bce = cigar.back();
-      if( bce.op == CigarOp::DELETION ) {
+      if( bce.op == CigarOp::Deletion ) {
         cigar.pop_back();
-      } else if( bce.op == CigarOp::INSERTION ) {
+      } else if( bce.op == CigarOp::Insertion ) {
         cigar.pop_back();
       }
     }
@@ -153,23 +153,23 @@ private:
     for( auto& c : cigar ) {
       for( int i = 0; i < c.count; i++ ) {
         switch( c.op ) {
-          case CigarOp::INSERTION:
+          case CigarOp::Insertion:
             line.t += '-';
             line.q += query[ qcount++ ];
             line.a += ' ';
             numGaps++;
             break;
 
-          case CigarOp::DELETION:
+          case CigarOp::Deletion:
             line.q += '-';
             line.t += target[ tcount++ ];
             line.a += ' ';
             numGaps++;
             break;
 
-          case CigarOp::MATCH: // specific for match
+          case CigarOp::Match: // specific for match
             numMatches++;
-          case CigarOp::MISMATCH: // match and mismatch
+          case CigarOp::Mismatch: // match and mismatch
             line.q += query[ qcount++ ];
             line.t += target[ tcount++ ];
             {

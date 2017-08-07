@@ -54,7 +54,7 @@ public:
   // Heavily influenced by Blast's SemiGappedAlign function
   int Extend( const Sequence< Alphabet >& A, const Sequence< Alphabet >& B,
               size_t* bestA = NULL, size_t* bestB = NULL, Cigar* cigar = NULL,
-              const AlignmentDirection dir = AlignmentDirection::fwd,
+              const AlignmentDirection dir = AlignmentDirection::Forward,
               size_t startA = 0, size_t startB = 0 ) {
     int    score;
     size_t x, y;
@@ -63,7 +63,7 @@ public:
 
     size_t width, height;
 
-    if( dir == AlignmentDirection::fwd ) {
+    if( dir == AlignmentDirection::Forward ) {
       width  = A.Length() - startA + 1;
       height = B.Length() - startB + 1;
     } else {
@@ -98,7 +98,7 @@ public:
       if( score < -mAP.xDrop )
         break;
 
-      mOperations[ x ]   = CigarOp::INSERTION;
+      mOperations[ x ]   = CigarOp::Insertion;
       mRow[ x ].score    = score;
       mRow[ x ].scoreGap = MININT;
     }
@@ -124,7 +124,7 @@ public:
         if( x > 0 ) {
           // diagScore: score at col-1, row-1
 
-          if( dir == AlignmentDirection::fwd ) {
+          if( dir == AlignmentDirection::Forward ) {
             aIdx = startA + x - 1;
             bIdx = startB + y - 1;
           } else {
@@ -177,11 +177,11 @@ public:
           // Record new score
           CigarOp op;
           if( score == rowGap ) {
-            op = CigarOp::INSERTION;
+            op = CigarOp::Insertion;
           } else if( score == colGap ) {
-            op = CigarOp::DELETION;
+            op = CigarOp::Deletion;
           } else {
-            op = match ? CigarOp::MATCH : CigarOp::MISMATCH;
+            op = match ? CigarOp::Match : CigarOp::Mismatch;
           }
           mOperations[ y * width + x ] = op;
 
@@ -209,7 +209,7 @@ public:
           mRow[ rowSize ].score = rowGap;
           mRow[ rowSize ].scoreGap =
             rowGap + mAP.gapOpenScore + mAP.gapExtendScore;
-          mOperations[ y * width + rowSize ] = CigarOp::INSERTION;
+          mOperations[ y * width + rowSize ] = CigarOp::Insertion;
           rowGap += mAP.gapExtendScore;
           rowSize++;
         }
@@ -235,17 +235,17 @@ public:
         cigar->Add( op );
 
         switch( op ) {
-          case CigarOp::INSERTION:
+          case CigarOp::Insertion:
             bx--;
             break;
-          case CigarOp::DELETION:
+          case CigarOp::Deletion:
             by--;
             break;
-          case CigarOp::MATCH:
+          case CigarOp::Match:
             bx--;
             by--;
             break;
-          case CigarOp::MISMATCH:
+          case CigarOp::Mismatch:
             bx--;
             by--;
             break;
@@ -255,7 +255,7 @@ public:
         }
       }
 
-      if( dir == AlignmentDirection::fwd ) {
+      if( dir == AlignmentDirection::Forward ) {
         cigar->Reverse();
       }
     }

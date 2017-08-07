@@ -8,10 +8,14 @@ target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
 add_executable(testnsearch EXCLUDE_FROM_ALL
   Alignment/BandedAlignTest.cpp
+  Alignment/CigarTest.cpp
   Alignment/ExtendAlignTest.cpp
-  DatabaseTest.cpp
+  Alnout/WriterTest.cpp
+  Alphabet/DNATest.cpp
+  Alphabet/ProteinTest.cpp
   Database/HSPTest.cpp
   Database/KmersTest.cpp
+  DatabaseTest.cpp
   FASTATest.cpp
   FASTQTest.cpp
   PairedEndTest.cpp
