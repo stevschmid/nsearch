@@ -21,7 +21,7 @@ static const char USAGE[] = R"(
   Metagenomics tool for the rest of us.
 
   Usage:
-    nsearch search (dna|protein) --query=<queryfile> --database=<databasefile>
+    nsearch search (dna|protein) --query=<queryfile> --db=<databasefile>
       --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
@@ -66,7 +66,7 @@ int main( int argc, const char** argv ) {
     gStats.StartTimer();
 
     auto query      = args[ "--query" ].asString();
-    auto db         = args[ "--database" ].asString();
+    auto db         = args[ "--db" ].asString();
     auto out        = args[ "--out" ].asString();
     auto minid      = std::stof( args[ "--min-identity" ].asString() );
     auto maxaccepts = args[ "--max-accepts" ].asLong();
