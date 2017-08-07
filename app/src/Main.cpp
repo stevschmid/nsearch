@@ -21,8 +21,8 @@ static const char USAGE[] = R"(
   Metagenomics tool for the rest of us.
 
   Usage:
-    nsearch search (dna|protein) --query=<queryfile> --db=<databasefile>
-      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>]
+    nsearch search --query=<queryfile> --db=<databasefile>
+      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
@@ -72,10 +72,10 @@ int main( int argc, const char** argv ) {
     auto maxaccepts = args[ "--max-accepts" ].asLong();
     auto maxrejects = args[ "--max-rejects" ].asLong();
 
-    if( args[ "dna" ].asBool() ) {
-      Search< DNA >( query, db, out, minid, maxaccepts, maxrejects );
-    } else if( args[ "protein" ].asBool() ) {
+    if( args[ "--protein" ].asBool() ) {
       Search< Protein >( query, db, out, minid, maxaccepts, maxrejects );
+    } else {
+      Search< DNA >( query, db, out, minid, maxaccepts, maxrejects );
     }
 
     gStats.StopTimer();
