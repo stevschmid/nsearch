@@ -7,7 +7,7 @@ ToDo
 - [ ] README (compiling, clang format, run tests)
 - [X] Alphabet tests
 - [ ] Allow WorkerQueue Enqueue with rvalues
-- [ ] Global Search Tests
+- [X] Global Search Tests
 - [X] Alnout Tests
 - [ ] Masking of low-quality sequence regions (e.g. ATATATATATA)
 - [ ] Try out vector instead of deque
