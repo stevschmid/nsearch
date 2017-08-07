@@ -1,0 +1,64 @@
+#pragma once
+
+#include <string>
+#include <vector>
+#include <map>
+
+#include <nsearch/FASTA/Writer.h>
+#include <nsearch/FASTQ/Writer.h>
+#include <nsearch/FASTA/Reader.h>
+#include <nsearch/FASTQ/Reader.h>
+
+enum class FileFormat {
+  FASTA,
+  FASTQ,
+  ALNOUT
+};
+
+using StringList = std::vector< std::string > ;
+static const std::map< FileFormat, StringList > FileFormatEndings = {
+  { FileFormat::FASTA, { "fa", "fna", "fsa", "fasta" } },
+  { FileFormat::FASTQ, { "fq", "fastq" } },
+  { FileFormat::ALNOUT, { "aln", "alnout" } }
+};
+
+static FileFormat InferFileFormat( const std::string& filepath, const FileFormat defaultFormat ) {
+  auto pos = filepath.find_last_of( "." );
+  if( pos == std::string::npos )
+    return defaultFormat;
+
+  auto ext = filepath.substr( pos + 1 );
+  for( auto &ff : FileFormatEndings ) {
+    for( auto &ending : ff.second ) {
+      if( ext == ending )
+        return ff.first;
+    }
+  }
+  return defaultFormat;
+}
+
+template < typename A >
+static std::unique_ptr< SequenceWriter < A > > DetectFileFormatAndOpenWriter( const std::string &path, const FileFormat defaultFormat ) {
+  switch( InferFileFormat( path, defaultFormat ) ) {
+    case FileFormat::FASTQ:
+      return std::unique_ptr< SequenceWriter< A > >(
+        new FASTQ::Writer< A >( path ) );
+
+    default:
+      return std::unique_ptr< SequenceWriter< A > >(
+        new FASTA::Writer< A >( path ) );
+  }
+}
+
+template < typename A >
+static std::unique_ptr< SequenceReader < A > > DetectFileFormatAndOpenReader( const std::string &path, const FileFormat defaultFormat ) {
+  switch( InferFileFormat( path, defaultFormat ) ) {
+    case FileFormat::FASTQ:
+      return std::unique_ptr< SequenceReader< A > >(
+        new FASTQ::Reader< A >( path ) );
+
+    default:
+      return std::unique_ptr< SequenceReader< A > >(
+        new FASTA::Reader< A >( path ) );
+  }
+}

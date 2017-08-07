@@ -3,14 +3,15 @@
 #include <nsearch/Alnout/Writer.h>
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
-#include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
 #include <nsearch/Alphabet/Protein.h>
 
-#include "WorkerQueue.h"
+#include <memory>
 
 #include "Common.h"
+#include "FileFormat.h"
+#include "WorkerQueue.h"
 
 template < typename A >
 using QueryWithHits     = std::pair< Sequence< A >, HitList< A > >;
@@ -112,7 +113,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   Sequence< A >     seq;
   SequenceList< A > sequences;
 
-  FASTA::Reader< A > dbReader( databasePath );
+  auto dbReader = DetectFileFormatAndOpenReader< A >( databasePath, FileFormat::FASTA );
 
   enum ProgressType {
     ReadDBFile,
@@ -132,11 +133,11 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 
   // Read DB
   progress.Activate( ProgressType::ReadDBFile );
-  while( !dbReader.EndOfFile() ) {
-    dbReader >> seq;
+  while( !dbReader->EndOfFile() ) {
+    (*dbReader) >> seq;
     sequences.push_back( std::move( seq ) );
-    progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(),
-                  dbReader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadDBFile, dbReader->NumBytesRead(),
+                  dbReader->NumBytesTotal() );
   }
 
   // Index DB
@@ -174,15 +175,15 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
     progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
   } );
 
-  FASTA::Reader< A > qryReader( queryPath );
+  auto qryReader = DetectFileFormatAndOpenReader< A >( queryPath, FileFormat::FASTA );
 
   SequenceList< A > queries;
   progress.Activate( ProgressType::ReadQueryFile );
-  while( !qryReader.EndOfFile() ) {
-    qryReader.Read( numQueriesPerWorkItem, &queries );
+  while( !qryReader->EndOfFile() ) {
+    qryReader->Read( numQueriesPerWorkItem, &queries );
     searcher.Enqueue( queries );
-    progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(),
-                  qryReader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadQueryFile, qryReader->NumBytesRead(),
+                  qryReader->NumBytesTotal() );
   }
 
   // Search

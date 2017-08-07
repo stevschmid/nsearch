@@ -1,13 +1,14 @@
 #include "Merge.h"
 
-#include <nsearch/FASTA/Reader.h>
-#include <nsearch/FASTQ/Writer.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
 #include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
 
+#include <memory>
+
 #include "Common.h"
+#include "FileFormat.h"
 #include "Stats.h"
 #include "WorkerQueue.h"
 
@@ -22,21 +23,23 @@ public:
 template < typename A >
 class MergedReadWriterWorker {
 public:
-  MergedReadWriterWorker( const std::string& path ) : mWriter( path ) {}
+  MergedReadWriterWorker( const std::string& path )
+      : mWriter( std::move(
+          DetectFileFormatAndOpenWriter< A >( path, FileFormat::FASTQ ) ) ) {}
 
   void Process( const SequenceList< A >& queueItem ) {
     for( auto seq : queueItem ) {
-      mWriter << seq;
+      ( *mWriter ) << seq;
     }
   }
 
 private:
-  FASTQ::Writer< A > mWriter;
+  std::unique_ptr< SequenceWriter< A > > mWriter;
 };
 
 template < typename A >
-using MergedReadWriter =
-  WorkerQueue< MergedReadWriterWorker< A >, SequenceList< A >, const std::string& >;
+using MergedReadWriter = WorkerQueue< MergedReadWriterWorker< A >,
+                                      SequenceList< A >, const std::string& >;
 
 template < typename A >
 using PairedReads = std::pair< SequenceList< A >, SequenceList< A > >;
