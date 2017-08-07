@@ -1,34 +1,37 @@
 #include <catch.hpp>
 
 #include <nsearch/Alignment/BandedAlign.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Sequence.h>
 
 TEST_CASE( "BandedAlign" ) {
   Cigar cigar;
 
   SECTION( "Basic" ) {
-    Sequence a = "TATAATGTTTACATTGG";
-    Sequence b = "TATAATGACACTGG";
+    Sequence< DNA > a = "TATAATGTTTACATTGG";
+    Sequence< DNA > b = "TATAATGACACTGG";
 
-    BandedAlignParams bap;
-    BandedAlign       ba( bap );
+    BandedAlignParams  bap;
+    BandedAlign< DNA > ba( bap );
 
     int score = ba.Align( a, b, &cigar );
     // TATAATGTTTACATTGG
     // |||||||   |||.|||
     // TATAATG---ACACTGG
     REQUIRE( cigar.ToString() == "7M3I3M1X3M" );
-    REQUIRE( score == 13 * bap.matchScore + 1 * bap.interiorGapOpenScore +
-                        3 * bap.interiorGapExtendScore +
-                        1 * bap.mismatchScore );
+    const int matchScore = 2;
+    const int mismatchScore = -4;
+    REQUIRE( score == 13 * matchScore + 1 * bap.interiorGapOpenScore +
+                        3 * bap.interiorGapExtendScore + 1 * mismatchScore );
   }
 
   SECTION( "Gap Penalties" ) {
-    Sequence a = "GGATCCTA";
-    Sequence b = "ATCGTA";
+    Sequence< DNA > a = "GGATCCTA";
+    Sequence< DNA > b = "ATCGTA";
 
     {
       // Default: terminal gaps are not penalized heavily
-      BandedAlign ba;
+      BandedAlign< DNA > ba;
       ba.Align( a, b, &cigar );
       REQUIRE( cigar.ToString() == "2I3M1X2M" );
     }
@@ -37,7 +40,7 @@ TEST_CASE( "BandedAlign" ) {
       // Penalize terminal gaps heavily
       BandedAlignParams bap;
       bap.terminalGapOpenScore = bap.interiorGapOpenScore * 2;
-      BandedAlign ba( bap );
+      BandedAlign< DNA > ba( bap );
       ba.Align( a, b, &cigar );
       // GGATCCTA
       // A--TCGTA
@@ -46,7 +49,7 @@ TEST_CASE( "BandedAlign" ) {
   }
 
   SECTION( "Long tails" ) {
-    BandedAlign ba;
+    BandedAlign< DNA > ba;
     ba.Align( "ATCGGGGGGGGGGGGGGGGGGGGGGG", "CGG", &cigar );
     REQUIRE( cigar.ToString() == "2I3M21I" );
     ba.Align( "GGGGTATAAAATTT", "TTTTTTTTGGGGTATAAAA", &cigar );
@@ -54,7 +57,7 @@ TEST_CASE( "BandedAlign" ) {
   }
 
   SECTION( "Edge cases" ) {
-    BandedAlign ba;
+    BandedAlign< DNA > ba;
     ba.Align( "", "", &cigar );
     REQUIRE( cigar.ToString() == "" );
 
@@ -66,7 +69,7 @@ TEST_CASE( "BandedAlign" ) {
   }
 
   SECTION( "Offsets" ) {
-    BandedAlign ba;
+    BandedAlign< DNA > ba;
     SECTION( "Going forward" ) {
       ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::fwd, 0,
                 0 );
@@ -93,9 +96,9 @@ TEST_CASE( "BandedAlign" ) {
   // Breaking cases
   SECTION( "Breaking case when first row is not initialized properly (beyond "
            "bandwidth)" ) {
-    Sequence    A = "AAAAAAAAAAAAAAA";
-    Sequence    B = "CCCCCCAAAAAAAAA";
-    BandedAlign ba;
+    Sequence< DNA >    A = "AAAAAAAAAAAAAAA";
+    Sequence< DNA >    B = "CCCCCCAAAAAAAAA";
+    BandedAlign< DNA > ba;
 
     ba.Align( A, B, &cigar );
     REQUIRE( cigar.ToString() == "6D9M6I" );
@@ -107,17 +110,17 @@ TEST_CASE( "BandedAlign" ) {
   }
 
   SECTION( "Breaking case when startA >> lenA" ) {
-    Sequence    A = "ATGCC";
-    Sequence    B = "TTTATGCC";
-    BandedAlign ba;
+    Sequence< DNA >    A = "ATGCC";
+    Sequence< DNA >    B = "TTTATGCC";
+    BandedAlign< DNA > ba;
 
     ba.Align( A, B, &cigar, AlignmentDirection::fwd, 6, 3 );
     REQUIRE( cigar.ToString() == "5D" );
   }
 
   SECTION( "Breaking case: Improper reset of vertical gap at 0,0" ) {
-    Cigar       cigar1, cigar2;
-    BandedAlign ba;
+    Cigar              cigar1, cigar2;
+    BandedAlign< DNA > ba;
 
     // Align first with fresh alignment cache
     int score1 =

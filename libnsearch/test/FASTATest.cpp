@@ -1,6 +1,7 @@
 #include <catch.hpp>
 
 #include <nsearch/FASTA/Reader.h>
+#include <nsearch/Alphabet/DNA.h>
 
 #include <sstream>
 
@@ -18,8 +19,8 @@ TEST_CASE( "FASTA" ) {
 
     std::istringstream iss( content );
 
-    FASTA::Reader reader( iss );
-    Sequence      sequence;
+    FASTA::Reader< DNA > reader( iss );
+    Sequence< DNA > sequence;
 
     reader >> sequence;
     REQUIRE( sequence.identifier == "Seq1" );

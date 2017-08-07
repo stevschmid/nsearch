@@ -153,13 +153,10 @@ bool Sequence< A >::operator!=( const Sequence< A >& other ) const {
   if( Length() != other.Length() )
     return true;
 
-  if( identifier != other.identifier )
-    return true;
-
   auto tit = ( *this ).sequence.begin();
   auto oit = other.sequence.begin();
   while( tit != ( *this ).sequence.end() && oit != other.sequence.end() ) {
-    if( MatchPolicy< A >::Match( *tit, *oit ) )
+    if( !MatchPolicy< A >::Match( *tit, *oit ) )
       return true;
 
     ++tit;

@@ -3,62 +3,63 @@
 #include <nsearch/FASTQ/Writer.h>
 #include <nsearch/PairedEnd/Merger.h>
 #include <nsearch/PairedEnd/Reader.h>
+#include <nsearch/Alphabet/DNA.h>
 
 using namespace PairedEnd;
 
 TEST_CASE( "Merger" ) {
   bool     res;
-  Sequence merged;
+  Sequence< DNA > merged;
 
   SECTION( "non-staggered overlap" ) {
-    Merger   merger( 5, 1.0 );
-    Sequence fwd1 = Sequence( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
-    Sequence rev1 =
-      Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
+    Merger< DNA >   merger( 5, 1.0 );
+    Sequence< DNA > fwd1 = Sequence< DNA >( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
+    Sequence< DNA > rev1 =
+      Sequence< DNA >( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).Reverse().Complement();
 
     res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
-    REQUIRE( merged == Sequence( "ACTGGATGGAATCCC" ) );
+    REQUIRE( merged == Sequence< DNA >( "ACTGGATGGAATCCC" ) );
   }
 
   SECTION( "staggered overlap (merged sequence is trimmed)" ) {
-    Merger   merger( 5, 1.0 );
-    Sequence fwd1 = Sequence( "fwd1", "ATCCCGGA", "JJJJJJJJ" );
-    Sequence rev1 =
-      Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
+    Merger< DNA >   merger( 5, 1.0 );
+    Sequence< DNA > fwd1 = Sequence< DNA >( "fwd1", "ATCCCGGA", "JJJJJJJJ" );
+    Sequence< DNA > rev1 =
+      Sequence< DNA >( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).Reverse().Complement();
 
     res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
-    REQUIRE( merged == Sequence( "ATCCC" ) );
+    REQUIRE( merged == Sequence< DNA >( "ATCCC" ) );
   }
 
   SECTION( "min bases requirement" ) {
-    Merger merger( 6, 0.8 );
+    Merger< DNA > merger( 6, 0.8 );
 
-    Sequence fwd1 = Sequence( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
-    Sequence rev1 =
-      Sequence( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).ReverseComplement();
+    Sequence< DNA > fwd1 = Sequence< DNA >( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
+    Sequence< DNA > rev1 =
+      Sequence< DNA >( "rev1", "ATGGAATCCC", "JJJJJJJJJJ" ).Reverse().Complement();
 
     res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == false );
   }
 
   SECTION( "min identity requirement" ) {
-    Merger merger( 5, 1.0 );
+    Merger< DNA > merger( 5, 1.0 );
 
-    Sequence fwd1 = Sequence( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
-    Sequence rev1 =
-      Sequence( "rev1", "GATAGAATCCC", "JJJJJJJJJJJ" ).ReverseComplement();
+    Sequence< DNA > fwd1 = Sequence< DNA >( "fwd1", "ACTGGATGGA", "JJJJJJJJJJ" );
+    Sequence< DNA > rev1 =
+      Sequence< DNA >( "rev1", "GATAGAATCCC", "JJJJJJJJJJJ" ).Reverse().Complement();
 
     res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == false );
   }
 
   SECTION( "posterior Q calculation" ) {
-    Merger   merger( 3, 1.0 );
-    Sequence fwd1 = Sequence( "fwd1", "ATTGACCGT", "1>AA1@FFF" );
-    Sequence rev1 =
-      Sequence( "rev1", "ACCGTGAATC", "?AAAAFFFFF" ).ReverseComplement();
+    Merger< DNA >   merger( 3, 1.0 );
+    Sequence< DNA > fwd1 = Sequence< DNA >( "fwd1", "ATTGACCGT", "1>AA1@FFF" );
+    Sequence< DNA > rev1 =
+      Sequence< DNA >( "rev1", "ACCGTGAATC", "?AAAAFFFFF" ).Reverse().Complement();
 
     res = merger.Merge( fwd1, rev1, &merged );
     REQUIRE( res == true );
@@ -109,14 +110,14 @@ ABAAB@DBFFFBGGGGGGAGBFGHGGEGGBGHHHGHHHHGFGGGDFGGGHHGHHHHHHHHHFHGFFHHHGHFB3FGGFCE
   std::istringstream issrev( reverseReadsContent );
   std::ostringstream os;
 
-  Reader reader( issfwd, issrev );
-  Merger merger;
+  Reader< DNA > reader( issfwd, issrev );
+  Merger< DNA > merger;
 
-  FASTQ::Writer writer( os );
-  Sequence      fwd, rev;
+  FASTQ::Writer< DNA > writer( os );
+  Sequence< DNA >      fwd, rev;
 
   while( reader.Read( &fwd, &rev ) ) {
-    Sequence merged;
+    Sequence< DNA > merged;
 
     if( merger.Merge( fwd, rev, &merged ) ) {
       writer << merged;
