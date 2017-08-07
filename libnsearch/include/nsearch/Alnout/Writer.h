@@ -68,13 +68,13 @@ public:
                                 std::to_string( lines.back().te ).size() );
 
         mOutput << "Qry " << std::setw( padLen ) << line.qs
-                << " + " // no strand support for now
+                << " "
                 << line.q << " " << line.qe << std::endl;
 
-        mOutput << std::string( 7 + padLen, ' ' ) << line.a << std::endl;
+        mOutput << std::string( 5 + padLen, ' ' ) << line.a << std::endl;
 
         mOutput << "Tgt " << std::setw( padLen ) << line.ts
-                << " + " // no strand support for now
+                << " "
                 << line.t << " " << line.te << std::endl;
 
         mOutput << std::endl;
@@ -184,14 +184,14 @@ private:
 
         numCols++;
         if( numCols % MAX_ALIGNMENT_STRING_LENGTH_LINE == 0 ) {
-          line.qe = line.qs + qcount - 1;
-          line.te = line.ts + tcount - 1;
+          line.qe = qcount;
+          line.te = tcount;
           lines.push_back( line );
 
           // Start new line
           line    = AlignmentLine();
-          line.qs = qcount + queryStart + 1;
-          line.ts = tcount + targetStart + 1;
+          line.qs = qcount + 1;
+          line.ts = tcount + 1;
         }
       }
     }
