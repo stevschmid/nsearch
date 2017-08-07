@@ -4,10 +4,12 @@
 #include "../Sequence.h"
 
 namespace PairedEnd {
+
+template < typename Alphabet >
 class Reader {
 private:
-  FASTQ::Reader mFwdReader;
-  FASTQ::Reader mRevReader;
+  FASTQ::Reader< Alphabet > mFwdReader;
+  FASTQ::Reader< Alphabet > mRevReader;
 
 public:
   Reader( const std::string& pathToFwdFile, const std::string& pathToRevFile )
@@ -16,8 +18,9 @@ public:
   Reader( std::istream& fwd, std::istream& rev )
       : mFwdReader( fwd ), mRevReader( rev ) {}
 
-  void Read( const int count, SequenceList* fwds, SequenceList* revs )  {
-    Sequence fwd, rev;
+  void Read( const int count, SequenceList< Alphabet >* fwds,
+             SequenceList< Alphabet >* revs ) {
+    Sequence< Alphabet > fwd, rev;
 
     for( int i = 0; i < count; i++ ) {
       if( !Read( &fwd, &rev ) )
@@ -28,7 +31,7 @@ public:
     }
   }
 
-  bool Read( Sequence* fwd, Sequence* rev ) {
+  bool Read( Sequence< Alphabet >* fwd, Sequence< Alphabet >* rev ) {
     if( EndOfFile() )
       return false;
 
@@ -50,4 +53,5 @@ public:
     return mFwdReader.NumBytesTotal() + mRevReader.NumBytesTotal();
   }
 };
+
 } // namespace PairedEnd

@@ -1,17 +1,18 @@
 #include <catch.hpp>
 
 #include <nsearch/Database.h>
+#include <nsearch/Alphabet/DNA.h>
 
 #include "Support.h"
 
 TEST_CASE( "Database" ) {
-  SequenceList sequences = { "ATGGG", "CATGGCCC", "GAGAGA", "CTTTN" };
-  Database db( 4 );
+  SequenceList< DNA > sequences = { "ATGGG", "CATGGCCC", "GAGAGA", "CTTTN" };
+  Database< DNA > db( 4 );
   db.Initialize( sequences );
 
   SECTION( "Sequences" ) {
     REQUIRE( db.NumSequences() == 4 );
-    REQUIRE( db.GetSequenceById( 0 ) == Sequence( "ATGGG" ) );
+    REQUIRE( db.GetSequenceById( 0 ) == Sequence< DNA >( "ATGGG" ) );
   }
 
   SECTION( "Kmer support" ) {
@@ -21,7 +22,7 @@ TEST_CASE( "Database" ) {
     }
 
     SECTION( "Search" ) {
-      const Database::SequenceId *seqIds;
+      const SequenceId *seqIds;
       size_t numSeqIds;
       bool found;
 

@@ -9,10 +9,6 @@
 
 typedef struct {
   int xDrop = 32;
-
-  int matchScore    = 2;
-  int mismatchScore = -4;
-
   int gapOpenScore   = -20;
   int gapExtendScore = -2;
 } ExtendAlignParams;
@@ -23,6 +19,7 @@ typedef struct {
 } ExtendedAlignment;
 
 // Influenced by Blast's SemiGappedAlign function
+template < typename Alphabet >
 class ExtendAlign {
 private:
   struct Cell {
@@ -55,9 +52,8 @@ public:
   }
 
   // Heavily influenced by Blast's SemiGappedAlign function
-  int Extend( const Sequence& A, const Sequence& B,
-              size_t* bestA = NULL, size_t* bestB = NULL,
-              Cigar* cigar = NULL,
+  int Extend( const Sequence< Alphabet >& A, const Sequence< Alphabet >& B,
+              size_t* bestA = NULL, size_t* bestB = NULL, Cigar* cigar = NULL,
               const AlignmentDirection dir = AlignmentDirection::fwd,
               size_t startA = 0, size_t startB = 0 ) {
     int    score;
@@ -137,8 +133,8 @@ public:
           }
 
           /* printf( "x:%zu y:%zu %c == %c\n", x, y, A[ aIdx ], B[ bIdx ] ); */
-          match = DoNucleotidesMatch( A[ aIdx ], B[ bIdx ] );
-          score = diagScore + ( match ? mAP.matchScore : mAP.mismatchScore );
+          match = MatchPolicy< Alphabet >::Match( A[ aIdx ], B[ bIdx ] );
+          score = diagScore + ScorePolicy< Alphabet >::Score( A[ aIdx ], B[ bIdx ] );
         }
 
         // select highest score

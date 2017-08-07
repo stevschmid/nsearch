@@ -6,6 +6,8 @@
 
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Alphabet/Protein.h>
 
 #include "Common.h"
 #include "Merge.h"
@@ -18,8 +20,9 @@ static const char USAGE[] = R"(
   Process and search sequences.
 
   Usage:
-    nsearch merge --forward=<forward.fastq> --reverse=<reverse.fastq> --out=<merged.fastq>
-    nsearch search --query=<query.fasta> --database=<database.fasta> --alnout=<output.aln> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+    nsearch search (dna|protein) --query=<queryfile> --database=<databasefile>
+      --out=<outputfile> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+    nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
 
   Options:
     --minidentity=<minidentity>    Minimum identity threshold (e.g. 0.8).
@@ -47,9 +50,9 @@ void PrintSummaryLine( const float value, const std::string& line,
 
 int main( int argc, const char** argv ) {
   std::map< std::string, docopt::value > args =
-      docopt::docopt( USAGE, { argv + 1, argv + argc },
-                      true, // help
-                      APP_NAME );
+    docopt::docopt( USAGE, { argv + 1, argv + argc },
+                    true, // help
+                    APP_NAME );
 
   // Print header
   std::cout << APP_NAME << " " << APP_VERSION << " (built on "
@@ -59,10 +62,18 @@ int main( int argc, const char** argv ) {
   if( args[ "search" ].asBool() ) {
     gStats.StartTimer();
 
-    Search( args[ "--query" ].asString(), args[ "--database" ].asString(),
-            args[ "--alnout" ].asString(),
-            std::stof( args[ "--minidentity" ].asString() ),
-            args[ "--maxaccepts" ].asLong(), args[ "--maxrejects" ].asLong() );
+    auto query      = args[ "--query" ].asString();
+    auto db         = args[ "--database" ].asString();
+    auto out        = args[ "--out" ].asString();
+    auto minid      = std::stof( args[ "--minidentity" ].asString() );
+    auto maxaccepts = args[ "--maxaccepts" ].asLong();
+    auto maxrejects = args[ "--maxrejects" ].asLong();
+
+    if( args[ "dna" ].asBool() ) {
+      Search< DNA >( query, db, out, minid, maxaccepts, maxrejects );
+    } else if( args[ "protein" ].asBool() ) {
+      Search< Protein >( query, db, out, minid, maxaccepts, maxrejects );
+    }
 
     gStats.StopTimer();
 

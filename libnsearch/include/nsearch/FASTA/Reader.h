@@ -3,11 +3,13 @@
 #include "../SequenceReader.h"
 
 namespace FASTA {
-class Reader : public SequenceReader {
-public:
-  using SequenceReader::SequenceReader;
 
-  void operator>>( Sequence& seq ) {
+template < typename Alphabet >
+class Reader : public SequenceReader< Alphabet > {
+public:
+  using SequenceReader< Alphabet >::SequenceReader;
+
+  Reader< Alphabet >& operator>>( Sequence< Alphabet >& seq ) {
     std::string identifier, sequence;
     if( mLastLine.empty() ) {
       ( *mTextReader ) >> identifier;
@@ -16,7 +18,7 @@ public:
     }
 
     std::string line;
-    while( !EndOfFile() ) {
+    while( !SequenceReader< Alphabet >::EndOfFile() ) {
       ( *mTextReader ) >> line;
 
       if( line[ 0 ] == '>' ) {
@@ -28,10 +30,15 @@ public:
     }
 
     UpcaseString( sequence );
-    seq = Sequence( identifier.substr( 1 ), sequence );
+    seq = Sequence< Alphabet >( identifier.substr( 1 ), sequence );
+
+    return *this;
   }
 
 private:
+  using SequenceReader< Alphabet >::mTextReader;
+
   std::string mLastLine;
 };
+
 } // namespace FASTA

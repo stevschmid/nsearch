@@ -3,15 +3,23 @@
 #include "../Database/GlobalSearch.h"
 #include "../Sequence.h"
 
+#include "../Alphabet/DNA.h"
+#include "../Alphabet/Protein.h"
+
 #include <fstream>
 
 #define MAX_ALIGNMENT_STRING_LENGTH_LINE 60
 
 namespace Alnout {
+
+template <typename Alphabet>
 class Writer {
 private:
   std::ofstream mFile;
   std::ostream& mOutput;
+
+  static inline char MatchSymbol( const char A, const char B );
+  static inline std::string Unit();
 
 public:
   Writer( std::ostream& output ) : mOutput( output ) {}
@@ -20,7 +28,8 @@ public:
       : mFile( pathToFile ), mOutput( mFile ) {}
 
   void operator<<(
-    const std::pair< Sequence, GlobalSearch::HitList >& queryWithHits ) {
+    const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
+      queryWithHits ) {
     const auto& query = queryWithHits.first;
     const auto& hits  = queryWithHits.second;
 
@@ -43,10 +52,10 @@ public:
       auto maxLen    = std::max( queryLen.size(), targetLen.size() );
 
       mOutput << " Query" << std::setw( maxLen + 1 )
-              << std::to_string( query.Length() ) << "nt"
+              << std::to_string( query.Length() ) << Unit()
               << " >" << query.identifier << std::endl;
       mOutput << "Target" << std::setw( maxLen + 1 )
-              << std::to_string( hit.target.Length() ) << "nt"
+              << std::to_string( hit.target.Length() ) << Unit()
               << " >" << hit.target.identifier << std::endl;
 
       size_t numCols, numMatches, numGaps;
@@ -59,13 +68,13 @@ public:
                                 std::to_string( lines.back().te ).size() );
 
         mOutput << "Qry " << std::setw( padLen ) << line.qs
-                << " + " // no strand support for now
+                << " "
                 << line.q << " " << line.qe << std::endl;
 
-        mOutput << std::string( 7 + padLen, ' ' ) << line.a << std::endl;
+        mOutput << std::string( 5 + padLen, ' ' ) << line.a << std::endl;
 
         mOutput << "Tgt " << std::setw( padLen ) << line.ts
-                << " + " // no strand support for now
+                << " "
                 << line.t << " " << line.te << std::endl;
 
         mOutput << std::endl;
@@ -94,8 +103,8 @@ private:
   };
   using AlignmentLines = std::deque< AlignmentLine >;
 
-  static AlignmentLines ExtractAlignmentLines( const Sequence& query,
-                                               const Sequence& target,
+  static AlignmentLines ExtractAlignmentLines( const Sequence< Alphabet >& query,
+                                               const Sequence< Alphabet >& target,
                                                const Cigar&    alignment,
                                                size_t* outNumCols    = NULL,
                                                size_t* outNumMatches = NULL,
@@ -135,8 +144,6 @@ private:
     size_t qcount = queryStart;
     size_t tcount = targetStart;
 
-    bool correct = true;
-
     AlignmentLine line;
     line.qs = queryStart + 1;
     line.ts = targetStart + 1;
@@ -160,26 +167,15 @@ private:
             numGaps++;
             break;
 
-          case CigarOp::MATCH:
+          case CigarOp::MATCH: // specific for match
             numMatches++;
+          case CigarOp::MISMATCH: // match and mismatch
             line.q += query[ qcount++ ];
             line.t += target[ tcount++ ];
             {
-              bool match = DoNucleotidesMatch( line.q.back(), line.t.back() );
-              if( !match ) {
-                correct = false;
-
-                line.a += 'X';
-              } else {
-                line.a += '|';
-              }
+              const char a = line.q.back(), b = line.t.back();
+              line.a += MatchSymbol( a, b );
             }
-            break;
-
-          case CigarOp::MISMATCH:
-            line.a += ' ';
-            line.q += query[ qcount++ ];
-            line.t += target[ tcount++ ];
             break;
 
           default:
@@ -188,14 +184,14 @@ private:
 
         numCols++;
         if( numCols % MAX_ALIGNMENT_STRING_LENGTH_LINE == 0 ) {
-          line.qe = line.qs + qcount - 1;
-          line.te = line.ts + tcount - 1;
+          line.qe = qcount;
+          line.te = tcount;
           lines.push_back( line );
 
           // Start new line
           line    = AlignmentLine();
-          line.qs = qcount + queryStart + 1;
-          line.ts = tcount + targetStart + 1;
+          line.qs = qcount + 1;
+          line.ts = tcount + 1;
         }
       }
     }
@@ -215,14 +211,36 @@ private:
     if( outNumGaps )
       *outNumGaps = numGaps;
 
-    if( !correct ) {
-      std::cerr << "[DEBUG] INVALID ALIGNMENT " << std::endl
-                << query.identifier << std::endl
-                << target.identifier << std::endl;
-    }
-
     return lines;
   }
 
 }; // Writer
+
+template<>
+inline char Writer< DNA >::MatchSymbol( const char A, const char B ) {
+  return MatchPolicy< DNA >::Match( A, B ) ? '|' : ' ';
+}
+
+template<>
+inline std::string Writer< DNA >::Unit() {
+  return "nt";
+}
+
+template<>
+inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
+  auto score = ScorePolicy< Protein >::Score( A, B );
+  if( score >= 4 )
+    return '|';
+  if( score >= 2 )
+    return ':';
+  if( score > 0 )
+    return '.';
+  return ' ';
+}
+
+template<>
+inline std::string Writer< Protein >::Unit() {
+  return "aa";
+}
+
 } // namespace Alnout

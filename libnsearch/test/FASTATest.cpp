@@ -1,6 +1,9 @@
 #include <catch.hpp>
 
 #include <nsearch/FASTA/Reader.h>
+#include <nsearch/FASTA/Writer.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Alphabet/Protein.h>
 
 #include <sstream>
 
@@ -18,8 +21,8 @@ TEST_CASE( "FASTA" ) {
 
     std::istringstream iss( content );
 
-    FASTA::Reader reader( iss );
-    Sequence      sequence;
+    FASTA::Reader< DNA > reader( iss );
+    Sequence< DNA > sequence;
 
     reader >> sequence;
     REQUIRE( sequence.identifier == "Seq1" );
@@ -34,5 +37,25 @@ TEST_CASE( "FASTA" ) {
     REQUIRE( sequence.sequence == "ACTGC" );
 
     REQUIRE( reader.EndOfFile() == true );
+  }
+
+  SECTION( "Writer" ) {
+    Sequence< DNA > seq1( "Seq1", "MTEITAAMVKELRESTGAGMMDCKNALSETNGDFDKAVQLLREKGLGKAAKKADRLAAEGLVSVKVSDDFTIAAMRPSYLSYEDLDMTFVENEYKALVAELEKENEERRRL" );
+    Sequence< DNA > seq2( "Seq2", "SATVSEINSETDFVAKNDQFIALTKDTTAHIQSNSLQSVEELHSSTINGVKFEEYLKSQI" );
+    Sequence< DNA > seq3( "Seq3", "IALT" );
+
+    std::ostringstream oss;
+    FASTA::Writer< DNA > writer( oss );
+
+    writer << seq1 << seq2 << seq3;
+
+    const char* expectedOutput = ">Seq1\n"
+                                 "MTEITAAMVKELRESTGAGMMDCKNALSETNGDFDKAVQLLREKGLGKAAKKADRLAAEG\n"
+                                 "LVSVKVSDDFTIAAMRPSYLSYEDLDMTFVENEYKALVAELEKENEERRRL\n"
+                                 ">Seq2\n"
+                                 "SATVSEINSETDFVAKNDQFIALTKDTTAHIQSNSLQSVEELHSSTINGVKFEEYLKSQI\n"
+                                 ">Seq3\n"
+                                 "IALT\n";
+    REQUIRE( oss.str() == expectedOutput );
   }
 }

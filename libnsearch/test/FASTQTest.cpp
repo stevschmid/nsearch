@@ -3,6 +3,7 @@
 #include <nsearch/FASTQ/QScore.h>
 #include <nsearch/FASTQ/Reader.h>
 #include <nsearch/FASTQ/Writer.h>
+#include <nsearch/Alphabet/DNA.h>
 
 #include <sstream>
 
@@ -19,8 +20,8 @@ TEST_CASE( "FASTQ" ) {
 
     std::istringstream iss( content );
 
-    FASTQ::Reader reader( iss );
-    Sequence      sequence;
+    FASTQ::Reader< DNA > reader( iss );
+    Sequence< DNA > sequence;
 
     reader >> sequence;
     REQUIRE( sequence.identifier == "Seq1" );
@@ -36,11 +37,11 @@ TEST_CASE( "FASTQ" ) {
   }
 
   SECTION( "Writer" ) {
-    Sequence seq1( "Seq1", "TAGGC", "JJ:BB" );
-    Sequence seq2( "Seq2", "CTAGG", "AA..D" );
+    Sequence< DNA > seq1( "Seq1", "TAGGC", "JJ:BB" );
+    Sequence< DNA > seq2( "Seq2", "CTAGG", "AA..D" );
 
     std::ostringstream oss;
-    FASTQ::Writer      writer( oss );
+    FASTQ::Writer< DNA > writer( oss );
 
     writer << seq1;
     writer << seq2;

@@ -1,17 +1,19 @@
 #include <catch.hpp>
 
 #include <nsearch/Alignment/ExtendAlign.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Sequence.h>
 
 TEST_CASE( "ExtendAlign" ) {
   size_t bestA, bestB;
   Cigar  cigar;
   int    score;
 
-  ExtendAlign ea;
+  ExtendAlign< DNA > ea;
 
   SECTION( "Gaps" ) {
-    Sequence a = "GATTGCGGGG";
-    Sequence b = "GAGCGGT";
+    Sequence< DNA > a = "GATTGCGGGG";
+    Sequence< DNA > b = "GAGCGGT";
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::fwd, 0, 0 );
@@ -20,14 +22,15 @@ TEST_CASE( "ExtendAlign" ) {
     ExtendAlignParams eap;
     eap.gapOpenScore = eap.gapExtendScore - 1;
 
-    ea = ExtendAlign( eap );
+    ea = ExtendAlign< DNA >( eap );
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::fwd, 0, 0 );
     REQUIRE( cigar.ToString() == "2M2I4M" );
   }
 
-  SECTION( "Forwards extend" ) { Sequence a = "ATCGG";
-    Sequence b = "ATCGT";
+  SECTION( "Forwards extend" ) {
+    Sequence< DNA > a = "ATCGG";
+    Sequence< DNA > b = "ATCGT";
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::fwd, 0, 0 );
@@ -49,8 +52,8 @@ TEST_CASE( "ExtendAlign" ) {
   }
 
   SECTION( "Backwards extend" ) {
-    Sequence a = "ATCGGTTG";
-    Sequence b = "TCGGTAT";
+    Sequence< DNA > a = "ATCGGTTG";
+    Sequence< DNA > b = "TCGGTAT";
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::rev, 3, 2 );

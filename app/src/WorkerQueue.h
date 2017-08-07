@@ -15,7 +15,8 @@ public:
 template < class Worker, class QueueItem, typename... Args >
 class WorkerQueue {
 public:
-  using OnProcessedCallback = std::function< void( const size_t, const size_t ) >;
+  using OnProcessedCallback =
+    std::function< void( const size_t, const size_t ) >;
 
   WorkerQueue( const int numWorkers = 1, Args... args )
       : mStop( false ), mWorkingCount( 0 ), mTotalEnqueued( 0 ),

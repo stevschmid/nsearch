@@ -6,6 +6,7 @@
 
 #include <memory>
 
+template< typename Alphabet >
 class SequenceReader {
 public:
   SequenceReader( const std::string& pathToFile )
@@ -26,10 +27,10 @@ public:
     return mTextReader->NumBytesTotal();
   }
 
-  virtual void operator>>( Sequence& seq ) = 0;
+  virtual SequenceReader< Alphabet >& operator>>( Sequence< Alphabet >& seq ) = 0;
 
-  void Read( const size_t count, SequenceList* out ) {
-    Sequence seq;
+  void Read( const size_t count, SequenceList< Alphabet >* out ) {
+    Sequence< Alphabet > seq;
 
     for( size_t i = 0; i < count && !EndOfFile(); i++ ) {
       *this >> seq;

@@ -3,62 +3,72 @@
 #include <nsearch/Alnout/Writer.h>
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
-#include <nsearch/FASTA/Reader.h>
 #include <nsearch/Sequence.h>
+#include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Alphabet/Protein.h>
 
-#include "WorkerQueue.h"
+#include <memory>
 
 #include "Common.h"
+#include "FileFormat.h"
+#include "WorkerQueue.h"
 
-using QueryWithHits     = std::pair< Sequence, GlobalSearch::HitList >;
-using QueryWithHitsList = std::deque< QueryWithHits >;
+template < typename A >
+using QueryWithHits     = std::pair< Sequence< A >, HitList< A > >;
 
-template <>
-class QueueItemInfo< QueryWithHitsList > {
+template < typename A >
+using QueryWithHitsList = std::deque< QueryWithHits< A > >;
+
+template < typename A >
+class QueueItemInfo< QueryWithHitsList< A > > {
 public:
-  static size_t Count( const QueryWithHitsList& list ) {
+  static size_t Count( const QueryWithHitsList< A >& list ) {
     return std::accumulate(
       list.begin(), list.end(), 0,
-      []( int sum, const QueryWithHits& q ) { return sum + q.second.size(); } );
+      []( int sum, const QueryWithHits< A >& q ) { return sum + q.second.size(); } );
   }
 };
 
+template < typename A >
 class SearchResultsWriterWorker {
 public:
   SearchResultsWriterWorker( const std::string& path ) : mWriter( path ) {}
 
-  void Process( const QueryWithHitsList& queryWithHitsList ) {
+  void Process( const QueryWithHitsList< A >& queryWithHitsList ) {
     for( auto& queryWithHits : queryWithHitsList ) {
       mWriter << queryWithHits;
     }
   }
 
 private:
-  Alnout::Writer mWriter;
+  Alnout::Writer< A > mWriter;
 };
+
+template < typename A >
 using SearchResultsWriter =
-  WorkerQueue< SearchResultsWriterWorker, QueryWithHitsList,
+  WorkerQueue< SearchResultsWriterWorker< A >, QueryWithHitsList< A >,
                const std::string& >;
 
-template <>
-class QueueItemInfo< SequenceList > {
+template < typename A >
+class QueueItemInfo< SequenceList< A > > {
 public:
-  static size_t Count( const SequenceList& list ) {
+  static size_t Count( const SequenceList< A >& list ) {
     return list.size();
   }
 };
 
+template < typename A >
 class QueryDatabaseSearcherWorker {
 public:
-  QueryDatabaseSearcherWorker( SearchResultsWriter* writer,
-                               const Database*      database,
+  QueryDatabaseSearcherWorker( SearchResultsWriter< A >* writer,
+                               const Database< A >*      database,
                                const float minIdentity, const int maxAccepts,
                                const int maxRejects )
       : mWriter( *writer ),
         mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects ) {}
 
-  void Process( const SequenceList& queries ) {
-    QueryWithHitsList list;
+  void Process( const SequenceList< A >& queries ) {
+    QueryWithHitsList< A > list;
 
     for( auto& query : queries ) {
       auto hits = mGlobalSearch.Query( query );
@@ -74,22 +84,36 @@ public:
   }
 
 private:
-  GlobalSearch         mGlobalSearch;
-  SearchResultsWriter& mWriter;
+  GlobalSearch< A >         mGlobalSearch;
+  SearchResultsWriter< A >& mWriter;
 };
-using QueryDatabaseSearcher =
-  WorkerQueue< QueryDatabaseSearcherWorker, SequenceList, SearchResultsWriter*,
-               const Database*, const float, const int, const int >;
 
+template < typename A >
+using QueryDatabaseSearcher =
+  WorkerQueue< QueryDatabaseSearcherWorker< A >, SequenceList< A >,
+               SearchResultsWriter< A >*, const Database< A >*, const float,
+               const int, const int >;
+
+template < typename A >
+struct WordSize {
+  static const int VALUE = 8; // DNA, default
+};
+
+template <>
+struct WordSize< Protein > {
+  static const int VALUE = 5;
+};
+
+template < typename A >
 bool Search( const std::string& queryPath, const std::string& databasePath,
              const std::string& outputPath, const float minIdentity,
              const int maxAccepts, const int maxRejects ) {
   ProgressOutput progress;
 
-  Sequence     seq;
-  SequenceList sequences;
+  Sequence< A >     seq;
+  SequenceList< A > sequences;
 
-  FASTA::Reader dbReader( databasePath );
+  auto dbReader = DetectFileFormatAndOpenReader< A >( databasePath, FileFormat::FASTA );
 
   enum ProgressType {
     ReadDBFile,
@@ -109,41 +133,40 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 
   // Read DB
   progress.Activate( ProgressType::ReadDBFile );
-  while( !dbReader.EndOfFile() ) {
-    dbReader >> seq;
+  while( !dbReader->EndOfFile() ) {
+    (*dbReader) >> seq;
     sequences.push_back( std::move( seq ) );
-    progress.Set( ProgressType::ReadDBFile, dbReader.NumBytesRead(),
-                  dbReader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadDBFile, dbReader->NumBytesRead(),
+                  dbReader->NumBytesTotal() );
   }
 
   // Index DB
-  const int wordSize = 8;
-  Database db( wordSize );
-  db.SetProgressCallback( [&]( Database::ProgressType type, size_t num,
-                         size_t total ) {
-    switch( type ) {
-      case Database::ProgressType::StatsCollection:
-        progress.Activate( ProgressType::StatsDB )
-          .Set( ProgressType::StatsDB, num, total );
-        break;
+  Database< A > db( WordSize< A >::VALUE );
+  db.SetProgressCallback(
+    [&]( typename Database< A >::ProgressType type, size_t num, size_t total ) {
+      switch( type ) {
+        case Database< A >::ProgressType::StatsCollection:
+          progress.Activate( ProgressType::StatsDB )
+            .Set( ProgressType::StatsDB, num, total );
+          break;
 
-      case Database::ProgressType::Indexing:
-        progress.Activate( ProgressType::IndexDB )
-          .Set( ProgressType::IndexDB, num, total );
-        break;
+        case Database< A >::ProgressType::Indexing:
+          progress.Activate( ProgressType::IndexDB )
+            .Set( ProgressType::IndexDB, num, total );
+          break;
 
-      default:
-        break;
-    }
-  });
+        default:
+          break;
+      }
+    } );
   db.Initialize( sequences );
 
   // Read and process queries
   const int numQueriesPerWorkItem = 64;
 
-  SearchResultsWriter   writer( 1, outputPath );
-  QueryDatabaseSearcher searcher( -1, &writer, &db, minIdentity, maxAccepts,
-                                  maxRejects );
+  SearchResultsWriter< A >   writer( 1, outputPath );
+  QueryDatabaseSearcher< A > searcher( -1, &writer, &db, minIdentity,
+                                       maxAccepts, maxRejects );
 
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
@@ -152,15 +175,15 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
     progress.Set( ProgressType::WriteHits, numProcessed, numEnqueued );
   } );
 
-  FASTA::Reader qryReader( queryPath );
+  auto qryReader = DetectFileFormatAndOpenReader< A >( queryPath, FileFormat::FASTA );
 
-  SequenceList queries;
+  SequenceList< A > queries;
   progress.Activate( ProgressType::ReadQueryFile );
-  while( !qryReader.EndOfFile() ) {
-    qryReader.Read( numQueriesPerWorkItem, &queries );
+  while( !qryReader->EndOfFile() ) {
+    qryReader->Read( numQueriesPerWorkItem, &queries );
     searcher.Enqueue( queries );
-    progress.Set( ProgressType::ReadQueryFile, qryReader.NumBytesRead(),
-                  qryReader.NumBytesTotal() );
+    progress.Set( ProgressType::ReadQueryFile, qryReader->NumBytesRead(),
+                  qryReader->NumBytesTotal() );
   }
 
   // Search
@@ -172,3 +195,11 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 
   return true;
 }
+
+// Explicit instantiation
+template bool Search< DNA >( const std::string&, const std::string&,
+                             const std::string&, const float, const int,
+                             const int );
+template bool Search< Protein >( const std::string&, const std::string&,
+                                 const std::string&, const float, const int,
+                                 const int );

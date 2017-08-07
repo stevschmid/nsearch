@@ -28,6 +28,11 @@ bool TextStreamReader::EndOfFile() const {
   return !mInput || mInput.peek() == EOF;
 }
 
+
+inline bool IsBlank( const std::string& str ) {
+  return str.empty() || std::all_of( str.begin(), str.end(), isspace );
+}
+
 void TextStreamReader::operator>>( std::string& str ) {
   do {
     getline( mInput, str );
