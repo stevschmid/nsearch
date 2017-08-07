@@ -2,10 +2,10 @@
 
 #include "BaseSearch.h"
 
-#include "../Database.h"
-#include "../Alignment/Common.h"
 #include "../Alignment/BandedAlign.h"
+#include "../Alignment/Common.h"
 #include "../Alignment/ExtendAlign.h"
+#include "../Database.h"
 
 #include <set>
 
@@ -69,7 +69,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
 
       uniqueCheck[ kmer ] = true;
 
-      size_t numSeqIds;
+      size_t            numSeqIds;
       const SequenceId* seqIds;
 
       if( !mDB.GetSequenceIdsIncludingKmer( kmer, &seqIds, &numSeqIds ) )
@@ -97,7 +97,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
   HitList< A > hits;
 
   for( auto it = highscores.cbegin(); it != highscores.cend(); ++it ) {
-    const size_t    seqId        = it->id;
+    const size_t         seqId        = it->id;
     const Sequence< A >& candidateSeq = mDB.GetSequenceById( seqId );
 
     std::deque< HSP > sps;
@@ -168,8 +168,8 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
         Cigar middleCigar;
         int   middleScore = 0;
         for( size_t a = sp.a1, b = sp.b1; a <= sp.a2 && b <= sp.b2; a++, b++ ) {
-          auto chA = query[ a ], chB = candidateSeq[ b ];
-          bool match = MatchPolicy< A >::Match( chA, chB );
+          auto   chA = query[ a ], chB = candidateSeq[ b ];
+          bool   match = MatchPolicy< A >::Match( chA, chB );
           int8_t score = ScorePolicy< A >::Score( chA, chB );
           middleCigar.Add( match ? CigarOp::Match : CigarOp::Mismatch );
           middleScore += score;
@@ -215,8 +215,8 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
 
       // Align first HSP's start to whole sequences begin
       auto& first = *chain.cbegin();
-      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::Reverse,
-                          first.a1, first.b1 );
+      mBandedAlign.Align( query, candidateSeq, &cigar,
+                          AlignmentDirection::Reverse, first.a1, first.b1 );
       alignment += cigar;
 
       // Align in between the HSP's
@@ -235,8 +235,9 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
       // Align last HSP's end to whole sequences end
       auto& last = *chain.crbegin();
       alignment += last.cigar;
-      mBandedAlign.Align( query, candidateSeq, &cigar, AlignmentDirection::Forward,
-                          last.a2 + 1, last.b2 + 1 );
+      mBandedAlign.Align( query, candidateSeq, &cigar,
+                          AlignmentDirection::Forward, last.a2 + 1,
+                          last.b2 + 1 );
       alignment += cigar;
 
       float identity = alignment.Identity();

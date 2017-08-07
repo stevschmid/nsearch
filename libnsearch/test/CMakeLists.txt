@@ -13,6 +13,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   Alnout/WriterTest.cpp
   Alphabet/DNATest.cpp
   Alphabet/ProteinTest.cpp
+  Database/GlobalSearchTest.cpp
   Database/HSPTest.cpp
   Database/KmersTest.cpp
   DatabaseTest.cpp
