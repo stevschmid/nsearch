@@ -1,24 +1,16 @@
-Masking
-Namespacing
-Proper templating (eg FASTA/FASTQ)
-Test DB with this breaking case (so HSP are not selected via length but with score)
- >40-284-M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
- >M37839.2 Klebsiella pneumoniae plasmid pMG230 beta-lactamase (MIR-1) gene, complete cds
+ToDo
+---
 
-Camila's idea: Add special coding gap model: Penalize gaps which shift the reading frame heavily, 
-but penalize gaps with 3nt, 6nt etc. which delete AAs less
+- [ ] Filtering
+- [ ] README (compiling, clang format)
+- [ ] Proper docs (API etc.)
+- [ ] Alphabet tests
+- [ ] Allow WorkerQueue Enqueue with rvalues
+- [ ] Database tests
+- [ ] Namespacing (after final name was determined)
+- [ ] Masking of low-quality sequence regions (e.g. ATATATATATA)
 
-Tests and so on for Kmers and INVALID_KMER (0, AAA..)
-  AmbiguousKmer at end of Kmer spectrum
+Wishlist
+---
 
-Tests for searching functionality
-  Handling ambig nucs
-Lower case method names?
-Allow diff. alphabets (proteins etc.), using C++ traits
-
-README (compiling, clang format)
-API docs
-
-allow WorkerQueue Enqueue with rvalues
-
-Alphabet tests
+- [ ] Camila's idea: Add special coding gap model: Penalize gaps which shift the reading frame heavily, but penalize gaps with 3nt, 6nt etc. which delete AAs less
