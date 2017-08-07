@@ -3,18 +3,19 @@
 #include <math.h>
 
 namespace FASTQ {
-static const int Q_MAX_SCORE      = 41;
+static const int Q_MAX_SCORE      = 42;
 static const int Q_MIN_ASCII_BASE = 33;                             // '!'
-static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'J'
+static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'K'
 
 // Calculate of posterior Q Scores as outlined by Edgar & Flyvbjerg (2015)
 class QScore {
 public:
-  double AsciiToProbability( const char ascii ) const {
+  double AsciiToProbability( const char ascii_ ) const {
+    char ascii = ascii_;
     if( ascii < Q_MIN_ASCII_BASE )
-      return 1.0;
+      ascii = Q_MIN_ASCII_BASE;
     if( ascii > Q_MAX_ASCII_BASE )
-      return 0.0f;
+      ascii = Q_MAX_ASCII_BASE;
     return ScoreToProbability( ascii - Q_MIN_ASCII_BASE );
   };
 

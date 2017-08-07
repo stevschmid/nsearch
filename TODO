@@ -2,9 +2,9 @@ ToDo
 ---
 
 - [X] Filtering
-- [ ] Filtering tests
-- [ ] README (compiling, clang format)
+- [X] Filtering tests
 - [ ] Proper docs (API etc.)
+- [ ] README (compiling, clang format, run tests)
 - [ ] Alphabet tests
 - [ ] Allow WorkerQueue Enqueue with rvalues
 - [ ] Database tests
