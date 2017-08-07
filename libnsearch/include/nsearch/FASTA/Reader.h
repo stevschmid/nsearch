@@ -9,7 +9,7 @@ class Reader : public SequenceReader< Alphabet > {
 public:
   using SequenceReader< Alphabet >::SequenceReader;
 
-  void operator>>( Sequence< Alphabet >& seq ) {
+  Reader< Alphabet >& operator>>( Sequence< Alphabet >& seq ) {
     std::string identifier, sequence;
     if( mLastLine.empty() ) {
       ( *mTextReader ) >> identifier;
@@ -31,6 +31,8 @@ public:
 
     UpcaseString( sequence );
     seq = Sequence< Alphabet >( identifier.substr( 1 ), sequence );
+
+    return *this;
   }
 
 private:

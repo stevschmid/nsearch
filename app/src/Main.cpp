@@ -20,8 +20,9 @@ static const char USAGE[] = R"(
   Process and search sequences.
 
   Usage:
-    nsearch merge --forward=<forward.fastq> --reverse=<reverse.fastq> --out=<merged.fastq>
-    nsearch search (dna|protein) --query=<query.fasta> --database=<database.fasta> --alnout=<output.aln> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+    nsearch search (dna|protein) --query=<queryfile> --database=<databasefile>
+      --out=<outputfile> --minidentity=<minidentity> [--maxaccepts=<maxaccepts>] [--maxrejects=<maxrejects>]
+    nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
 
   Options:
     --minidentity=<minidentity>    Minimum identity threshold (e.g. 0.8).
@@ -63,7 +64,7 @@ int main( int argc, const char** argv ) {
 
     auto query      = args[ "--query" ].asString();
     auto db         = args[ "--database" ].asString();
-    auto out        = args[ "--alnout" ].asString();
+    auto out        = args[ "--out" ].asString();
     auto minid      = std::stof( args[ "--minidentity" ].asString() );
     auto maxaccepts = args[ "--maxaccepts" ].asLong();
     auto maxrejects = args[ "--maxrejects" ].asLong();

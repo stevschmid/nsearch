@@ -9,7 +9,7 @@ class Reader : public SequenceReader< Alphabet > {
 public:
   using SequenceReader< Alphabet >::SequenceReader;
 
-  void operator>>( Sequence< Alphabet >& seq ) {
+  Reader< Alphabet >& operator>>( Sequence< Alphabet >& seq ) {
     ( *mTextReader ) >> seq.identifier;
     ( *mTextReader ) >> seq.sequence;
     ( *mTextReader ) >> seq.quality; // skip plusline
@@ -20,6 +20,8 @@ public:
 
     UpcaseString( seq.sequence ); // atc -> ATC
     UpcaseString( seq.quality );
+
+    return *this;
   }
 
 private:
