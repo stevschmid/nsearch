@@ -1,13 +1,15 @@
 #include "Filter.h"
 
-#include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
+#include <nsearch/Sequence.h>
 
 #include "Common.h"
 #include "FileFormat.h"
 
-bool Filter( const std::string& inputPath, const std::string& outputPath, const float maxExpectedErrors ) {
-  auto reader = DetectFileFormatAndOpenReader< DNA >( inputPath, FileFormat::FASTQ );
+bool Filter( const std::string& inputPath, const std::string& outputPath,
+             const float maxExpectedErrors ) {
+  auto reader =
+    DetectFileFormatAndOpenReader< DNA >( inputPath, FileFormat::FASTQ );
 
   enum ProgressType { ReadFile, Filter, WriteFile };
 
@@ -16,13 +18,12 @@ bool Filter( const std::string& inputPath, const std::string& outputPath, const 
   progress.Add( ProgressType::Filter, "Filter reads" );
   progress.Add( ProgressType::WriteFile, "Write final reads" );
 
-
   // Read
   SequenceList< DNA > sequences;
-  Sequence< DNA > seq;
+  Sequence< DNA >     seq;
   progress.Activate( ProgressType::ReadFile );
   while( !reader->EndOfFile() ) {
-    (*reader) >> seq;
+    ( *reader ) >> seq;
     sequences.push_back( std::move( seq ) );
     progress.Set( ProgressType::ReadFile, reader->NumBytesRead(),
                   reader->NumBytesTotal() );
@@ -32,7 +33,7 @@ bool Filter( const std::string& inputPath, const std::string& outputPath, const 
   SequenceList< DNA > filtered;
   progress.Activate( ProgressType::Filter );
   size_t count = 0;
-  for( auto &s : sequences ) {
+  for( auto& s : sequences ) {
     if( s.NumExpectedErrors() <= maxExpectedErrors ) {
       filtered.push_back( std::move( s ) );
     }
@@ -42,9 +43,10 @@ bool Filter( const std::string& inputPath, const std::string& outputPath, const 
   // Write
   progress.Activate( ProgressType::WriteFile );
   count = 0;
-  auto writer = DetectFileFormatAndOpenWriter< DNA >( outputPath, FileFormat::FASTA );
-  for( auto &s : filtered ) {
-    (*writer) << s;
+  auto writer =
+    DetectFileFormatAndOpenWriter< DNA >( outputPath, FileFormat::FASTA );
+  for( auto& s : filtered ) {
+    ( *writer ) << s;
     progress.Set( ProgressType::WriteFile, ++count, filtered.size() );
   }
 
