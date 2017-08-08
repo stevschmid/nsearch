@@ -4,7 +4,7 @@ ToDo
 - [X] Filtering
 - [X] Filtering tests
 - [ ] Proper docs (API etc.)
-- [ ] README (compiling, clang format, run tests)
+- [X] README (compiling, clang format, run tests)
 - [X] Alphabet tests
 - [ ] Allow WorkerQueue Enqueue with rvalues
 - [X] Global Search Tests
@@ -14,6 +14,7 @@ ToDo
 - [ ] Find final name
 - [ ] Namespacing (after final name was determined)
 - [ ] Pick OS license
+- [ ] GZIP support
 
 Wishlist
 ---

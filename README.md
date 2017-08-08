@@ -11,7 +11,7 @@ Metagenomics app/library for the rest of us. Written in C++11.
 ### Read processing
 
 - **Merge** forward and reverse (Illumina) short-read sequences.
-- **Filter** of (merged) sequences based on the number of expected errors.
+- **Filter** (merged) sequences based on the number of expected errors.
 
 ### File formats
 Currently supported:
