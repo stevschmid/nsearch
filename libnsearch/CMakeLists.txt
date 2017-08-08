@@ -12,5 +12,13 @@ target_include_directories(libnsearch PUBLIC
 
 target_link_libraries(libnsearch)
 
+# Zlib
+find_package(ZLIB)
+if(ZLIB_FOUND)
+  add_definitions(-DUSE_ZLIB=1)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(libnsearch ${ZLIB_LIBRARIES})
+endif(ZLIB_FOUND)
+
 # Tests
 add_subdirectory(test)

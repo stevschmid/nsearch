@@ -4,6 +4,10 @@
 #include <iostream>
 #include <string>
 
+#ifdef USE_ZLIB
+#include <zlib.h>
+#endif
+
 class TextReader {
 public:
   virtual size_t NumBytesRead() const  = 0;
@@ -50,6 +54,10 @@ private:
   void NextBuffer();
 
   int mFd;
+
+#ifdef USE_ZLIB
+  gzFile mGzFile;
+#endif
 
   size_t mBufferPos, mBufferSize, mTotalBufferSize;
   char*  mBuffer;

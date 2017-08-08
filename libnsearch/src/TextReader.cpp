@@ -43,7 +43,15 @@ void TextStreamReader::operator>>( std::string& str ) {
  * TextFileReader
  */
 void TextFileReader::NextBuffer() {
-  mBufferSize = read( mFd, mBuffer, mTotalBufferSize );
+#ifdef USE_ZLIB
+  if( mGzFile ) {
+    mBufferSize = gzread( mGzFile, mBuffer, mTotalBufferSize );
+  } else
+#endif
+  {
+    mBufferSize = read( mFd, mBuffer, mTotalBufferSize );
+  }
+
   mBufferPos  = 0;
 }
 
@@ -52,7 +60,19 @@ TextFileReader::TextFileReader( const std::string& fileName,
     : mBufferPos( -1 ), mBufferSize( 0 ), mTotalBufferSize( totalBufferSize ),
       mBuffer( NULL ) {
   mFd = open( fileName.c_str(), O_RDONLY ); // orly?
+
   if( mFd != -1 ) {
+#ifdef USE_ZLIB
+  mGzFile = NULL;
+
+  // Check for GZ magic number
+  uint8_t magic[ 2 ] = { 0, 0 };
+  read( mFd, magic, 2 );
+  lseek( mFd, 0, SEEK_SET );
+  if( magic[ 0 ] == 0x1F && magic[ 1 ] == 0x8B ) {
+    mGzFile = gzdopen( mFd, "rb" );
+  }
+#endif
     mBuffer = new char[ totalBufferSize ];
 
     mTotalBytes = lseek( mFd, 0, SEEK_END );
@@ -102,7 +122,14 @@ size_t TextFileReader::NumBytesRead() const {
   if( EndOfFile() ) {
     return mTotalBytes;
   } else {
-    return lseek( mFd, 0, SEEK_CUR );
+#ifdef USE_ZLIB
+    if( mGzFile ) {
+      return gzseek( mGzFile, 0, SEEK_CUR );
+    } else
+#endif
+    {
+      return lseek( mFd, 0, SEEK_CUR );
+    }
   }
 }
 

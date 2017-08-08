@@ -20,17 +20,16 @@ Currently supported:
 - FASTQ (merging input, merging output, searching input)
 - ALNOUT (searching output)
 
+Gzipped input files (e.g. `db.fasta.gz`) are supported.
+
 ### Library
 
 Use the `libnsearch` components for your own bioinformatics pipeline.
 
 ## Requirements
 
-You need `cmake` (build system). On macOS, installation via homebrew is recommended:
-
-```bash
-brew install cmake
-```
+* cmake: Build system. On macOS, installation via homebrew is recommended: `brew install cmake`.
+* (optional) zlib: Reading compressed file support (`.gz`). `brew install zlib`.
 
 ## Build instructions
 

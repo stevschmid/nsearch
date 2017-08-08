@@ -14,7 +14,8 @@ ToDo
 - [ ] Find final name
 - [ ] Namespacing (after final name was determined)
 - [ ] Pick OS license
-- [ ] GZIP support
+- [X] GZIP input support
+- [ ] GZIP output support
 
 Wishlist
 ---
