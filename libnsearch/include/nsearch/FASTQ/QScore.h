@@ -3,9 +3,9 @@
 #include <math.h>
 
 namespace FASTQ {
-static const int Q_MAX_SCORE      = 42;
+static const int Q_MAX_SCORE      = 41;
 static const int Q_MIN_ASCII_BASE = 33;                             // '!'
-static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'K'
+static const int Q_MAX_ASCII_BASE = Q_MIN_ASCII_BASE + Q_MAX_SCORE; // 'J'
 
 // Calculate of posterior Q Scores as outlined by Edgar & Flyvbjerg (2015)
 class QScore {

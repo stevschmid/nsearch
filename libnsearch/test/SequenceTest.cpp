@@ -61,7 +61,7 @@ TEST_CASE( "Sequence" ) { Sequence< DNA > seq( "Id", "ACCT", "JJ::" );
 
     REQUIRE( Sequence< DNA >( "ATTT" ).NumExpectedErrors() == 0.0f );
     REQUIRE( Sequence< DNA >( "" ).NumExpectedErrors() == 0.0f );
-    REQUIRE( Sequence< DNA >( "seq1", "ATTT", "$'KK" ).NumExpectedErrors() == Approx( 0.50119f + 0.25119f + 2 * 0.00006f ) );
+    REQUIRE( Sequence< DNA >( "seq1", "ATTT", "$'JJ" ).NumExpectedErrors() == Approx( 0.50119f + 0.25119f + 2 * 0.00008f ) );
     REQUIRE( Sequence< DNA >( "seq1", "NA", "!<" ).NumExpectedErrors() == Approx( 1.0f + 0.002f ) );
   }
 }
