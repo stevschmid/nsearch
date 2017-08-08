@@ -122,14 +122,7 @@ size_t TextFileReader::NumBytesRead() const {
   if( EndOfFile() ) {
     return mTotalBytes;
   } else {
-#ifdef USE_ZLIB
-    if( mGzFile ) {
-      return gzseek( mGzFile, 0, SEEK_CUR );
-    } else
-#endif
-    {
-      return lseek( mFd, 0, SEEK_CUR );
-    }
+    return lseek( mFd, 0, SEEK_CUR );
   }
 }
 
