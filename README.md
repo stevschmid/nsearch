@@ -1,6 +1,6 @@
 # nsearch (WIP title)
 
-Metagenomics app/library for the rest of us. Written in C++11.
+Metagenomics tool/library for the rest of us. Written in C++11.
 
 ## Features
 
