@@ -21,15 +21,17 @@ private:
   static inline char MatchSymbol( const char A, const char B );
   static inline std::string Unit();
 
+  static inline std::string QueryStrand( const Hit< Alphabet > &hit );
+  static inline std::string TargetStrand( const Hit< Alphabet > &hit );
+
 public:
   Writer( std::ostream& output ) : mOutput( output ) {}
 
   Writer( const std::string& pathToFile )
       : mFile( pathToFile ), mOutput( mFile ) {}
 
-  void operator<<(
-    const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
-      queryWithHits ) {
+  void operator<<( const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
+                     queryWithHits ) {
     const auto& query = queryWithHits.first;
     const auto& hits  = queryWithHits.second;
 
@@ -67,13 +69,22 @@ public:
         auto padLen = std::max( std::to_string( lines.back().qe ).size(),
                                 std::to_string( lines.back().te ).size() );
 
-        mOutput << "Qry " << std::setw( padLen ) << line.qs
+        auto qstrand = QueryStrand( hit );
+        auto tstrand = TargetStrand( hit );
+
+        if( !qstrand.empty() )
+          qstrand += " ";
+
+        if( !tstrand.empty() )
+          tstrand += " ";
+
+        mOutput << "Qry " << qstrand << std::setw( padLen ) << line.qs
                 << " "
                 << line.q << " " << line.qe << std::endl;
 
-        mOutput << std::string( 5 + padLen, ' ' ) << line.a << std::endl;
+        mOutput << std::string( 5 + padLen + qstrand.size(), ' ' ) << line.a << std::endl;
 
-        mOutput << "Tgt " << std::setw( padLen ) << line.ts
+        mOutput << "Tgt " << tstrand << std::setw( padLen ) << line.ts
                 << " "
                 << line.t << " " << line.te << std::endl;
 
@@ -216,6 +227,7 @@ private:
 
 }; // Writer
 
+// DNA specializations
 template<>
 inline char Writer< DNA >::MatchSymbol( const char A, const char B ) {
   return MatchPolicy< DNA >::Match( A, B ) ? '|' : ' ';
@@ -226,6 +238,17 @@ inline std::string Writer< DNA >::Unit() {
   return "nt";
 }
 
+template <>
+inline std::string Writer< DNA >::QueryStrand( const Hit< DNA >& hit ) {
+  return "+";
+}
+
+template <>
+inline std::string Writer< DNA >::TargetStrand( const Hit< DNA >& hit ) {
+  return "+";
+}
+
+// Protein specializations
 template<>
 inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
   auto score = ScorePolicy< Protein >::Score( A, B );
@@ -241,6 +264,16 @@ inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
 template<>
 inline std::string Writer< Protein >::Unit() {
   return "aa";
+}
+
+template <>
+inline std::string Writer< Protein >::QueryStrand( const Hit< Protein >& hit ) {
+  return "";
+}
+
+template <>
+inline std::string Writer< Protein >::TargetStrand( const Hit< Protein >& hit ) {
+  return "";
 }
 
 } // namespace Alnout
