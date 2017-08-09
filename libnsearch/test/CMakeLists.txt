@@ -2,7 +2,7 @@ enable_testing()
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 
-set(CATCH_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/vendor/catch)
+set(CATCH_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/catch)
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 

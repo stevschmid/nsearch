@@ -42,7 +42,7 @@ make
 
 ## Usage
 
-Invoke the `app/nsearch` binary in the `build` directory.
+Invoke the `nsearch/nsearch` binary in the `build` directory.
 
 ## Tests
 
