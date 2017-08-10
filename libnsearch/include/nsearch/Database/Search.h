@@ -20,7 +20,7 @@ struct SearchParams : public BaseSearchParams {};
 
 template <>
 struct SearchParams< DNA > : public BaseSearchParams {
-  DNA::Strand strand = DNA::Strand::Plus;
+  DNA::Strand strand = DNA::Strand::Both;
 };
 
 template < typename Alphabet >
