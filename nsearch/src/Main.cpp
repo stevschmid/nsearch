@@ -55,12 +55,27 @@ void PrintSummaryLine( const float value, const std::string& line,
 using Args = std::map< std::string, docopt::value > ;
 
 template < typename A >
+void AddSpecialSearchParams( const Args& args, SearchParams< A >* sp ) {}
+
+void AddSpecialSearchParams( const Args& args, SearchParams< DNA >* sp ) {
+  auto str = args.at( "--strand" ).asString();
+  sp->strand = DNA::Strand::Plus;
+  if( str == "minus" ) {
+    sp->strand = DNA::Strand::Minus;
+  } else if( str == "both" ) {
+    sp->strand = DNA::Strand::Both;
+  }
+}
+
+template < typename A >
 SearchParams< A > ParseSearchParams( const Args& args ) {
   SearchParams< A > sp;
 
   sp.minIdentity = std::stof( args.at( "--min-identity" ).asString() );
   sp.maxAccepts  = args.at( "--max-accepts" ).asLong();
   sp.maxRejects  = args.at( "--max-rejects" ).asLong();
+
+  AddSpecialSearchParams( args, &sp );
 
   return sp;
 }
@@ -86,17 +101,7 @@ int main( int argc, const char** argv ) {
     if( args[ "--protein" ].asBool() ) {
       DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
     } else {
-      auto sp = ParseSearchParams< DNA >( args );
-
-      auto str = args[ "--strand" ].asString();
-      auto strand = DNA::Strand::Plus;
-      if( str == "minus" ) {
-        sp.strand = DNA::Strand::Minus;
-      } else if( str == "both" ) {
-        sp.strand = DNA::Strand::Both;
-      }
-
-      DoSearch< DNA >( query, db, out, sp );
+      DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
     }
 
     gStats.StopTimer();
