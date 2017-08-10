@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BaseSearch.h"
+#include "Search.h"
 
 #include "../Alignment/BandedAlign.h"
 #include "../Alignment/Common.h"
@@ -12,14 +12,15 @@
 using Counter = unsigned short;
 
 template < typename Alphabet >
-class GlobalSearch : public BaseSearch< Alphabet > {
+class GlobalSearch : public Search< Alphabet > {
 public:
   GlobalSearch( const Database< Alphabet >& db, const SearchParams< Alphabet >& params );
-  HitList< Alphabet > Query( const Sequence< Alphabet >& query );
 
-private:
-  using BaseSearch< Alphabet >::mDB;
-  using BaseSearch< Alphabet >::mParams;
+protected:
+  using Search< Alphabet >::mDB;
+  using Search< Alphabet >::mParams;
+
+  HitList< Alphabet > QuerySingleSequence( const Sequence< Alphabet >& query );
 
   std::vector< Counter >  mHits;
   ExtendAlign< Alphabet > mExtendAlign;
@@ -29,12 +30,12 @@ private:
 template < typename A >
 GlobalSearch< A >::GlobalSearch( const Database< A >&     db,
                                  const SearchParams< A >& params )
-    : BaseSearch< A >( db, params ) {
+    : Search< A >( db, params ) {
 
 }
 
 template < typename A >
-HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
+HitList< A > GlobalSearch< A >::QuerySingleSequence( const Sequence< A >& query ) {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance  = 16;
 

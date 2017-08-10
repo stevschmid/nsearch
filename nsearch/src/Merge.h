@@ -2,5 +2,5 @@
 
 #include <string>
 
-extern bool Merge( const std::string& fwdPath, const std::string& revPath,
-                   const std::string& mergedPath );
+extern bool DoMerge( const std::string& fwdPath, const std::string& revPath,
+                     const std::string& mergedPath );

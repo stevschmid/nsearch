@@ -104,9 +104,9 @@ struct WordSize< Protein > {
 };
 
 template < typename A >
-bool Search( const std::string& queryPath, const std::string& databasePath,
-             const std::string&       outputPath,
-             const SearchParams< A >& searchParams ) {
+bool DoSearch( const std::string& queryPath, const std::string& databasePath,
+               const std::string&       outputPath,
+               const SearchParams< A >& searchParams ) {
   ProgressOutput progress;
 
   Sequence< A >     seq;
@@ -195,8 +195,8 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 }
 
 // Explicit instantiation
-template bool Search< DNA >( const std::string&, const std::string&,
-                             const std::string&, const SearchParams< DNA >& );
-template bool Search< Protein >( const std::string&, const std::string&,
-                                 const std::string&,
-                                 const SearchParams< Protein >& );
+template bool DoSearch< DNA >( const std::string&, const std::string&,
+                               const std::string&, const SearchParams< DNA >& );
+template bool DoSearch< Protein >( const std::string&, const std::string&,
+                                   const std::string&,
+                                   const SearchParams< Protein >& );

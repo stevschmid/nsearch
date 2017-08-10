@@ -27,14 +27,19 @@ template< typename Alphabet >
 using HitList = std::deque< Hit< Alphabet > >;
 
 template< typename Alphabet >
-class BaseSearch {
+class Search {
 public:
-  BaseSearch( const Database< Alphabet >&     db,
-              const SearchParams< Alphabet >& params )
+  Search( const Database< Alphabet >&     db,
+          const SearchParams< Alphabet >& params )
       : mDB( db ), mParams( params ) {}
-  virtual HitList< Alphabet > Query( const Sequence< Alphabet > & query ) = 0;
+
+  HitList< Alphabet > Query( const Sequence< Alphabet >& query ) {
+    return QuerySingleSequence( query );
+  }
 
 protected:
+  virtual HitList< Alphabet > QuerySingleSequence( const Sequence< Alphabet > & query ) = 0;
+
   const Database< Alphabet >& mDB;
   const SearchParams< Alphabet >& mParams;
 };

@@ -82,9 +82,9 @@ int main( int argc, const char** argv ) {
     auto out        = args[ "--out" ].asString();
 
     if( args[ "--protein" ].asBool() ) {
-      Search< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
+      DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
     } else {
-      Search< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
+      DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
     }
 
     gStats.StopTimer();
@@ -97,7 +97,7 @@ int main( int argc, const char** argv ) {
   if( args[ "merge" ].asBool() ) {
     gStats.StartTimer();
 
-    Merge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(),
+    DoMerge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(),
            args[ "--out" ].asString() );
 
     gStats.StopTimer();
@@ -119,7 +119,7 @@ int main( int argc, const char** argv ) {
     auto out   = args[ "--out" ].asString();
     auto maxee = std::stof( args[ "--max-expected-errors" ].asString() );
 
-    Filter( in, out, maxee );
+    DoFilter( in, out, maxee );
 
     gStats.StopTimer();
 
