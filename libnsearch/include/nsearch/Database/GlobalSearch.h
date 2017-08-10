@@ -20,7 +20,8 @@ protected:
   using Search< Alphabet >::mDB;
   using Search< Alphabet >::mParams;
 
-  HitList< Alphabet > QuerySingleSequence( const Sequence< Alphabet >& query );
+  void SearchForHits( const Sequence< Alphabet >&              query,
+                      const SearchForHitsCallback< Alphabet >& callback );
 
   std::vector< Counter >  mHits;
   ExtendAlign< Alphabet > mExtendAlign;
@@ -35,7 +36,8 @@ GlobalSearch< A >::GlobalSearch( const Database< A >&     db,
 }
 
 template < typename A >
-HitList< A > GlobalSearch< A >::QuerySingleSequence( const Sequence< A >& query ) {
+void GlobalSearch< A >::SearchForHits( const Sequence< A >&              query,
+                                  const SearchForHitsCallback< A >& callback ) {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance  = 16;
 
@@ -238,7 +240,7 @@ HitList< A > GlobalSearch< A >::QuerySingleSequence( const Sequence< A >& query 
       float identity = alignment.Identity();
       if( identity >= mParams.minIdentity ) {
         accept = true;
-        hits.push_back( { candidateSeq, alignment } );
+        callback( candidateSeq, alignment );
       }
     }
 
@@ -252,6 +254,4 @@ HitList< A > GlobalSearch< A >::QuerySingleSequence( const Sequence< A >& query 
         break;
     }
   }
-
-  return hits;
 }
