@@ -5,7 +5,6 @@
 #include <nsearch/Alphabet/DNA.h>
 
 #include <sstream>
-#include <cstring>
 
 const char AlnoutOutputForProtein[] = R"(Query >query1
  %Id   TLen  Target
