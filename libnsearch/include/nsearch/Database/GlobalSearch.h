@@ -8,6 +8,7 @@
 #include "../Database.h"
 
 #include <set>
+#include <cstring>
 
 using Counter = unsigned short;
 

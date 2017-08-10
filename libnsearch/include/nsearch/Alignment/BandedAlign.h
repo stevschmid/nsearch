@@ -61,7 +61,7 @@ private:
     }
 
     void Reset() {
-      mScore      = MININT;
+      mScore      = MinInt();
       mIsTerminal = false;
     }
   };
@@ -72,7 +72,7 @@ private:
   void PrintRow( const size_t width ) {
     for( int i = 0; i < width; i++ ) {
       int score = mScores[ i ];
-      if( score <= MININT ) {
+      if( score <= MinInt() ) {
         printf( "%5c", 'X' );
       } else {
         printf( "%5d", score );
@@ -126,7 +126,7 @@ public:
 
     // Make sure we have enough cells
     if( mScores.capacity() < width ) {
-      mScores = Scores( width * 1.5, MININT );
+      mScores = Scores( width * 1.5, MinInt() );
     }
 
     if( mVerticalGaps.capacity() < width ) {
@@ -164,7 +164,7 @@ public:
       mVerticalGaps[ x ].Reset();
     }
     if( x < width ) {
-      mScores[ x ] = MININT;
+      mScores[ x ] = MinInt();
       mVerticalGaps[ x ].Reset();
     }
     /* PrintRow( width ); */
@@ -173,7 +173,7 @@ public:
     size_t center = 1;
     bool   hitEnd = false;
     for( y = 1; y < height && !hitEnd; y++ ) {
-      int score = MININT;
+      int score = MinInt();
 
       // Calculate band bounds
       size_t leftBound =
@@ -187,10 +187,10 @@ public:
       /* } */
 
       // Set diagonal score for first calculated cell in row
-      int diagScore = MININT;
+      int diagScore = MinInt();
       if( leftBound > 0 ) {
         diagScore                = mScores[ leftBound - 1 ];
-        mScores[ leftBound - 1 ] = MININT;
+        mScores[ leftBound - 1 ] = MinInt();
         mVerticalGaps[ leftBound - 1 ].Reset();
       }
 
@@ -247,7 +247,7 @@ public:
       }
 
       if( rightBound + 1 < width ) {
-        mScores[ rightBound + 1 ] = MININT;
+        mScores[ rightBound + 1 ] = MinInt();
         mVerticalGaps[ rightBound + 1 ].Reset();
       }
 

@@ -23,14 +23,14 @@ template < typename Alphabet >
 class ExtendAlign {
 private:
   struct Cell {
-    int score    = MININT;
-    int scoreGap = MININT;
+    int score    = MinInt();
+    int scoreGap = MinInt();
   };
   using Cells = std::vector< Cell >;
 
   void Print( const Cells& row ) {
     for( auto& c : row ) {
-      if( c.score <= MININT ) {
+      if( c.score <= MinInt() ) {
         printf( "%5c", 'X' );
       } else {
         printf( "%5d", c.score );
@@ -100,7 +100,7 @@ public:
 
       mOperations[ x ]   = CigarOp::Insertion;
       mRow[ x ].score    = score;
-      mRow[ x ].scoreGap = MININT;
+      mRow[ x ].scoreGap = MinInt();
     }
     size_t rowSize = x;
     /* Print( mRow ); */
@@ -109,9 +109,9 @@ public:
 
     for( y = 1; y < height; y++ ) {
 
-      int rowGap    = MININT;
-      int score     = MININT;
-      int diagScore = MININT;
+      int rowGap    = MinInt();
+      int score     = MinInt();
+      int diagScore = MinInt();
 
       size_t lastX = firstX;
 
@@ -152,7 +152,7 @@ public:
 
         if( bestScore - score > mAP.xDrop ) {
           // X-Drop test failed
-          mRow[ x ].score = MININT;
+          mRow[ x ].score = MinInt();
 
           if( x == firstX ) {
             // Tighten left bound
@@ -217,8 +217,8 @@ public:
 
       // Properly reset right bound
       if( rowSize < width ) {
-        mRow[ rowSize ].score    = MININT;
-        mRow[ rowSize ].scoreGap = MININT;
+        mRow[ rowSize ].score    = MinInt();
+        mRow[ rowSize ].scoreGap = MinInt();
         rowSize++;
       }
       /* Print( mRow ); */
