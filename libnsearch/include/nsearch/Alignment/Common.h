@@ -3,10 +3,7 @@
 #include "../Sequence.h"
 #include "../Utils.h"
 
-#include <deque>
-#include <sstream>
-
-#define MAXINT INT_MAX / 2  // prevent overflow
-#define MININT -INT_MIN / 2 // prevent underflow
+#include <limits>
+inline int MinInt() { return std::numeric_limits< int >::min() / 2; }
 
 enum class AlignmentDirection { Forward, Reverse };
