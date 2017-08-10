@@ -76,25 +76,23 @@ protected:
  */
 template <>
 inline HitList< DNA > Search< DNA >::Query( const Sequence< DNA >& query ) {
-  /* HitList< DNA > hits; */
+  HitList< DNA > hits;
 
-  /* /1*   auto strand = mParams.strand; *1/ */
+  auto strand = mParams.strand;
 
-  /* /1*   if( strand == DNA::Strand::Plus || strand == DNA::Strand::Both ) { *1/ */
-  /* /1*     /2* std::cout << "Search plus" << std::endl; *2/ *1/ */
-  /* /1*     /2* auto ret = SearchForHits( query ); *2/ *1/ */
-  /* /1*     SearchForHits( query, *1/ */
-  /* /1*                    []( const Sequence< DNA >& target, const Cigar& */
-  /*  * alignment ) { *1/ */
-  /* /1*                      hits.push_back( *1/ */
-  /* /1*                    } ); *1/ */
-  /* /1*   } *1/ */
+  if( strand == DNA::Strand::Plus || strand == DNA::Strand::Both ) {
+    SearchForHits( query,
+                   [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
+                     hits.push_back( { target, alignment, DNA::Strand::Plus } );
+                   } );
+  }
 
-  /* /1* if( strand == DNA::Strand::Minus || strand == DNA::Strand::Both ) { *1/ */
-  /* /1*   std::cout << "Search minus" << std::endl; *1/ */
-  /* /1*   auto ret = SearchForHits( query.Reverse().Complement() ); *1/ */
-  /* /1*   for( *1/ */
-  /* /1* } *1/ */
+  if( strand == DNA::Strand::Minus || strand == DNA::Strand::Both ) {
+    SearchForHits( query.Reverse().Complement(),
+                   [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
+                     hits.push_back( { target, alignment, DNA::Strand::Minus } );
+                   } );
+  }
 
-  return HitList< DNA >();
+  return hits;
 }
