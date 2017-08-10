@@ -4,6 +4,8 @@
 
 struct DNA {
   typedef char CharType;
+
+  enum class Strand { Plus, Minus, Both };
 };
 
 using RNA = DNA;

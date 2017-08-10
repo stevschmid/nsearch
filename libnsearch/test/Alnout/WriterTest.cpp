@@ -51,17 +51,37 @@ const char AlnoutOutputForDNA[] = R"(Query >RF00966;mir-676;ABRQ01840532.1/340-4
  Query 89nt >RF00966;mir-676;ABRQ01840532.1/340-428   9813:Procavia capensis (cape rock hyrax)
 Target 89nt >RF00966;mir-676;AAGV020395671.1/1356-1444   9361:Dasypus novemcinctus (nine-banded armadillo)
 
-Qry  1 CUUUGCCUGAACGCAAGACUCUUCAACCUCAGGACUUGCAGAAUUGGUAGAAUGCCGUCC 60
-       | |  ||||||| || ||||||||||| |||||||||||||||||  | |||||||||||
-Tgt  1 CGUCACCUGAACUCAUGACUCUUCAACUUCAGGACUUGCAGAAUUAAUGGAAUGCCGUCC 60
+Qry  1 + CUUUGCCUGAACGCAAGACUCUUCAACCUCAGGACUUGCAGAAUUGGUAGAAUGCCGUCC 60
+         | |  ||||||| || ||||||||||| |||||||||||||||||  | |||||||||||
+Tgt  1 + CGUCACCUGAACUCAUGACUCUUCAACUUCAGGACUUGCAGAAUUAAUGGAAUGCCGUCC 60
 
-Qry 61 UAAGGUUGUUGAGUUCUGUGUUUGGAGGC 89
-       |||||||||||||||||| ||||   |||
-Tgt 61 UAAGGUUGUUGAGUUCUGCGUUUCUGGGC 89
+Qry 61 + UAAGGUUGUUGAGUUCUGUGUUUGGAGGC 89
+         |||||||||||||||||| ||||   |||
+Tgt 61 + UAAGGUUGUUGAGUUCUGCGUUUCUGGGC 89
 
 89 cols, 76 ids (85.4%), 0 gaps (0.0%)
 
 )";
+
+const char AlnoutOutputForDNAMinus[] = R"(Query >RevComp of RF00966;mir-676;ABRQ01840532.1/340-428   9813:Procavia capensis (cape rock hyrax)
+ %Id   TLen  Target
+ 85%     89  RF00966;mir-676;AAGV020395671.1/1356-1444   9361:Dasypus novemcinctus (nine-banded armadillo)
+
+ Query 89nt >RevComp of RF00966;mir-676;ABRQ01840532.1/340-428   9813:Procavia capensis (cape rock hyrax)
+Target 89nt >RF00966;mir-676;AAGV020395671.1/1356-1444   9361:Dasypus novemcinctus (nine-banded armadillo)
+
+Qry 89 - CTTTGCCTGAACGCAAGACTCTTCAACCTCAGGACTTGCAGAATTGGTAGAATGCCGTCC 30
+         | +  ||+|||| || |||+|++|||| +||||||++||||||++  + |||+||||+||
+Tgt  1 + CGUCACCUGAACUCAUGACUCUUCAACUUCAGGACUUGCAGAAUUAAUGGAAUGCCGUCC 60
+
+Qry 29 - TAAGGTTGTTGAGTTCTGTGTTTGGAGGC 1
+         +||||++|++|||++|+| |+++   |||
+Tgt 61 + UAAGGUUGUUGAGUUCUGCGUUUCUGGGC 89
+
+89 cols, 76 ids (85.4%), 0 gaps (0.0%)
+
+)";
+
 
 TEST_CASE( "Alnout" ) {
   SECTION( "Protein" ) {
@@ -103,8 +123,22 @@ TEST_CASE( "Alnout" ) {
     std::ostringstream oss;
     Alnout::Writer< DNA > writer( oss );
 
-    writer << entry;
+    SECTION( "Default" ) {
+      writer << entry;
+      REQUIRE( oss.str() == AlnoutOutputForDNA );
+    }
 
-    REQUIRE( oss.str() == AlnoutOutputForDNA );
+    SECTION( "Minus strand" ) {
+      entry.first =
+        Sequence< DNA >( "RevComp of RF00966;mir-676;ABRQ01840532.1/340-428   "
+                         "9813:Procavia capensis (cape rock hyrax)",
+                         "GCCTCCAAACACAGAACTCAACAACCTTAGGACGGCATTCTACCAATTCTGCA"
+                         "AGTCCTGAGGTTGAAGAGTCTTGCGTTCAGGCAAAG" );
+      entry.second[ 0 ].strand = DNA::Strand::Minus;
+
+      writer << entry;
+
+      REQUIRE( oss.str() == AlnoutOutputForDNAMinus );
+    }
   }
 }

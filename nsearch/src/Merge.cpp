@@ -94,8 +94,8 @@ template < typename A >
 using ReadMerger = WorkerQueue< ReadMergerWorker< A >, PairedReads< A >,
                                 MergedReadWriter< A >* >;
 
-bool Merge( const std::string& fwdPath, const std::string& revPath,
-            const std::string& mergedPath ) {
+bool DoMerge( const std::string& fwdPath, const std::string& revPath,
+              const std::string& mergedPath ) {
   const int numReadsPerWorkItem = 512;
 
   PairedEnd::Reader< DNA > reader( fwdPath, revPath );

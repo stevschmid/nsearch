@@ -22,7 +22,7 @@ static const char USAGE[] = R"(
 
   Usage:
     nsearch search --query=<queryfile> --db=<databasefile>
-      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein]
+      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--strand=<strand>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
@@ -31,6 +31,7 @@ static const char USAGE[] = R"(
     --max-accepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
     --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
     --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
+    --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: plus]).
 )";
 
 void PrintSummaryHeader() {
@@ -51,11 +52,38 @@ void PrintSummaryLine( const float value, const std::string& line,
   std::cout.flags( f );
 }
 
+using Args = std::map< std::string, docopt::value > ;
+
+template < typename A >
+void AddSpecialSearchParams( const Args& args, SearchParams< A >* sp ) {}
+
+void AddSpecialSearchParams( const Args& args, SearchParams< DNA >* sp ) {
+  auto str = args.at( "--strand" ).asString();
+  sp->strand = DNA::Strand::Plus;
+  if( str == "minus" ) {
+    sp->strand = DNA::Strand::Minus;
+  } else if( str == "both" ) {
+    sp->strand = DNA::Strand::Both;
+  }
+}
+
+template < typename A >
+SearchParams< A > ParseSearchParams( const Args& args ) {
+  SearchParams< A > sp;
+
+  sp.minIdentity = std::stof( args.at( "--min-identity" ).asString() );
+  sp.maxAccepts  = args.at( "--max-accepts" ).asLong();
+  sp.maxRejects  = args.at( "--max-rejects" ).asLong();
+
+  AddSpecialSearchParams( args, &sp );
+
+  return sp;
+}
+
 int main( int argc, const char** argv ) {
-  std::map< std::string, docopt::value > args =
-    docopt::docopt( USAGE, { argv + 1, argv + argc },
-                    true, // help
-                    APP_NAME );
+  Args args = docopt::docopt( USAGE, { argv + 1, argv + argc },
+                              true, // help
+                              APP_NAME );
 
   // Print header
   std::cout << APP_NAME << " " << APP_VERSION << " (built on "
@@ -68,14 +96,12 @@ int main( int argc, const char** argv ) {
     auto query      = args[ "--query" ].asString();
     auto db         = args[ "--db" ].asString();
     auto out        = args[ "--out" ].asString();
-    auto minid      = std::stof( args[ "--min-identity" ].asString() );
-    auto maxaccepts = args[ "--max-accepts" ].asLong();
-    auto maxrejects = args[ "--max-rejects" ].asLong();
+
 
     if( args[ "--protein" ].asBool() ) {
-      Search< Protein >( query, db, out, minid, maxaccepts, maxrejects );
+      DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
     } else {
-      Search< DNA >( query, db, out, minid, maxaccepts, maxrejects );
+      DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
     }
 
     gStats.StopTimer();
@@ -88,7 +114,7 @@ int main( int argc, const char** argv ) {
   if( args[ "merge" ].asBool() ) {
     gStats.StartTimer();
 
-    Merge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(),
+    DoMerge( args[ "--forward" ].asString(), args[ "--reverse" ].asString(),
            args[ "--out" ].asString() );
 
     gStats.StopTimer();
@@ -110,7 +136,7 @@ int main( int argc, const char** argv ) {
     auto out   = args[ "--out" ].asString();
     auto maxee = std::stof( args[ "--max-expected-errors" ].asString() );
 
-    Filter( in, out, maxee );
+    DoFilter( in, out, maxee );
 
     gStats.StopTimer();
 

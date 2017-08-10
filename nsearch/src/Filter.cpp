@@ -6,7 +6,7 @@
 #include "Common.h"
 #include "FileFormat.h"
 
-bool Filter( const std::string& inputPath, const std::string& outputPath,
+bool DoFilter( const std::string& inputPath, const std::string& outputPath,
              const float maxExpectedErrors ) {
   auto reader =
     DetectFileFormatAndOpenReader< DNA >( inputPath, FileFormat::FASTQ );

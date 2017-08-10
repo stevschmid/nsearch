@@ -12,14 +12,45 @@
 
 namespace Alnout {
 
-template <typename Alphabet>
+template < typename Alphabet >
 class Writer {
 private:
   std::ofstream mFile;
   std::ostream& mOutput;
 
-  static inline char MatchSymbol( const char A, const char B );
+  static inline char        MatchSymbol( const char A, const char B );
   static inline std::string Unit();
+
+  static inline std::string QueryStrand( const Hit< Alphabet >& hit ) {
+    return "";
+  }
+  static inline std::string TargetStrand( const Hit< Alphabet >& hit ) {
+    return "";
+  }
+
+  static inline Sequence< Alphabet >
+  QueryForAlignment( const Hit< Alphabet >&      hit,
+                     const Sequence< Alphabet >& query ) {
+    return query;
+  }
+
+  static inline Sequence< Alphabet >
+  TargetForAlignment( const Hit< Alphabet >&      hit,
+                      const Sequence< Alphabet >& query ) {
+    return hit.target;
+  }
+
+  static inline size_t QueryPos( const size_t                pos,
+                                 const Sequence< Alphabet >& query,
+                                 const Hit< Alphabet >&      hit ) {
+    return pos;
+  }
+
+  static inline size_t TargetPos( const size_t                pos,
+                                  const Sequence< Alphabet >& query,
+                                  const Hit< Alphabet >&      hit ) {
+    return pos;
+  }
 
 public:
   Writer( std::ostream& output ) : mOutput( output ) {}
@@ -27,9 +58,8 @@ public:
   Writer( const std::string& pathToFile )
       : mFile( pathToFile ), mOutput( mFile ) {}
 
-  void operator<<(
-    const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
-      queryWithHits ) {
+  void operator<<( const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
+                     queryWithHits ) {
     const auto& query = queryWithHits.first;
     const auto& hits  = queryWithHits.second;
 
@@ -52,30 +82,45 @@ public:
       auto maxLen    = std::max( queryLen.size(), targetLen.size() );
 
       mOutput << " Query" << std::setw( maxLen + 1 )
-              << std::to_string( query.Length() ) << Unit()
-              << " >" << query.identifier << std::endl;
+              << std::to_string( query.Length() ) << Unit() << " >"
+              << query.identifier << std::endl;
       mOutput << "Target" << std::setw( maxLen + 1 )
-              << std::to_string( hit.target.Length() ) << Unit()
-              << " >" << hit.target.identifier << std::endl;
+              << std::to_string( hit.target.Length() ) << Unit() << " >"
+              << hit.target.identifier << std::endl;
 
       size_t numCols, numMatches, numGaps;
-      auto   lines = ExtractAlignmentLines( query, hit.target, hit.alignment,
-                                          &numCols, &numMatches, &numGaps );
+      auto   lines = ExtractAlignmentLines(
+        QueryForAlignment( hit, query ), TargetForAlignment( hit, query ), hit.alignment,
+        &numCols, &numMatches, &numGaps );
 
       mOutput << std::endl;
       for( auto& line : lines ) {
-        auto padLen = std::max( std::to_string( lines.back().qe ).size(),
-                                std::to_string( lines.back().te ).size() );
+        auto padLen = std::max( { std::to_string( lines.back().qs ).size(),
+                                  std::to_string( lines.back().ts ).size(),
+                                  std::to_string( lines.back().qe ).size(),
+                                  std::to_string( lines.back().te ).size() } );
 
-        mOutput << "Qry " << std::setw( padLen ) << line.qs
-                << " "
-                << line.q << " " << line.qe << std::endl;
+        auto qstrand = QueryStrand( hit );
+        auto tstrand = TargetStrand( hit );
 
-        mOutput << std::string( 5 + padLen, ' ' ) << line.a << std::endl;
+        if( !qstrand.empty() )
+          qstrand += " ";
 
-        mOutput << "Tgt " << std::setw( padLen ) << line.ts
-                << " "
-                << line.t << " " << line.te << std::endl;
+        if( !tstrand.empty() )
+          tstrand += " ";
+
+        mOutput << "Qry " << std::setw( padLen )
+                << QueryPos( line.qs, query, hit )
+                << " " << qstrand << line.q << " "
+                << QueryPos( line.qe, query, hit ) << std::endl;
+
+        mOutput << std::string( 5 + padLen + qstrand.size(), ' ' ) << line.a
+                << std::endl;
+
+        mOutput << "Tgt " << std::setw( padLen )
+                << TargetPos( line.ts, query, hit )
+                << " " << tstrand << line.t << " "
+                << TargetPos( line.te, query, hit ) << std::endl;
 
         mOutput << std::endl;
       }
@@ -103,12 +148,10 @@ private:
   };
   using AlignmentLines = std::deque< AlignmentLine >;
 
-  static AlignmentLines ExtractAlignmentLines( const Sequence< Alphabet >& query,
-                                               const Sequence< Alphabet >& target,
-                                               const Cigar&    alignment,
-                                               size_t* outNumCols    = NULL,
-                                               size_t* outNumMatches = NULL,
-                                               size_t* outNumGaps    = NULL ) {
+  static AlignmentLines ExtractAlignmentLines(
+    const Sequence< Alphabet >& query, const Sequence< Alphabet >& target,
+    const Cigar& alignment, size_t* outNumCols = NULL,
+    size_t* outNumMatches = NULL, size_t* outNumGaps = NULL ) {
     Cigar cigar = alignment;
 
     size_t queryStart  = 0;
@@ -216,17 +259,67 @@ private:
 
 }; // Writer
 
-template<>
+// DNA specializations
+template <>
 inline char Writer< DNA >::MatchSymbol( const char A, const char B ) {
-  return MatchPolicy< DNA >::Match( A, B ) ? '|' : ' ';
+  if( A == B ) {
+    return '|';
+  }
+  if( MatchPolicy< DNA >::Match( A, B ) ) {
+    return '+';
+  }
+  return ' ';
 }
 
-template<>
+template <>
 inline std::string Writer< DNA >::Unit() {
   return "nt";
 }
 
-template<>
+template <>
+inline std::string Writer< DNA >::QueryStrand( const Hit< DNA >& hit ) {
+  return hit.strand == DNA::Strand::Minus ? "-" : "+";
+}
+
+template <>
+inline std::string Writer< DNA >::TargetStrand( const Hit< DNA >& hit ) {
+  // target is always reference (plus strand)
+  return "+";
+}
+
+template <>
+inline size_t Writer< DNA >::QueryPos( const size_t           pos,
+                                       const Sequence< DNA >& query,
+                                       const Hit< DNA >&      hit ) {
+  return hit.strand == DNA::Strand::Minus ? ( query.Length() - pos + 1 ) : pos;
+}
+
+template <>
+inline size_t Writer< DNA >::TargetPos( const size_t           pos,
+                                        const Sequence< DNA >& query,
+                                        const Hit< DNA >&      hit ) {
+  // target is always reference (plus strand)
+  return pos;
+}
+
+template <>
+inline Sequence< DNA >
+Writer< DNA >::QueryForAlignment( const Hit< DNA >&      hit,
+                                  const Sequence< DNA >& query ) {
+  return hit.strand == DNA::Strand::Minus ? query.Reverse().Complement()
+                                          : query;
+}
+
+template <>
+inline Sequence< DNA >
+Writer< DNA >::TargetForAlignment( const Hit< DNA >&      hit,
+                                   const Sequence< DNA >& query ) {
+  // target is always reference (plus strand)
+  return hit.target;
+}
+
+// Protein specializations
+template <>
 inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
   auto score = ScorePolicy< Protein >::Score( A, B );
   if( score >= 4 )
@@ -238,7 +331,7 @@ inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
   return ' ';
 }
 
-template<>
+template <>
 inline std::string Writer< Protein >::Unit() {
   return "aa";
 }
