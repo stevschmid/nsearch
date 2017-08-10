@@ -1,8 +1,8 @@
 #pragma once
 
 #include "nsearch/Alignment/Cigar.h"
-#include "nsearch/Sequence.h"
 #include "nsearch/Database.h"
+#include "nsearch/Sequence.h"
 
 #include "nsearch/Alphabet/DNA.h"
 
@@ -10,16 +10,15 @@
 #include <vector>
 
 struct BaseSearchParams {
-  int maxAccepts;
-  int maxRejects;
+  int   maxAccepts;
+  int   maxRejects;
   float minIdentity;
 };
 
 template < typename Alphabet >
-struct SearchParams : public BaseSearchParams {
-};
+struct SearchParams : public BaseSearchParams {};
 
-template<>
+template <>
 struct SearchParams< DNA > : public BaseSearchParams {
   DNA::Strand strand = DNA::Strand::Plus;
 };
@@ -30,21 +29,21 @@ struct Hit {
   Cigar                alignment;
 };
 
-template<>
+template <>
 struct Hit< DNA > {
   Sequence< DNA > target;
   Cigar           alignment;
   DNA::Strand     strand;
 };
 
-template< typename Alphabet >
+template < typename Alphabet >
 using HitList = std::deque< Hit< Alphabet > >;
 
-template< typename Alphabet >
+template < typename Alphabet >
 using SearchForHitsCallback =
   std::function< void( const Sequence< Alphabet >&, const Cigar& ) >;
 
-template< typename Alphabet >
+template < typename Alphabet >
 class Search {
 public:
   Search( const Database< Alphabet >&     db,
@@ -81,17 +80,18 @@ inline HitList< DNA > Search< DNA >::Query( const Sequence< DNA >& query ) {
   auto strand = mParams.strand;
 
   if( strand == DNA::Strand::Plus || strand == DNA::Strand::Both ) {
-    SearchForHits( query,
-                   [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
-                     hits.push_back( { target, alignment, DNA::Strand::Plus } );
-                   } );
+    SearchForHits(
+      query, [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
+        hits.push_back( { target, alignment, DNA::Strand::Plus } );
+      } );
   }
 
   if( strand == DNA::Strand::Minus || strand == DNA::Strand::Both ) {
-    SearchForHits( query.Reverse().Complement(),
-                   [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
-                     hits.push_back( { target, alignment, DNA::Strand::Minus } );
-                   } );
+    SearchForHits(
+      query.Reverse().Complement(),
+      [&]( const Sequence< DNA >& target, const Cigar& alignment ) {
+        hits.push_back( { target, alignment, DNA::Strand::Minus } );
+      } );
   }
 
   return hits;
