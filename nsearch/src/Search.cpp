@@ -62,10 +62,9 @@ class QueryDatabaseSearcherWorker {
 public:
   QueryDatabaseSearcherWorker( SearchResultsWriter< A >* writer,
                                const Database< A >*      database,
-                               const float minIdentity, const int maxAccepts,
-                               const int maxRejects )
+                               const SearchParams< A > &params )
       : mWriter( *writer ),
-        mGlobalSearch( *database, minIdentity, maxAccepts, maxRejects ) {}
+        mGlobalSearch( *database, params ) {}
 
   void Process( const SequenceList< A >& queries ) {
     QueryWithHitsList< A > list;
@@ -91,8 +90,8 @@ private:
 template < typename A >
 using QueryDatabaseSearcher =
   WorkerQueue< QueryDatabaseSearcherWorker< A >, SequenceList< A >,
-               SearchResultsWriter< A >*, const Database< A >*, const float,
-               const int, const int >;
+               SearchResultsWriter< A >*, const Database< A >*,
+               const SearchParams< A >& >;
 
 template < typename A >
 struct WordSize {
@@ -106,8 +105,8 @@ struct WordSize< Protein > {
 
 template < typename A >
 bool Search( const std::string& queryPath, const std::string& databasePath,
-             const std::string& outputPath, const float minIdentity,
-             const int maxAccepts, const int maxRejects ) {
+             const std::string&       outputPath,
+             const SearchParams< A >& searchParams ) {
   ProgressOutput progress;
 
   Sequence< A >     seq;
@@ -165,8 +164,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
   const int numQueriesPerWorkItem = 64;
 
   SearchResultsWriter< A >   writer( 1, outputPath );
-  QueryDatabaseSearcher< A > searcher( -1, &writer, &db, minIdentity,
-                                       maxAccepts, maxRejects );
+  QueryDatabaseSearcher< A > searcher( -1, &writer, &db, searchParams );
 
   searcher.OnProcessed( [&]( size_t numProcessed, size_t numEnqueued ) {
     progress.Set( ProgressType::SearchDB, numProcessed, numEnqueued );
@@ -198,8 +196,7 @@ bool Search( const std::string& queryPath, const std::string& databasePath,
 
 // Explicit instantiation
 template bool Search< DNA >( const std::string&, const std::string&,
-                             const std::string&, const float, const int,
-                             const int );
+                             const std::string&, const SearchParams< DNA >& );
 template bool Search< Protein >( const std::string&, const std::string&,
-                                 const std::string&, const float, const int,
-                                 const int );
+                                 const std::string&,
+                                 const SearchParams< Protein >& );

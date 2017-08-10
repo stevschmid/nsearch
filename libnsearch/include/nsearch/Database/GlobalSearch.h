@@ -14,16 +14,12 @@ using Counter = unsigned short;
 template < typename Alphabet >
 class GlobalSearch : public BaseSearch< Alphabet > {
 public:
-  GlobalSearch( const Database< Alphabet >& db, const float minIdentity,
-                const int maxHits = 1, const int maxRejects = 8 );
+  GlobalSearch( const Database< Alphabet >& db, const SearchParams< Alphabet >& params );
   HitList< Alphabet > Query( const Sequence< Alphabet >& query );
 
 private:
   using BaseSearch< Alphabet >::mDB;
-
-  float mMinIdentity;
-  int   mMaxHits;
-  int   mMaxRejects;
+  using BaseSearch< Alphabet >::mParams;
 
   std::vector< Counter >  mHits;
   ExtendAlign< Alphabet > mExtendAlign;
@@ -31,18 +27,16 @@ private:
 };
 
 template < typename A >
-GlobalSearch< A >::GlobalSearch( const Database< A >& db,
-                                 const float minIdentity, const int maxHits,
-                                 const int maxRejects )
-    : BaseSearch< A >( db ), mMinIdentity( minIdentity ), mMaxHits( maxHits ),
-      mMaxRejects( maxRejects ) {}
+GlobalSearch< A >::GlobalSearch( const Database< A >&     db,
+                                 const SearchParams< A >& params )
+    : BaseSearch< A >( db, params ) {
+
+}
 
 template < typename A >
 HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
   const size_t defaultMinHSPLength = 16;
   const size_t maxHSPJoinDistance  = 16;
-
-  /* std::cout << "===> SEARCH " << query.identifier << std::endl; */
 
   size_t minHSPLength = std::min( defaultMinHSPLength, query.Length() / 2 );
 
@@ -54,7 +48,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
   // Fast counter reset
   memset( mHits.data(), 0, sizeof( Counter ) * mHits.capacity() );
 
-  Highscore highscore( mMaxHits + mMaxRejects );
+  Highscore highscore( mParams.maxAccepts + mParams.maxRejects );
 
   auto hitsData = mHits.data();
 
@@ -241,7 +235,7 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
       alignment += cigar;
 
       float identity = alignment.Identity();
-      if( identity >= mMinIdentity ) {
+      if( identity >= mParams.minIdentity ) {
         accept = true;
         hits.push_back( { candidateSeq, alignment } );
       }
@@ -249,11 +243,11 @@ HitList< A > GlobalSearch< A >::Query( const Sequence< A >& query ) {
 
     if( accept ) {
       numHits++;
-      if( numHits >= mMaxHits )
+      if( numHits >= mParams.maxAccepts )
         break;
     } else {
       numRejects++;
-      if( numRejects >= mMaxRejects )
+      if( numRejects >= mParams.maxRejects )
         break;
     }
   }
