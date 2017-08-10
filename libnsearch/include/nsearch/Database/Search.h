@@ -10,9 +10,9 @@
 #include <vector>
 
 struct BaseSearchParams {
-  int   maxAccepts;
-  int   maxRejects;
-  float minIdentity;
+  int   maxAccepts  = 1;
+  int   maxRejects  = 8;
+  float minIdentity = 0.75f;
 };
 
 template < typename Alphabet >

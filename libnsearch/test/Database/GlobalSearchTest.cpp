@@ -1,13 +1,13 @@
 #include <catch.hpp>
 
+#include <nsearch/Alphabet/DNA.h>
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/FASTA/Reader.h>
-#include <nsearch/Alphabet/DNA.h>
 
-#include <vector>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 
 const char DatabaseContents[] = R"(
 >RF00807;mir-314;AFFE01007792.1/82767-82854   42026:Drosophila bipectinata
@@ -63,6 +63,11 @@ CGUUGAAAGUUGAUACGCGAUCGAAC
 TEST_CASE( "Global Search" ) {
   Database< DNA > db( 8 );
 
+  SearchParams< DNA > sp;
+  sp.maxAccepts = 1;
+  sp.maxRejects = 8;
+  sp.minIdentity = 0.75f;
+
   std::istringstream dbFile( DatabaseContents );
   FASTA::Reader< DNA> dbReader( dbFile );
   SequenceList< DNA > sequences;
@@ -80,21 +85,29 @@ TEST_CASE( "Global Search" ) {
     "GG" );
 
   SECTION( "Default" ) {
-    GlobalSearch< DNA > gs( db, 0.75f, 1, 8 );
-    HitList< DNA > hits = gs.Query( query );
+    GlobalSearch< DNA > gs( db, sp );
+    auto hits = gs.Query( query );
+
     REQUIRE( hits.size() == 1 );
     REQUIRE( hits[ 0 ].target.identifier == "RF00807;mir-314;AFFE01007792.1/82767-82854   42026:Drosophila bipectinata" );
   }
 
   SECTION( "Min Identity" ) {
-    GlobalSearch< DNA > gs( db, 0.9f, 1, 8 );
-    HitList< DNA > hits = gs.Query( query );
+    sp.minIdentity = 0.9f;
+
+    GlobalSearch< DNA > gs( db, sp );
+    auto hits = gs.Query( query );
+
     REQUIRE( hits.size() == 0 );
   }
 
   SECTION( "Max Accepts" ) {
-    GlobalSearch< DNA > gs( db, 0.6f, 2, 8 );
-    HitList< DNA > hits = gs.Query( query );
+    sp.minIdentity = 0.6f;
+    sp.maxAccepts = 2;
+
+    GlobalSearch< DNA > gs( db, sp );
+    auto hits = gs.Query( query );
+
     REQUIRE( hits.size() == 2 );
     std::vector< std::string > ids;
     for( auto &hit : hits ) {
@@ -102,5 +115,37 @@ TEST_CASE( "Global Search" ) {
     }
     REQUIRE( std::find( ids.begin(), ids.end(), "RF00807;mir-314;AAPU01011627.1/156896-156990   7230:Drosophila mojavensis" ) != ids.end() );
     REQUIRE( std::find( ids.begin(), ids.end(), "RF00807;mir-314;AFFE01007792.1/82767-82854   42026:Drosophila bipectinata" ) != ids.end() );
+  }
+
+  SECTION( "Strand support" ) {
+    // our read goes in the "other" direction
+    query = query.Reverse().Complement();
+
+    SECTION( "Looking on plus strand (default)" ) {
+      // no match, default is plus
+      GlobalSearch< DNA > gs( db, sp );
+
+      auto hits = gs.Query( query );
+      REQUIRE( hits.size() == 0 );
+    }
+
+    SECTION( "Looking on minus strand" ) {
+      // match, we are looking on the minus strand now
+      sp.strand = DNA::Strand::Minus;
+      GlobalSearch< DNA > gs( db, sp );
+
+      auto hits = gs.Query( query );
+      REQUIRE( hits.size() == 1 );
+      REQUIRE( hits[ 0 ].strand == DNA::Strand::Minus );
+    }
+
+    SECTION( "Looking on both strands" ) {
+      sp.strand = DNA::Strand::Both;
+      GlobalSearch< DNA > gs( db, sp );
+
+      auto hits = gs.Query( query );
+      REQUIRE( hits.size() == 1 );
+      REQUIRE( hits[ 0 ].strand == DNA::Strand::Minus );
+    }
   }
 }
