@@ -22,7 +22,7 @@ static const char USAGE[] = R"(
 
   Usage:
     nsearch search --query=<queryfile> --db=<databasefile>
-      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein]
+      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--strand=<strand>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
@@ -31,6 +31,7 @@ static const char USAGE[] = R"(
     --max-accepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
     --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
     --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
+    --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: plus]).
 )";
 
 void PrintSummaryHeader() {
@@ -81,10 +82,21 @@ int main( int argc, const char** argv ) {
     auto db         = args[ "--db" ].asString();
     auto out        = args[ "--out" ].asString();
 
+
     if( args[ "--protein" ].asBool() ) {
       DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
     } else {
-      DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
+      auto sp = ParseSearchParams< DNA >( args );
+
+      auto str = args[ "--strand" ].asString();
+      auto strand = DNA::Strand::Plus;
+      if( str == "minus" ) {
+        sp.strand = DNA::Strand::Minus;
+      } else if( str == "both" ) {
+        sp.strand = DNA::Strand::Both;
+      }
+
+      DoSearch< DNA >( query, db, out, sp );
     }
 
     gStats.StopTimer();
