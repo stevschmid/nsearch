@@ -60,8 +60,8 @@ class ProgressOutput {
   using Stage = struct {
     std::string       label;
     UnitType          unit;
-    int               value;
-    int               max;
+    size_t            value;
+    size_t            max;
     clock::time_point lastPrint;
   };
 
@@ -74,7 +74,7 @@ public:
     return *this;
   }
 
-  ProgressOutput& Set( const int id, const float value, const float max ) {
+  ProgressOutput& Set( const int id, const size_t value, const size_t max ) {
     auto& stage = mStages[ id ];
     stage.value = value;
     stage.max   = max;
