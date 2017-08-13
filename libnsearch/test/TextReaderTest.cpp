@@ -8,31 +8,36 @@ TEST_CASE( "TextReader" ) {
 
 #if defined( __APPLE__ ) || defined( __unix__ )
   SECTION( "File" ) {
-    const char    filename[] = "/tmp/textreadertest.tmp";
-    std::ofstream file( filename );
-    file << "Hello" << std::endl
-         << std::endl
-         << "Happy " << std::endl
-         << "World";
-    file.close();
+    SECTION( "Existing" ) {
+      const char    filename[] = "/tmp/textreadertest.tmp";
+      std::ofstream file( filename );
+      file << "Hello" << std::endl
+           << std::endl
+           << "Happy " << std::endl
+           << "World";
+      file.close();
 
-    std::string    line;
-    TextFileReader reader( filename );
+      std::string    line;
+      TextFileReader reader( filename );
 
-    reader >> line;
-    REQUIRE( line == "Hello" );
-    reader >> line;
-    REQUIRE( line == "Happy " );
-    reader >> line;
-    REQUIRE( line == "World" );
+      reader >> line;
+      REQUIRE( line == "Hello" );
+      reader >> line;
+      REQUIRE( line == "Happy " );
+      reader >> line;
+      REQUIRE( line == "World" );
 
-    REQUIRE( reader.EndOfFile() == true );
+      REQUIRE( reader.EndOfFile() == true );
 
-    std::remove( filename );
+      std::remove( filename );
+    }
 
     SECTION( "Non-existing file" ) {
+      std::string    line;
       TextFileReader reader( "garbagepath" );
+
       reader >> line;
+
       REQUIRE( reader.EndOfFile() == true );
     }
   }

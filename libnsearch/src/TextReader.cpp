@@ -31,7 +31,6 @@ bool TextStreamReader::EndOfFile() const {
   return !mInput || mInput.peek() == EOF;
 }
 
-
 inline bool IsBlank( const std::string& str ) {
   return str.empty() || std::all_of( str.begin(), str.end(), isspace );
 }
@@ -55,7 +54,7 @@ void TextFileReader::NextBuffer() {
     mBufferSize = read( mFd, mBuffer, mTotalBufferSize );
   }
 
-  mBufferPos  = 0;
+  mBufferPos = 0;
 }
 
 TextFileReader::TextFileReader( const std::string& fileName,
@@ -66,15 +65,15 @@ TextFileReader::TextFileReader( const std::string& fileName,
 
   if( mFd != -1 ) {
 #ifdef USE_ZLIB
-  mGzFile = NULL;
+    mGzFile = NULL;
 
-  // Check for GZ magic number
-  uint8_t magic[ 2 ] = { 0, 0 };
-  read( mFd, magic, 2 );
-  lseek( mFd, 0, SEEK_SET );
-  if( magic[ 0 ] == 0x1F && magic[ 1 ] == 0x8B ) {
-    mGzFile = gzdopen( mFd, "rb" );
-  }
+    // Check for GZ magic number
+    uint8_t magic[ 2 ] = { 0, 0 };
+    read( mFd, magic, 2 );
+    lseek( mFd, 0, SEEK_SET );
+    if( magic[ 0 ] == 0x1F && magic[ 1 ] == 0x8B ) {
+      mGzFile = gzdopen( mFd, "rb" );
+    }
 #endif
     mBuffer = new char[ totalBufferSize ];
 
