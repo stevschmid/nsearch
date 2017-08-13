@@ -88,7 +88,14 @@ TextFileReader::TextFileReader( const std::string& fileName,
 TextFileReader::~TextFileReader() {
   delete[] mBuffer;
 
-  close( mFd );
+#ifdef USE_ZLIB
+  if( mGzFile ) {
+    gzclose( mGzFile );
+  } else
+#endif
+  {
+    close( mFd );
+  }
 }
 
 void TextFileReader::operator>>( std::string& str ) {
