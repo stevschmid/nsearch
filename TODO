@@ -18,6 +18,7 @@ ToDo
 - [ ] GZIP output support
 - [ ] SAM Output
 - [ ] Alnout: Sort by id% for multiple hits!
+- [ ] Performance: Reject candidate immediately if all HSP similarities lower than requested similarity
 
 Wishlist
 ---
