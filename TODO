@@ -17,6 +17,7 @@ ToDo
 - [X] GZIP input support
 - [ ] GZIP output support
 - [ ] SAM Output
+- [ ] Alnout: Sort by id% for multiple hits!
 
 Wishlist
 ---
