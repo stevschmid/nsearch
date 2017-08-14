@@ -42,8 +42,18 @@ public:
 
   std::vector< Entry > EntriesFromTopToBottom() const {
     std::vector< Entry > sorted = mEntries;
+
+    // remove empty elements
+    sorted.erase(
+      std::remove_if( sorted.begin(), sorted.end(),
+                      []( const Entry& e ) { return e.score == 0; } ),
+      sorted.end() );
+
+    // sort
     std::sort( sorted.begin(), sorted.end(),
                []( const Entry& a, const Entry& b ) { return a < b; } );
+
+    // reverse
     std::reverse( sorted.begin(), sorted.end() );
     return sorted;
   }
