@@ -11,7 +11,7 @@
 
 struct BaseSearchParams {
   int   maxAccepts  = 1;
-  int   maxRejects  = 8;
+  int   maxRejects  = 16;
   float minIdentity = 0.75f;
 };
 

@@ -29,7 +29,7 @@ static const char USAGE[] = R"(
   Options:
     --min-identity=<minidentity>    Minimum identity threshold (e.g. 0.8).
     --max-accepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
-    --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 8].
+    --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 16].
     --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
     --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: plus]).
 )";
