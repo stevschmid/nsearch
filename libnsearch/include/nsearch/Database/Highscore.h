@@ -41,10 +41,11 @@ public:
   }
 
   std::vector< Entry > EntriesFromTopToBottom() const {
-    std::vector< Entry > topToBottom = mEntries;
-    std::sort( topToBottom.begin(), topToBottom.end(),
-               []( const Entry& a, const Entry& b ) { return !( a < b ); } );
-    return topToBottom;
+    std::vector< Entry > sorted = mEntries;
+    std::sort( sorted.begin(), sorted.end(),
+               []( const Entry& a, const Entry& b ) { return a < b; } );
+    std::reverse( sorted.begin(), sorted.end() );
+    return sorted;
   }
 
 private:
