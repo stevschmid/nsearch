@@ -22,13 +22,13 @@ static const char USAGE[] = R"(
 
   Usage:
     nsearch search --query=<queryfile> --db=<databasefile>
-      --out=<outputfile> --min-identity=<minidentity> [--max-accepts=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--strand=<strand>]
+      --out=<outputfile> --min-identity=<minidentity> [--max-hits=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--strand=<strand>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
   Options:
     --min-identity=<minidentity>    Minimum identity threshold (e.g. 0.8).
-    --max-accepts=<maxaccepts>      Maximum number of successful hits reported for one query [default: 1].
+    --max-hits=<maxaccepts>         Maximum number of successful hits reported for one query [default: 1].
     --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 16].
     --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
     --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: plus]).
@@ -72,7 +72,7 @@ SearchParams< A > ParseSearchParams( const Args& args ) {
   SearchParams< A > sp;
 
   sp.minIdentity = std::stof( args.at( "--min-identity" ).asString() );
-  sp.maxAccepts  = args.at( "--max-accepts" ).asLong();
+  sp.maxAccepts  = args.at( "--max-hits" ).asLong();
   sp.maxRejects  = args.at( "--max-rejects" ).asLong();
 
   AddSpecialSearchParams( args, &sp );
