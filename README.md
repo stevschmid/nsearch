@@ -1,6 +1,8 @@
-# nsearch (WIP title)
+# nsearch 
 
 Metagenomics framework for the rest of us. Written in C++11.
+
+[![CircleCI](https://circleci.com/gh/stevschmid/nsearch.svg?style=shield)](https://circleci.com/gh/stevschmid/nsearch)
 
 ## Features
 
