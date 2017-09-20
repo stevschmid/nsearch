@@ -2,8 +2,6 @@
 
 #include <nsearch/Database/HSP.h>
 
-#include <vector>
-
 TEST_CASE( "HSP" ) {
   SECTION( "Basic methods" ) {
     HSP hsp( 5, 6, 11, 15, -62 );
