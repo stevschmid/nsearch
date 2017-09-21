@@ -110,6 +110,7 @@ void GlobalSearch< A >::SearchForHits( const Sequence< A >&              query,
         if( kmers2[ pos2 ] != kmers[ pos ] )
           continue;
 
+        // Look for the start of a "diagonal" (alignment matrix), then follow it
         if( pos == 0 || pos2 == 0 || kmers[ pos - 1 ] == AmbiguousKmer ||
             kmers2[ pos2 - 1 ] == AmbiguousKmer ||
             ( kmers[ pos - 1 ] != kmers2[ pos2 - 1 ] ) ) {

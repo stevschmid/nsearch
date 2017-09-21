@@ -104,8 +104,9 @@ void Database< A >::Initialize( const SequenceList< A >& sequences ) {
       mProgressCallback( ProgressType::StatsCollection, seqId + 1,
                          mSequences.size() );
     }
-  } // Calculate indices
+  }
 
+  // Calculate indices
   mSequenceIdsOffsetByKmer.reserve( mMaxUniqueKmers );
   for( size_t i = 0; i < mMaxUniqueKmers; i++ ) {
     mSequenceIdsOffsetByKmer[ i ] =
