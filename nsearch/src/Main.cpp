@@ -31,7 +31,7 @@ static const char USAGE[] = R"(
     --max-hits=<maxaccepts>         Maximum number of successful hits reported for one query [default: 1].
     --max-rejects=<maxrejects>      Abort after this many candidates were rejected [default: 16].
     --max-expected-errors=<maxee>   Maximum number of expected errors [default: 1.0].
-    --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: plus]).
+    --strand=<strand>               Strand to search on (plus, minus or both). If minus (or both), queries are reverse complemented [default: both].
 )";
 
 void PrintSummaryHeader() {
