@@ -19,6 +19,7 @@ ToDo
 - [ ] SAM Output
 - [ ] Alnout: Sort by id% for multiple hits!
 - [ ] Performance: Reject candidate immediately if all HSP similarities lower than requested similarity
+- [ ] Allow overwriting of word size on cmd line!
 
 Wishlist
 ---
