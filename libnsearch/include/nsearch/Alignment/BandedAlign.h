@@ -180,12 +180,6 @@ public:
         std::min( center > bw ? ( center - bw ) : 0, width - 1 );
       size_t rightBound = std::min( center + bw, width - 1 );
 
-      /* // If we are in the last row, make sure we calculate up to the last
-       * cell (for traceback) */
-      /* if( y == height - 1 ) { */
-      /*   rightBound = width - 1; */
-      /* } */
-
       // Set diagonal score for first calculated cell in row
       int diagScore = MinInt();
       if( leftBound > 0 ) {
