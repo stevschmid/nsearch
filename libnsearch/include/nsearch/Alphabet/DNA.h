@@ -93,7 +93,7 @@ struct ScorePolicy< DNA > {
 
 template <>
 struct MatchPolicy < DNA > {
-  inline static int8_t Match( const char nucA, const char nucB ) {
+  inline static bool Match( const char nucA, const char nucB ) {
     return ScorePolicy< DNA >::Score( nucA, nucB ) > 0;
   }
 };
