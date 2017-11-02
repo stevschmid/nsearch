@@ -4,7 +4,7 @@
 
 namespace FASTA {
 
-template< typename Alphabet >
+template < typename Alphabet >
 class Writer : public SequenceWriter< Alphabet > {
 public:
   using SequenceWriter< Alphabet >::SequenceWriter;
@@ -15,7 +15,7 @@ public:
     auto& out = this->mOutput;
     out << '>' << seq.identifier << std::endl;
     for( size_t i = 0; i < seq.Length(); i += MaxLineLength ) {
-      auto sub = seq.Subsequence( i, MaxLineLength ) ;
+      auto sub = seq.Subsequence( i, MaxLineLength );
       out << sub.sequence << std::endl;
     }
     return *this;

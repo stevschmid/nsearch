@@ -8,11 +8,11 @@ template< typename Alphabet >
 class SequenceWriter  {
 public:
   SequenceWriter( std::ostream& output ) : mOutput( output ) {}
-
   SequenceWriter( const std::string& pathToFile )
       : mFile( pathToFile ), mOutput( mFile ) {}
 
-  virtual SequenceWriter< Alphabet >& operator<<( const Sequence< Alphabet >& seq ) = 0;
+  virtual SequenceWriter< Alphabet >&
+  operator<<( const Sequence< Alphabet >& seq ) = 0;
 
 protected:
   std::ofstream mFile;
