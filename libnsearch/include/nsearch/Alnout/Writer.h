@@ -34,7 +34,7 @@ public:
     }
     out << std::endl;
 
-    for( auto& hit : hits ) {
+    for( const auto& hit : hits ) {
       auto queryLen  = std::to_string( query.Length() );
       auto targetLen = std::to_string( hit.target.Length() );
       auto maxLen    = std::max( queryLen.size(), targetLen.size() );

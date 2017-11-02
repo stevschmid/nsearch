@@ -1,6 +1,6 @@
 #include "Search.h"
 
-#include <nsearch/Alnout/Writer.h>
+#include <nsearch/CSV/Writer.h>
 #include <nsearch/Database.h>
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/Sequence.h>
@@ -41,7 +41,7 @@ public:
   }
 
 private:
-  Alnout::Writer< A > mWriter;
+  CSV::Writer< A > mWriter;
 };
 
 template < typename A >
