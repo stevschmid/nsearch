@@ -4,22 +4,29 @@
 #include <vector>
 #include <map>
 
+// Sequences
 #include <nsearch/FASTA/Writer.h>
 #include <nsearch/FASTQ/Writer.h>
 #include <nsearch/FASTA/Reader.h>
 #include <nsearch/FASTQ/Reader.h>
 
+// Hits
+#include <nsearch/Alnout/Writer.h>
+#include <nsearch/CSV/Writer.h>
+
 enum class FileFormat {
   FASTA,
   FASTQ,
-  ALNOUT
+  ALNOUT,
+  CSV,
 };
 
 using StringList = std::vector< std::string > ;
 static const std::map< FileFormat, StringList > FileFormatEndings = {
   { FileFormat::FASTA, { "fa", "fna", "fsa", "fasta" } },
   { FileFormat::FASTQ, { "fq", "fastq" } },
-  { FileFormat::ALNOUT, { "aln", "alnout" } }
+  { FileFormat::ALNOUT, { "aln", "alnout" } },
+  { FileFormat::CSV, { "csv" } },
 };
 
 static FileFormat InferFileFormat( const std::string& filepath, const FileFormat defaultFormat ) {
@@ -60,5 +67,18 @@ static std::unique_ptr< SequenceReader < A > > DetectFileFormatAndOpenReader( co
     default:
       return std::unique_ptr< SequenceReader< A > >(
         new FASTA::Reader< A >( path ) );
+  }
+}
+
+template < typename A >
+static std::unique_ptr< HitWriter < A > > DetectFileFormatAndOpenHitWriter( const std::string &path, const FileFormat defaultFormat ) {
+  switch( InferFileFormat( path, defaultFormat ) ) {
+    case FileFormat::CSV:
+      return std::unique_ptr< HitWriter< A > >(
+        new CSV::Writer< A >( path ) );
+
+    default:
+      return std::unique_ptr< HitWriter< A > >(
+        new Alnout::Writer< A >( path ) );
   }
 }
