@@ -11,6 +11,7 @@ add_executable(testnsearch EXCLUDE_FROM_ALL
   Alignment/CigarTest.cpp
   Alignment/ExtendAlignTest.cpp
   Alnout/WriterTest.cpp
+  CSV/WriterTest.cpp
   Alphabet/DNATest.cpp
   Alphabet/ProteinTest.cpp
   Database/GlobalSearchTest.cpp
