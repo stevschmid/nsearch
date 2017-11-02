@@ -1,22 +1,102 @@
 #pragma once
 
-#include "../Database/GlobalSearch.h"
-#include "../Sequence.h"
+#include "../Database/HitWriter.h"
 
 #include "../Alphabet/DNA.h"
 #include "../Alphabet/Protein.h"
 
 #include <fstream>
 
-#define MAX_ALIGNMENT_STRING_LENGTH_LINE 60
-
 namespace Alnout {
 
 template < typename Alphabet >
-class Writer {
+class Writer : public HitWriter< Alphabet > {
+public:
+  using HitWriter< Alphabet >::HitWriter;
+
+  HitWriter< Alphabet >&
+  operator<<( const QueryHitsPair< Alphabet >& queryWithHits ) {
+    const auto& query = queryWithHits.first;
+    const auto& hits  = queryWithHits.second;
+
+    auto& out = this->mOutput;
+
+    // Output with fixed precision (sticky)
+    out << std::setiosflags( std::ios::fixed );
+
+    out << "Query >" << query.identifier << std::endl;
+    out << " %Id   TLen  Target" << std::endl;
+    for( auto& hit : hits ) {
+      out << std::setprecision( 0 ) << std::setw( 3 )
+              << ( hit.alignment.Identity() * 100.0 ) << '%' << std::setw( 7 )
+              << hit.target.Length() << "  " << hit.target.identifier
+              << std::endl;
+    }
+    out << std::endl;
+
+    for( const auto& hit : hits ) {
+      auto queryLen  = std::to_string( query.Length() );
+      auto targetLen = std::to_string( hit.target.Length() );
+      auto maxLen    = std::max( queryLen.size(), targetLen.size() );
+
+      out << " Query" << std::setw( maxLen + 1 )
+              << std::to_string( query.Length() ) << Unit() << " >"
+              << query.identifier << std::endl;
+      out << "Target" << std::setw( maxLen + 1 )
+              << std::to_string( hit.target.Length() ) << Unit() << " >"
+              << hit.target.identifier << std::endl;
+
+      size_t numCols, numMatches, numGaps;
+      auto   lines = ExtractAlignmentLines(
+        QueryForAlignment( hit, query ), TargetForAlignment( hit, query ), hit.alignment,
+        &numCols, &numMatches, &numGaps );
+
+      out << std::endl;
+      for( auto& line : lines ) {
+        auto padLen = std::max( { std::to_string( lines.back().qs ).size(),
+                                  std::to_string( lines.back().ts ).size(),
+                                  std::to_string( lines.back().qe ).size(),
+                                  std::to_string( lines.back().te ).size() } );
+
+        auto qstrand = QueryStrand( hit );
+        auto tstrand = TargetStrand( hit );
+
+        if( !qstrand.empty() )
+          qstrand += " ";
+
+        if( !tstrand.empty() )
+          tstrand += " ";
+
+        out << "Qry " << std::setw( padLen )
+                << QueryPos( line.qs, query, hit )
+                << " " << qstrand << line.q << " "
+                << QueryPos( line.qe, query, hit ) << std::endl;
+
+        out << std::string( 5 + padLen + qstrand.size(), ' ' ) << line.a
+                << std::endl;
+
+        out << "Tgt " << std::setw( padLen )
+                << TargetPos( line.ts, query, hit )
+                << " " << tstrand << line.t << " "
+                << TargetPos( line.te, query, hit ) << std::endl;
+
+        out << std::endl;
+      }
+
+      float identity  = float( numMatches ) / float( numCols );
+      float gapsRatio = float( numGaps ) / float( numCols );
+      out << numCols << " cols, " << numMatches << " ids ("
+              << std::setprecision( 1 ) << ( 100.0f * identity ) << "%), "
+              << numGaps << " gaps (" << std::setprecision( 1 )
+              << ( 100.0f * gapsRatio ) << "%)" << std::endl;
+
+      out << std::endl;
+    }
+    return *this;
+  }
+
 private:
-  std::ofstream mFile;
-  std::ostream& mOutput;
+  static const size_t MaxLineLength = 60;
 
   static inline char        MatchSymbol( const char A, const char B );
   static inline std::string Unit();
@@ -52,91 +132,6 @@ private:
     return pos;
   }
 
-public:
-  Writer( std::ostream& output ) : mOutput( output ) {}
-
-  Writer( const std::string& pathToFile )
-      : mFile( pathToFile ), mOutput( mFile ) {}
-
-  void operator<<( const std::pair< Sequence< Alphabet >, HitList< Alphabet > >&
-                     queryWithHits ) {
-    const auto& query = queryWithHits.first;
-    const auto& hits  = queryWithHits.second;
-
-    // Output with fixed precision (sticky)
-    mOutput << std::setiosflags( std::ios::fixed );
-
-    mOutput << "Query >" << query.identifier << std::endl;
-    mOutput << " %Id   TLen  Target" << std::endl;
-    for( auto& hit : hits ) {
-      mOutput << std::setprecision( 0 ) << std::setw( 3 )
-              << ( hit.alignment.Identity() * 100.0 ) << '%' << std::setw( 7 )
-              << hit.target.Length() << "  " << hit.target.identifier
-              << std::endl;
-    }
-    mOutput << std::endl;
-
-    for( auto& hit : hits ) {
-      auto queryLen  = std::to_string( query.Length() );
-      auto targetLen = std::to_string( hit.target.Length() );
-      auto maxLen    = std::max( queryLen.size(), targetLen.size() );
-
-      mOutput << " Query" << std::setw( maxLen + 1 )
-              << std::to_string( query.Length() ) << Unit() << " >"
-              << query.identifier << std::endl;
-      mOutput << "Target" << std::setw( maxLen + 1 )
-              << std::to_string( hit.target.Length() ) << Unit() << " >"
-              << hit.target.identifier << std::endl;
-
-      size_t numCols, numMatches, numGaps;
-      auto   lines = ExtractAlignmentLines(
-        QueryForAlignment( hit, query ), TargetForAlignment( hit, query ), hit.alignment,
-        &numCols, &numMatches, &numGaps );
-
-      mOutput << std::endl;
-      for( auto& line : lines ) {
-        auto padLen = std::max( { std::to_string( lines.back().qs ).size(),
-                                  std::to_string( lines.back().ts ).size(),
-                                  std::to_string( lines.back().qe ).size(),
-                                  std::to_string( lines.back().te ).size() } );
-
-        auto qstrand = QueryStrand( hit );
-        auto tstrand = TargetStrand( hit );
-
-        if( !qstrand.empty() )
-          qstrand += " ";
-
-        if( !tstrand.empty() )
-          tstrand += " ";
-
-        mOutput << "Qry " << std::setw( padLen )
-                << QueryPos( line.qs, query, hit )
-                << " " << qstrand << line.q << " "
-                << QueryPos( line.qe, query, hit ) << std::endl;
-
-        mOutput << std::string( 5 + padLen + qstrand.size(), ' ' ) << line.a
-                << std::endl;
-
-        mOutput << "Tgt " << std::setw( padLen )
-                << TargetPos( line.ts, query, hit )
-                << " " << tstrand << line.t << " "
-                << TargetPos( line.te, query, hit ) << std::endl;
-
-        mOutput << std::endl;
-      }
-
-      float identity  = float( numMatches ) / float( numCols );
-      float gapsRatio = float( numGaps ) / float( numCols );
-      mOutput << numCols << " cols, " << numMatches << " ids ("
-              << std::setprecision( 1 ) << ( 100.0f * identity ) << "%), "
-              << numGaps << " gaps (" << std::setprecision( 1 )
-              << ( 100.0f * gapsRatio ) << "%)" << std::endl;
-
-      mOutput << std::endl;
-    }
-  }
-
-private:
   using AlignmentLine = struct {
     size_t      qs, qe;
     std::string q;
@@ -226,7 +221,7 @@ private:
         }
 
         numCols++;
-        if( numCols % MAX_ALIGNMENT_STRING_LENGTH_LINE == 0 ) {
+        if( numCols % MaxLineLength == 0 ) {
           line.qe = qcount;
           line.te = tcount;
           lines.push_back( line );
@@ -257,7 +252,7 @@ private:
     return lines;
   }
 
-}; // Writer
+};
 
 // DNA specializations
 template <>

@@ -1,7 +1,7 @@
 #include "Search.h"
 
-#include <nsearch/Alnout/Writer.h>
 #include <nsearch/Database.h>
+#include <nsearch/Database/HitWriter.h>
 #include <nsearch/Database/GlobalSearch.h>
 #include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
@@ -32,16 +32,18 @@ public:
 template < typename A >
 class SearchResultsWriterWorker {
 public:
-  SearchResultsWriterWorker( const std::string& path ) : mWriter( path ) {}
+  SearchResultsWriterWorker( const std::string& path )
+      : mWriter( std::move(
+          DetectFileFormatAndOpenHitWriter< A >( path, FileFormat::ALNOUT ) ) ) {}
 
   void Process( const QueryWithHitsList< A >& queryWithHitsList ) {
     for( auto& queryWithHits : queryWithHitsList ) {
-      mWriter << queryWithHits;
+      ( *mWriter ) << queryWithHits;
     }
   }
 
 private:
-  Alnout::Writer< A > mWriter;
+  std::unique_ptr< HitWriter< A > > mWriter;
 };
 
 template < typename A >

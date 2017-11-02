@@ -40,6 +40,9 @@ template < typename Alphabet >
 using HitList = std::deque< Hit< Alphabet > >;
 
 template < typename Alphabet >
+using QueryHitsPair = std::pair< Sequence< Alphabet >, HitList< Alphabet > >;
+
+template < typename Alphabet >
 using SearchForHitsCallback =
   std::function< void( const Sequence< Alphabet >&, const Cigar& ) >;
 

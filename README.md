@@ -1,6 +1,6 @@
 # nsearch 
 
-NGS data processing library for the rest of us. Written in C++11.
+NGS data processing command-line tool & library for the rest of us. Written in C++11.
 
 [![CircleCI](https://circleci.com/gh/stevschmid/nsearch.svg?style=shield)](https://circleci.com/gh/stevschmid/nsearch)
 
@@ -21,6 +21,7 @@ Currently supported:
 - FASTA (merging output, searching input)
 - FASTQ (merging input, merging output, searching input)
 - ALNOUT (searching output)
+- CSV (searching output)
 
 Gzipped input files (e.g. `db.fasta.gz`) are supported.
 

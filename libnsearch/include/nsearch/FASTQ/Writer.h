@@ -4,7 +4,7 @@
 
 namespace FASTQ {
 
-template< typename Alphabet >
+template < typename Alphabet >
 class Writer : public SequenceWriter< Alphabet > {
 public:
   using SequenceWriter< Alphabet >::SequenceWriter;
