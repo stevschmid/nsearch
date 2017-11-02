@@ -85,15 +85,19 @@ TextFileReader::TextFileReader( const std::string& fileName,
 }
 
 TextFileReader::~TextFileReader() {
-  delete[] mBuffer;
+  if( mBuffer ) {
+    delete[] mBuffer;
+  }
 
+  if( mFd != -1 ) {
 #ifdef USE_ZLIB
-  if( mGzFile ) {
-    gzclose( mGzFile );
-  } else
+    if( mGzFile ) {
+      gzclose( mGzFile );
+    } else
 #endif
-  {
-    close( mFd );
+    {
+      close( mFd );
+    }
   }
 }
 
