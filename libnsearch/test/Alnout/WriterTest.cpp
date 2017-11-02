@@ -87,13 +87,13 @@ TEST_CASE( "Alnout" ) {
   SECTION( "Protein" ) {
     auto entry1 = std::make_pair( Sequence< Protein >( "query1", "LAFQGVRN" ),
                                   HitList< Protein >( {
-                                    { { "target50", "MAFQGVRS" }, "1X6M1X" },
-                                    { { "target114", "LAGQGSAN" }, "4M3X1M" },
+                                    { { "target50", "MAFQGVRS" }, "1X6=1X" },
+                                    { { "target114", "LAGQGSAN" }, "4=3X1=" },
                                   } ) );
     auto entry2 =
       std::make_pair( Sequence< Protein >( "query2", "GGGGGYFDEATGVCPF" ),
                       HitList< Protein >( {
-                        { { "target1337", "YFDEATGICPFQQQ" }, "5I7M1X3M3D" },
+                        { { "target1337", "YFDEATGICPFQQQ" }, "5I7=1X3=3D" },
                       } ) );
 
 
@@ -117,7 +117,7 @@ TEST_CASE( "Alnout" ) {
             "novemcinctus (nine-banded armadillo)",
             "CGUCACCUGAACUCAUGACUCUUCAACUUCAGGACUUGCAGAAUUAAUGGAAUGCCGUCCUAAGGU"
             "UGUUGAGUUCUGCGUUUCUGGGC" },
-          "1M1X1M2X7M1X2M1X11M1X17M2X1M1X29M1X4M3X3M" },
+          "1=1X1=2X7=1X2=1X11=1X17=2X1=1X29=1X4=3X3=" },
       } ) );
 
     std::ostringstream oss;

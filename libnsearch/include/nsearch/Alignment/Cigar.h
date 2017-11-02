@@ -10,7 +10,7 @@
 
 enum class CigarOp : char {
   Unknown   = ' ',
-  Match     = 'M',
+  Match     = '=',
   Mismatch  = 'X',
   Deletion  = 'D',
   Insertion = 'I',

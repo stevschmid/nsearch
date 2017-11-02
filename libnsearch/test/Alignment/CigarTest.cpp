@@ -5,7 +5,7 @@
 TEST_CASE( "CigarTest" ) {
   SECTION( "Constructing" ) {
     Cigar cigar1;
-    Cigar cigar2( "5M10I" );
+    Cigar cigar2( "5=10I" );
     REQUIRE( cigar2[ 0 ] == CigarEntry( 5, CigarOp::Match ) );
     REQUIRE( cigar2[ 1 ] == CigarEntry( 10, CigarOp::Insertion ) );
   }
@@ -20,12 +20,12 @@ TEST_CASE( "CigarTest" ) {
     cigar.Add( CigarOp::Match );
     cigar.Add( CigarOp::Match );
 
-    REQUIRE( cigar.ToString() == "7M20D3X3M" );
+    REQUIRE( cigar.ToString() == "7=20D3X3=" );
   }
 
   SECTION( "Identity" ) {
-    REQUIRE( Cigar( "50I14M2X4M25D" ).Identity() == float( 18 ) / float( 20 ) );
-    REQUIRE( Cigar( "2M" ).Identity() == 1.0f );
-    REQUIRE( Cigar( "1X1M" ).Identity() == 0.5f );
+    REQUIRE( Cigar( "50I14=2X4=25D" ).Identity() == float( 18 ) / float( 20 ) );
+    REQUIRE( Cigar( "2=" ).Identity() == 1.0f );
+    REQUIRE( Cigar( "1X1=" ).Identity() == 0.5f );
   }
 }

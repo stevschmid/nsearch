@@ -17,7 +17,7 @@ TEST_CASE( "ExtendAlign" ) {
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::Forward, 0, 0 );
-    REQUIRE( cigar.ToString() == "2M" );
+    REQUIRE( cigar.ToString() == "2=" );
 
     ExtendAlignParams eap;
     eap.gapOpenScore = eap.gapExtendScore - 1;
@@ -25,7 +25,7 @@ TEST_CASE( "ExtendAlign" ) {
     ea = ExtendAlign< DNA >( eap );
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::Forward, 0, 0 );
-    REQUIRE( cigar.ToString() == "2M2I4M" );
+    REQUIRE( cigar.ToString() == "2=2I4=" );
   }
 
   SECTION( "Forwards extend" ) {
@@ -36,13 +36,13 @@ TEST_CASE( "ExtendAlign" ) {
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::Forward, 0, 0 );
     REQUIRE( bestA == 3 );
     REQUIRE( bestB == 3 );
-    REQUIRE( cigar.ToString() == "4M" );
+    REQUIRE( cigar.ToString() == "4=" );
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::Forward, 3, 3 );
     REQUIRE( bestA == 3 );
     REQUIRE( bestB == 3 );
-    REQUIRE( cigar.ToString() == "1M" );
+    REQUIRE( cigar.ToString() == "1=" );
 
     score =
       ea.Extend( a, b, &bestA, &bestB, &cigar, AlignmentDirection::Forward, 4, 4 );

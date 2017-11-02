@@ -18,7 +18,7 @@ TEST_CASE( "BandedAlign" ) {
     // TATAATGTTTACATTGG
     // |||||||   |||.|||
     // TATAATG---ACACTGG
-    REQUIRE( cigar.ToString() == "7M3I3M1X3M" );
+    REQUIRE( cigar.ToString() == "7=3I3=1X3=" );
     const int matchScore = 2;
     const int mismatchScore = -4;
     REQUIRE( score == 13 * matchScore + 1 * bap.interiorGapOpenScore +
@@ -33,7 +33,7 @@ TEST_CASE( "BandedAlign" ) {
       // Default: terminal gaps are not penalized heavily
       BandedAlign< DNA > ba;
       ba.Align( a, b, &cigar );
-      REQUIRE( cigar.ToString() == "2I3M1X2M" );
+      REQUIRE( cigar.ToString() == "2I3=1X2=" );
     }
 
     {
@@ -44,16 +44,16 @@ TEST_CASE( "BandedAlign" ) {
       ba.Align( a, b, &cigar );
       // GGATCCTA
       // A--TCGTA
-      REQUIRE( cigar.ToString() == "1X2I2M1X2M" );
+      REQUIRE( cigar.ToString() == "1X2I2=1X2=" );
     }
   }
 
   SECTION( "Long tails" ) {
     BandedAlign< DNA > ba;
     ba.Align( "ATCGGGGGGGGGGGGGGGGGGGGGGG", "CGG", &cigar );
-    REQUIRE( cigar.ToString() == "2I3M21I" );
+    REQUIRE( cigar.ToString() == "2I3=21I" );
     ba.Align( "GGGGTATAAAATTT", "TTTTTTTTGGGGTATAAAA", &cigar );
-    REQUIRE( cigar.ToString() == "8D11M3I" );
+    REQUIRE( cigar.ToString() == "8D11=3I" );
   }
 
   SECTION( "Edge cases" ) {
@@ -73,23 +73,23 @@ TEST_CASE( "BandedAlign" ) {
     SECTION( "Going forward" ) {
       ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::Forward, 0,
                 0 );
-      REQUIRE( cigar.ToString() == "4I2X6M" );
+      REQUIRE( cigar.ToString() == "4I2X6=" );
 
       ba.Align( "TTTTATCGGTAT", "GGCGGTAT", &cigar, AlignmentDirection::Forward, 4,
                 2 );
-      REQUIRE( cigar.ToString() == "2I6M" );
+      REQUIRE( cigar.ToString() == "2I6=" );
     }
 
     SECTION( "Going backwards" ) {
       // GGATGA-
       // --ATGAA
       ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::Reverse, 6, 5 );
-      REQUIRE( cigar.ToString() == "2I4M1D" );
+      REQUIRE( cigar.ToString() == "2I4=1D" );
 
       // GGATGA
       // --ATG-
       ba.Align( "GGATGA", "ATGAA", &cigar, AlignmentDirection::Reverse, 6, 3 );
-      REQUIRE( cigar.ToString() == "2I3M1I" );
+      REQUIRE( cigar.ToString() == "2I3=1I" );
     }
   }
 
@@ -101,12 +101,12 @@ TEST_CASE( "BandedAlign" ) {
     BandedAlign< DNA > ba;
 
     ba.Align( A, B, &cigar );
-    REQUIRE( cigar.ToString() == "6D9M6I" );
+    REQUIRE( cigar.ToString() == "6D9=6I" );
 
     A = "CCCCCCCCCCCCCCC";
     B = "CCCCCCAAAAAAAAA";
     ba.Align( A, B, &cigar );
-    REQUIRE( cigar.ToString() == "9I6M9D" );
+    REQUIRE( cigar.ToString() == "9I6=9D" );
   }
 
   SECTION( "Breaking case when startA >> lenA" ) {
@@ -125,7 +125,7 @@ TEST_CASE( "BandedAlign" ) {
     // Align first with fresh alignment cache
     int score1 =
       ba.Align( "ATGCC", "TTTTAGCC", &cigar1, AlignmentDirection::Forward, 1, 1 );
-    REQUIRE( cigar1.ToString() == "1M3X3D" );
+    REQUIRE( cigar1.ToString() == "1=3X3D" );
 
     // This alignment will set mVerticalGaps[0] to a low value, which will be
     // extended upon subsequently if we don't reset
