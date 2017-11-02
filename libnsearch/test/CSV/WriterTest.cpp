@@ -16,10 +16,11 @@ TEST_CASE( "CSV" ) {
       { { "Ref,1", "TTTATCGTGTCCCACCAGGATGTTT" }, "3D7=3D9=3D", DNA::Strand::Plus },
       /*
        *
-       *   ATCGTGTACCAGGATG (Query)
-       *   CATCCTGGTACACGAT (RevComp)
+       *   ATCGTGTACCAGGATG (Query +Strand)
+       *   CATCCTGGTACACGAT (Query -Strand)
        *   |||||| ||||||||
-       * TTCATCCTCGTACACGA- (DB)
+       * TTCATCCTCGTACACGA- (Database +Strand)
+       *
        */
       { { "Ref2", "TTCATCCTCGTACACGA" }, "2D6=1X8=1I", DNA::Strand::Minus },
     } ) );
