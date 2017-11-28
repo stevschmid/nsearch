@@ -27,4 +27,4 @@ add_subdirectory(vendor/docopt)
 
 target_link_libraries(nsearch
   libnsearch
-  docopt)
+  docopt_s)
