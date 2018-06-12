@@ -1,6 +1,9 @@
 #pragma once
+
 #include "../Sequence.h"
 #include "../Utils.h"
+
+#include <functional>
 
 using Kmer = uint32_t;
 const Kmer AmbiguousKmer = ( Kmer )-1;
