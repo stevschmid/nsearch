@@ -31,7 +31,7 @@ public:
   }
 
 private:
-  std::chrono::high_resolution_clock::time_point mTimerStart, mTimerStop;
+  std::chrono::time_point< std::chrono::steady_clock > mTimerStart, mTimerStop;
 };
 
 extern Stats gStats;

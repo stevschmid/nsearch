@@ -4,6 +4,7 @@
 #include <deque>
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 #include "Utils.h"
 

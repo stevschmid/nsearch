@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 enum class CigarOp : char {
   Unknown   = ' ',
