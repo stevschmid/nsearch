@@ -6,8 +6,9 @@ set(APP_VERSION 0.1)
 
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 
-# Enable C++11
+# Enable C++11 and threading
 set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_FLAGS -pthread)
 
 # We need some defines
 add_definitions(-DAPP_NAME="${APP_NAME}")
