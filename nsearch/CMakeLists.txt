@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 
 # Setup project
 set(APP_NAME nsearch)
-set(APP_VERSION 0.1)
+set(APP_VERSION 0.2)
 
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 
