@@ -38,6 +38,8 @@ public:
     }
   }
 
+  virtual ~SequenceReader() = default;
+
 protected:
   std::unique_ptr< TextReader > mTextReader;
 };

@@ -16,6 +16,8 @@ public:
   virtual bool EndOfFile() const = 0;
 
   virtual void operator>>( std::string& str ) = 0;
+
+  virtual ~TextReader() = default;
 };
 
 class TextStreamReader : public TextReader {

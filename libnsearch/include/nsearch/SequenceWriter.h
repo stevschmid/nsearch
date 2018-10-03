@@ -14,6 +14,8 @@ public:
   virtual SequenceWriter< Alphabet >&
   operator<<( const Sequence< Alphabet >& seq ) = 0;
 
+  virtual ~SequenceWriter() = default;
+
 protected:
   std::ofstream mFile;
   std::ostream& mOutput;

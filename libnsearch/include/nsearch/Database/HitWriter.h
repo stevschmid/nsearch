@@ -14,6 +14,8 @@ public:
   virtual HitWriter< Alphabet >&
   operator<<( const QueryHitsPair< Alphabet >& queryWithHits ) = 0;
 
+  virtual ~HitWriter() = default;
+
 protected:
   std::ofstream mFile;
   std::ostream& mOutput;
