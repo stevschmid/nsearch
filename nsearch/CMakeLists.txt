@@ -8,7 +8,8 @@ project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 
 # Enable C++11 and threading
 set(CMAKE_CXX_STANDARD 11)
-SET(CMAKE_CXX_FLAGS -pthread)
+set(CMAKE_CXX_FLAGS -pthread)
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 # We need some defines
 add_definitions(-DAPP_NAME="${APP_NAME}")
