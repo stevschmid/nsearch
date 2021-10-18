@@ -6,6 +6,7 @@
 #include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
 #include <nsearch/Alphabet/Protein.h>
+#include <nsearch/Alphabet/English.h>
 
 #include <memory>
 
@@ -102,6 +103,10 @@ struct WordSize {
 
 template <>
 struct WordSize< Protein > {
+  static const int VALUE = 5;
+};
+
+struct WordSize< English > {
   static const int VALUE = 5;
 };
 
@@ -202,3 +207,6 @@ template bool DoSearch< DNA >( const std::string&, const std::string&,
 template bool DoSearch< Protein >( const std::string&, const std::string&,
                                    const std::string&,
                                    const SearchParams< Protein >& );
+template bool DoSearch< English >( const std::string&, const std::string&,
+                                   const std::string&,
+                                   const SearchParams< English >& );

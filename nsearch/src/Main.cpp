@@ -22,7 +22,7 @@ static const char USAGE[] = R"(
 
   Usage:
     nsearch search --query=<queryfile> --db=<databasefile>
-      --out=<outputfile> --min-identity=<minidentity> [--max-hits=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--strand=<strand>]
+      --out=<outputfile> --min-identity=<minidentity> [--max-hits=<maxaccepts>] [--max-rejects=<maxrejects>] [--protein] [--english] [--strand=<strand>]
     nsearch merge --forward=<forwardfile> --reverse=<reversefile> --out=<outputfile>
     nsearch filter --in=<inputfile> --out=<outputfile> [--max-expected-errors=<maxee>]
 
@@ -100,6 +100,8 @@ int main( int argc, const char** argv ) {
 
     if( args[ "--protein" ].asBool() ) {
       DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
+    } else if (args[ "--english" ].asBol() ) {
+      DoSearch< English >( query, db, out, ParseSearchParams< Englsih >( args ) );
     } else {
       DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
     }
