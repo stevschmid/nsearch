@@ -8,6 +8,7 @@
 #include <nsearch/Sequence.h>
 #include <nsearch/Alphabet/DNA.h>
 #include <nsearch/Alphabet/Protein.h>
+#include <nsearch/Alphabet/English.h>
 
 #include "Common.h"
 #include "Filter.h"
@@ -100,8 +101,8 @@ int main( int argc, const char** argv ) {
 
     if( args[ "--protein" ].asBool() ) {
       DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
-    } else if (args[ "--english" ].asBol() ) {
-      DoSearch< English >( query, db, out, ParseSearchParams< Englsih >( args ) );
+    } else if (args[ "--english" ].asBool() ) {
+      DoSearch< English >( query, db, out, ParseSearchParams< English >( args ) );
     } else {
       DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
     }

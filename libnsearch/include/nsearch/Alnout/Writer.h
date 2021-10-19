@@ -4,6 +4,7 @@
 
 #include "../Alphabet/DNA.h"
 #include "../Alphabet/Protein.h"
+#include "../Alphabet/English.h"
 
 #include <fstream>
 
@@ -329,6 +330,24 @@ inline char Writer< Protein >::MatchSymbol( const char A, const char B ) {
 template <>
 inline std::string Writer< Protein >::Unit() {
   return "aa";
+}
+
+// English specializations
+template <>
+inline char Writer< English >::MatchSymbol( const char A, const char B ) {
+  auto score = ScorePolicy< English >::Score( A, B );
+  if( score >= 10 )
+    return '|';
+  if( score >= 5 )
+    return ':';
+  if( score > 0 )
+    return '.';
+  return ' ';
+}
+
+template <>
+inline std::string Writer< English >::Unit() {
+  return "Letter";
 }
 
 } // namespace Alnout

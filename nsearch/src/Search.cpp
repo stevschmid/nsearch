@@ -106,6 +106,7 @@ struct WordSize< Protein > {
   static const int VALUE = 5;
 };
 
+template <>
 struct WordSize< English > {
   static const int VALUE = 5;
 };
