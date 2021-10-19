@@ -9,7 +9,7 @@ struct English {
 // Scoring: First Try. Looking for exact match.
 // Collapse letters into 5 bits
 template <>
-struct BitMapPolicy< Protein > {
+struct BitMapPolicy< English > {
   static const size_t NumBits = 4;
 
   inline static int8_t BitMap( const char letters ) {
