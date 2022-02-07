@@ -140,6 +140,20 @@ void GlobalSearch< A >::SearchForHits( const Sequence< A >&              query,
     for( auto& sp : sps ) {
       size_t queryPos, candidatePos;
 
+      // check if we already have a HSP which this SP is part of
+      bool isContained = false;
+      for( auto it = hsps.cbegin(); it != hsps.cend(); ++it ) {
+        const HSP& hsp = *it;
+        if (sp.IsFullyContainedWithin(hsp)) {
+          isContained = true;
+          break;
+        }
+      }
+
+      // do not extend this, since it's part of an HSP already
+      if (isContained)
+        continue;
+
       size_t a1 = sp.a1, a2 = sp.a2, b1 = sp.b1, b2 = sp.b2;
 
       Cigar leftCigar;

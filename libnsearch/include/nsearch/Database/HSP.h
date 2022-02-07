@@ -33,6 +33,11 @@ public:
            || ( b1 <= other.b2 && other.b1 <= b2 ); // overlap in B direction
   }
 
+  bool IsFullyContainedWithin( const HSP& other) const {
+    return (other.a1 <= a1 && other.a2 >= a2) &&
+      (other.b1 <= b1 && other.b2 >= b2);
+  }
+
   size_t DistanceTo( const HSP& other ) const {
     size_t dx = ( a1 > other.a2 ? a1 - other.a2 : other.a1 - a2 );
     dx        = dx > 0 ? dx - 1 : 0;
