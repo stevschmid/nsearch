@@ -4,10 +4,14 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <cstring>
+
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#include "winstd.h"
+#endif
 
 /*
  * TextStreamReader
