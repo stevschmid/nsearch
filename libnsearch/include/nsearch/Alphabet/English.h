@@ -10,51 +10,51 @@ struct English {
 // Collapse letters into 5 bits
 template <>
 struct BitMapPolicy< English > {
-  static const size_t NumBits = 4;
+  static const size_t NumBits = 5;
 
-  inline static int8_t BitMap( const char letters ) {
+  inline static int8_t BitMap( const char letter ) {
     static const uint8_t BitMapping[] = {
-      0b00000, // 'A'
-      0b10000, // 'B'
-      0b00011, // 'C'
-      0b00100, // 'D'
-      0b00100, // 'E'
-      0b01111, // 'F'
-      0b00101, // 'G'
-      0b00110, // 'H'
-      0b00111, // 'I'
-      0b10000, // 'J'
-      0b01001, // 'K'
-      0b01000, // 'L'
-      0b01010, // 'M'
-      0b00010, // 'N'
-      0b10000, // 'O'
-      0b01011, // 'P'
-      0b00100, // 'Q'
-      0b00001, // 'R'
-      0b01100, // 'S'
-      0b01101, // 'T'
-      0b10000, // 'U'
-      0b00111, // 'V'
-      0b01110, // 'W'
-      0b10010, // 'X'
-      0b01111, // 'Y'
-      0b10001, // 'Z'
-      0b10011, // ' ' space
+      0b000000, // 'A'
+      0b000001, // 'B'
+      0b000010, // 'C'
+      0b000011, // 'D'
+      0b000100, // 'E'
+      0b000101, // 'F'
+      0b000110, // 'G'
+      0b000111, // 'H'
+      0b001000, // 'I'
+      0b001001, // 'J'
+      0b001010, // 'K'
+      0b001011, // 'L'
+      0b001100, // 'M'
+      0b001101, // 'N'
+      0b001110, // 'O'
+      0b001111, // 'P'
+      0b010000, // 'Q'
+      0b010001, // 'R'
+      0b010010, // 'S'
+      0b010011, // 'T'
+      0b010101, // 'U'
+      0b010110, // 'V'
+      0b010111, // 'W'
+      0b011000, // 'X'
+      0b011001, // 'Y'
+      0b011010, // 'Z'
+      0b011011, // ' ' space
     };
 
-    auto val = BitMapping[ letters - 'A' ];
-    if( ( val & 0b10000 ) > 0 )
-      return -1; // ambiguity
+    auto val = BitMapping[ letter - 'A' ];
+    // if( ( val & 0b010000 ) > 0 )
+    //   return -1; // ambiguity
 
-    return ( val & 0b1111 );
+    return ( val & 0b01111 );
   }
 };
 
 // BLOSUM62
 template <>
 struct ScorePolicy< English > {
-  inline static int8_t Score( const char lettersA, const char lettersB ) {
+  inline static int8_t Score( const char letterA, const char letterB ) {
     static const int ScoreMatrixSize = 27; // 'A'...'Z' and ' '
     static const int8_t ScoreMatrix[ ScoreMatrixSize ][ ScoreMatrixSize ] = {
       /* A,   B,   C,   D,   E,   F,   G,   H,   I,   J,   K,   L,   M,   N,   O,   P,   Q,   R,   S,   T,   U,   V,   W,   X,   Y,   Z,     */
@@ -87,13 +87,13 @@ struct ScorePolicy< English > {
       {  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1}, //  
     };
 
-    return ScoreMatrix[ lettersA - 'A' ][ lettersB - 'A' ];
+    return ScoreMatrix[ letterA - 'A' ][ letterB - 'A' ];
   }
 };
 
 template <>
 struct MatchPolicy< English > {
-  inline static bool Match( const char lettersA, const char lettersB ) {
-    return ScorePolicy< English >::Score( lettersA, lettersB ) >= 10;
+  inline static bool Match( const char letterA, const char letterB ) {
+    return ScorePolicy< English >::Score( letterA, letterB ) >= 4;
   }
 };

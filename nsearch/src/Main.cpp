@@ -101,7 +101,7 @@ int main( int argc, const char** argv ) {
 
     if( args[ "--protein" ].asBool() ) {
       DoSearch< Protein >( query, db, out, ParseSearchParams< Protein >( args ) );
-    } else if (args[ "--english" ].asBool() ) {
+    } else if ( args[ "--english" ].asBool() ) {
       DoSearch< English >( query, db, out, ParseSearchParams< English >( args ) );
     } else {
       DoSearch< DNA >( query, db, out, ParseSearchParams< DNA >( args ) );
