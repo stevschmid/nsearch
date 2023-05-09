@@ -58,3 +58,12 @@ make check
 ## Code Style
 
 A `.clang-format` for [ClangFormat](https://clang.llvm.org/docs/ClangFormat.html) file is provided in the repository. 
+
+
+## Tested on
+
+- linux\_64, vc >= 14.2
+- osx\_64, libcxx >= 12.0.1
+- win\_64, libgcc-ng >= 10.3.0
+
+Details available at https://anaconda.org/conda-forge/nsearch/files.
